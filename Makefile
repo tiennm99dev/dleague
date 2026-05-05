@@ -3,63 +3,62 @@ SHELL := /usr/bin/env bash
 GO ?= go
 BUF ?= buf
 GOLANGCI_LINT ?= golangci-lint
+NPM ?= npm
 
-WEB_OUT := web/main.wasm
-WASM_EXEC_SRC := $(shell $(GO) env GOROOT)/lib/wasm/wasm_exec.js
-WASM_EXEC_DST := web/wasm_exec.js
+WEB_DIR := client/web
 
-.PHONY: help dev dev-debug build build-wasm build-wasm-debug build-server test lint db-up db-down proto-gen proto-lint proto-breaking tools clean
+.PHONY: help dev dev-debug build build-server web-dev web-build web-install test lint db-up db-down compose-up compose-down proto-gen proto-lint proto-breaking tools clean
 
 help:
 	@echo "make targets:"
-	@echo "  dev              run server (prod build) + ensure WASM built"
-	@echo "  dev-debug        run server + WASM with -tags debug (protojson logging on)"
-	@echo "  build            build server + WASM (prod)"
-	@echo "  build-wasm       build client/cmd/web -> $(WEB_OUT)"
-	@echo "  build-wasm-debug build client with -tags debug"
+	@echo "  dev              run Go server (prod build)"
+	@echo "  dev-debug        run server with -tags debug (protojson logging on)"
+	@echo "  build            build server + web client"
 	@echo "  build-server     build server/cmd/api"
-	@echo "  test             go test ./... in every module"
-	@echo "  lint             golangci-lint run on every module"
+	@echo "  web-install      cd $(WEB_DIR) && npm install"
+	@echo "  web-dev          run Vite dev server (Svelte+Phaser)"
+	@echo "  web-build        production build of the web client"
+	@echo "  test             go test ./... across server + shared"
+	@echo "  lint             golangci-lint run on server + shared modules"
+	@echo "  compose-up       docker compose up -d (couchbase + redis + dleague)"
+	@echo "  compose-down     docker compose down"
 	@echo "  proto-gen        regenerate shared/pb from proto/"
 	@echo "  proto-lint       buf lint"
 	@echo "  proto-breaking   buf breaking against main branch"
-	@echo "  db-up / db-down  docker-compose Postgres"
 	@echo "  tools            install buf + protoc-gen-go locally"
 
-dev: build-wasm
+dev:
 	cd server && $(GO) run ./cmd/api
 
-dev-debug: build-wasm-debug
+dev-debug:
 	cd server && $(GO) run -tags debug ./cmd/api
 
-build: build-server build-wasm
+build: build-server web-build
 
 build-server:
 	cd server && $(GO) build -o ../bin/dleague-server ./cmd/api
 
-build-wasm: $(WASM_EXEC_DST)
-	cd client && GOOS=js GOARCH=wasm $(GO) build -o ../$(WEB_OUT) ./cmd/web
+web-install:
+	cd $(WEB_DIR) && $(NPM) install
 
-build-wasm-debug: $(WASM_EXEC_DST)
-	cd client && GOOS=js GOARCH=wasm $(GO) build -tags debug -o ../$(WEB_OUT) ./cmd/web
+web-dev:
+	cd $(WEB_DIR) && $(NPM) run dev
 
-$(WASM_EXEC_DST):
-	cp $(WASM_EXEC_SRC) $(WASM_EXEC_DST)
+web-build:
+	cd $(WEB_DIR) && $(NPM) run build-nolog
 
 test:
 	cd shared && $(GO) test ./...
 	cd server && $(GO) test ./...
-	cd client && $(GO) test ./...
 
 lint:
 	cd shared && $(GOLANGCI_LINT) run
 	cd server && $(GOLANGCI_LINT) run
-	cd client && $(GOLANGCI_LINT) run
 
-db-up:
-	docker compose up -d postgres
+compose-up:
+	docker compose up -d couchbase redis
 
-db-down:
+compose-down:
 	docker compose down
 
 proto-gen:
@@ -76,5 +75,5 @@ tools:
 	$(GO) install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 
 clean:
-	rm -f $(WEB_OUT)
 	rm -rf bin/
+	rm -rf $(WEB_DIR)/build $(WEB_DIR)/.svelte-kit

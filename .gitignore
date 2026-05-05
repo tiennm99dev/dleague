@@ -33,3 +33,9 @@ coverage.out
 
 # Plan transient artifacts
 plans/visuals/cache/
+
+# Web client (Svelte + Phaser)
+client/web/node_modules/
+client/web/build/
+client/web/.svelte-kit/
+client/web/.env

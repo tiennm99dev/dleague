@@ -1,7 +1,7 @@
 ---
 phase: 7
 title: "Svelte 5 + Phaser 4 + Capacitor client scaffold"
-status: pending
+status: completed
 priority: P1
 effort: "3d"
 dependencies: [1, 6]
@@ -107,18 +107,19 @@ Svelte App (auth, lobby, HUD)
 
 ## Todo List
 
-- [ ] `phaserjs/template-svelte` scaffolded into `client/web/`
-- [ ] Firebase JS SDK init
-- [ ] @capacitor-firebase/authentication wrapper
-- [ ] Rune-based auth state (`auth.svelte.ts`)
-- [ ] EventBus pattern verified Svelte ↔ Phaser
-- [ ] Proto wire helpers
-- [ ] WS handshake helper
-- [ ] BetaBanner component with copy approved
-- [ ] SignIn page (3 providers) shows BetaBanner above provider buttons
-- [ ] Lobby page proves WS auth + collapsible BetaBanner topbar
-- [ ] Makefile targets
-- [ ] go.work updated (or Ebitengine client retained as legacy until Phase 12 decision)
+- [x] `phaserjs/template-svelte` scaffolded into `client/web/` (Svelte 5.23, Vite 6.3, Phaser 4.0, SvelteKit static adapter)
+- [x] Firebase JS SDK init — `src/auth/firebase.ts`, env via `import.meta.env.VITE_FIREBASE_*`
+- [x] `@capacitor-firebase/authentication` + `@capacitor/core` + `@capacitor/cli` installed (cap add platforms deferred until mobile phase)
+- [x] Rune-based auth state — `auth.svelte.ts` exposes `auth.user`, `auth.loading`, `auth.error`, `signInWith{Google,Email,Anonymously}`, `signOut`, `getIdToken(forceRefresh)`
+- [x] EventBus pattern preserved from template — `src/game/EventBus.ts` + `PhaserGame.svelte` mount used by Lobby
+- [x] Proto wire helpers — `src/net/proto.ts` parses inline schema (mirrors `proto/dleague/v1/envelope.proto`); `Build.{auth,ping,joinRoom,turn,matchEnd}` builders + decode/dispatch
+- [x] WS handshake helper — `src/net/ws.ts` `WsClient` opens, sends AUTH_REQUEST, awaits AUTH_RESPONSE; reactive `state` (idle/connecting/authenticating/connected/closed) for HUD; auto-reconnect with token-refresh + backoff
+- [x] BetaBanner component — full mode (always-visible on SignIn) + topbar mode (sessionStorage-dismiss on Lobby), copy includes "data may reset, early adopters earn rewards"
+- [x] SignIn page — Google + email/password + anonymous + BetaBanner full + signup CTA copy
+- [x] Lobby page — auth state + WS state badge + sign-out + Phaser canvas mount; routes/+page.svelte conditionally renders SignIn or Lobby on auth.user
+- [x] Makefile targets — `web-install` / `web-dev` / `web-build`; `compose-up` / `compose-down` replace old `db-up/db-down`; legacy WASM targets removed
+- [x] `.gitignore` — adds `client/web/{node_modules,build,.svelte-kit}` + `client/web/.env`
+- [ ] go.work cleanup — Ebitengine `./client` member still present; retire decision deferred to Phase 12
 
 ## Success Criteria
 
