@@ -104,3 +104,4 @@ Phases 3+4+5 are independent backend integrations; can fan out. Phase 7 unlocks 
 5. ~~Phaser 4 spike~~ — resolved: Phaser 4 adopted as default renderer (Svelte for shell, Phaser for game canvas).
 6. Early-adopter reward mechanism — out of scope here; revisit post-beta.
 7. Future managed-service migration target — Capella / Mongo Atlas / Postgres? Decide post-beta from collected usage data.
+8. **GitHub CI disabled during pivot** — `.github/workflows/ci.yml` renamed to `ci.yml.disabled` because the workflow targeted Go 1.26 + WASM client which no longer match the stack. Re-enable in Phase 12 (rewrite for Go 1.25.5 + Svelte/Phaser client + new buildable targets, then rename back).

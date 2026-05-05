@@ -82,6 +82,7 @@ docs/
 - [ ] README tech stack section refreshed
 - [ ] Superseded plans cross-linked
 - [ ] Legacy `client/` decision made (delete vs retain)
+- [ ] **Re-enable GitHub CI**: rewrite `.github/workflows/ci.yml.disabled` to match new stack (Go 1.25.5, Svelte+Phaser client build instead of WASM, drop MySQL refs), verify green on PR, rename back to `ci.yml`
 - [ ] Journal entry via `/ck:journal`
 
 ## Success Criteria
