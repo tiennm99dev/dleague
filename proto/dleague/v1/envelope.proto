@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package dleague.v1;
+
+option go_package = "github.com/tiennm99/dleague/shared/pb/dleague/v1;dleaguev1";
+
+// MessageType identifies the payload variant inside Envelope.
+enum MessageType {
+  MESSAGE_TYPE_UNSPECIFIED = 0;
+  MESSAGE_TYPE_PING = 1;
+  MESSAGE_TYPE_PONG = 2;
+}
+
+// Envelope is the wire frame for every WebSocket message.
+// Payload bytes are the marshaled bytes of the inner message identified by `type`.
+message Envelope {
+  MessageType type = 1;
+  string request_id = 2;
+  bytes payload = 3;
+}
+
+message Ping {
+  int64 client_unix_ms = 1;
+}
+
+message Pong {
+  int64 client_unix_ms = 1;
+  int64 server_unix_ms = 2;
+}

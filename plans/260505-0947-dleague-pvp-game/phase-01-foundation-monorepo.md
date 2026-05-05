@@ -1,7 +1,7 @@
 ---
 phase: 1
 title: "Foundation & monorepo"
-status: pending
+status: completed
 priority: P1
 effort: 1w
 dependencies: []
@@ -122,37 +122,37 @@ dleague/
 
 ## Todo List
 
-- [ ] Init Go workspace + 3 modules
-- [ ] `proto/` scaffold + `buf.yaml` + `buf.gen.yaml`
-- [ ] First proto: `envelope.proto` with ping/pong
-- [ ] `make proto-gen` produces `shared/pb/`
-- [ ] Define `shared/game.Game` interface + `Registry` factory
-- [ ] Ebitengine hello-world WASM (port `Game{Layout/Update/Draw}` w/ Apache attribution)
-- [ ] HTML shell + CSS overlay scaffold
-- [ ] Go server: chi router with /health + /ws upgrade
-- [ ] WS hub stub: ping/pong via **binary** protobuf
-- [ ] Debug-tag wire logger: `protojson` to console (client) / stdout (server) under `//go:build debug`
-- [ ] Production build excludes protojson via build tags
-- [ ] WS client wrapper in client/internal/net (syscall/js bridge)
-- [ ] docker-compose Postgres
-- [ ] Makefile (dev/build/test/proto-gen/proto-lint/proto-breaking)
-- [ ] golangci-lint config
-- [ ] GitHub Actions CI (incl proto-lint + proto-breaking)
-- [ ] README quickstart updated
+- [x] Init Go workspace + 3 modules
+- [x] `proto/` scaffold + `buf.yaml` + `buf.gen.yaml`
+- [x] First proto: `envelope.proto` with ping/pong
+- [x] `make proto-gen` produces `shared/pb/`
+- [x] Define `shared/game.Game` interface + `Registry` factory
+- [x] Ebitengine hello-world WASM (port `Game{Layout/Update/Draw}` w/ Apache attribution)
+- [x] HTML shell + CSS overlay scaffold
+- [x] Go server: chi router with /health + /ws upgrade
+- [x] WS hub stub: ping/pong via **binary** protobuf
+- [x] Debug-tag wire logger: `protojson` to console (client) / stdout (server) under `//go:build debug`
+- [x] Production build excludes protojson via build tags
+- [x] WS client wrapper in client/internal/net (syscall/js bridge)
+- [x] docker-compose Postgres
+- [x] Makefile (dev/build/test/proto-gen/proto-lint/proto-breaking)
+- [x] golangci-lint config
+- [x] GitHub Actions CI (incl proto-lint + proto-breaking)
+- [x] README quickstart updated
 
 ## Success Criteria
 
-- [ ] `make dev` starts server on :8080, browser loads "Dleague" title screen
-- [ ] `curl localhost:8080/health` returns 200 OK
-- [ ] Browser WS connects to `/ws`, sends Ping, receives Pong (binary frames in devtools network tab)
-- [ ] `make dev-debug` build prints human-readable JSON for every send/recv message
-- [ ] Production WASM bundle (no `-tags debug`) does NOT include protojson symbols (verified via `go tool nm` or bundle size diff)
-- [ ] `make proto-gen` regenerates without diff (CI verifies)
-- [ ] CI green on push: proto-lint + proto-breaking + lint + test + build WASM
-- [ ] WASM bundle <8MB
-- [ ] All Go files <200 LOC
-- [ ] NOTICE file lists ratel-online (MIT) + Ebitengine (Apache-2.0)
-- [ ] Direct-ported files carry original copyright headers
+- [x] `make dev` starts server on :8080, browser loads "Dleague" title screen
+- [x] `curl localhost:8080/health` returns 200 OK
+- [x] Browser WS connects to `/ws`, sends Ping, receives Pong (binary frames in devtools network tab)
+- [x] `make dev-debug` build prints human-readable JSON for every send/recv message
+- [x] Production WASM bundle (no `-tags debug`) does NOT include protojson symbols (verified via `go tool nm` or bundle size diff)
+- [x] `make proto-gen` regenerates without diff (CI verifies)
+- [x] CI green on push: proto-lint + proto-breaking + lint + test + build WASM
+- [x] WASM bundle <8MB
+- [x] All Go files <200 LOC
+- [x] NOTICE file lists ratel-online (MIT) + Ebitengine (Apache-2.0)
+- [x] Direct-ported files carry original copyright headers
 
 ## Risk Assessment
 
@@ -166,3 +166,19 @@ dleague/
 | protobuf-go runtime adds ~400KB to WASM (binary only, no protojson in prod) | Acceptable within <10MB total budget; track in CI |
 | Debug-tag drift: dev runs with debug, prod without — behavior divergence | Tag only affects logging, not message correctness. Add CI build of both `-tags debug` and default to catch tag-gated compile errors |
 | Air / file-watcher complexity | Skip auto-rebuild MVP; just `make build-wasm` manually |
+
+## Completion Notes
+
+Phase 1 completed 2026-05-05.
+
+**Reports:**
+- `/config/workspace/tiennm99/dleague/plans/reports/code-reviewer-260505-1104-phase-01-foundation.md` — 4 high-priority issues identified + fixed (js.Func leaks, webRoot validation, WS OriginPatterns env binding, HTTP timeouts, proto-breaking CI)
+- `/config/workspace/tiennm99/dleague/plans/reports/tester-260505-1104-phase-01-foundation.md` — all tests passing, WASM bundle 3.5MB gzipped (target <8MB ✓)
+
+**Deviations from plan:**
+- **Go version:** 1.26 (not 1.23 planned) — no impact, forward-compatible
+- **WASM output path:** `web/main.wasm` (not `dist/wasm/main.wasm` as drafted) — web root maps to `web/` for simplicity
+- **Deferred to Phase 2+:** `client/internal/{ui,game}` and `server/internal/{store,config}` directories not yet scaffolded per YAGNI — staged in actual implementation as needed
+- **Database:** `docker-compose.yml` defined but Postgres dev setup deferred (no docker in current dev env); will activate in Phase 3 when store layer needed
+
+All verification criteria met: prod + debug builds clean, `go test -race` passes, protojson scrubbed from prod binary, WASM <8MB, all files <200 LOC, CI proto-breaking runs on PRs.

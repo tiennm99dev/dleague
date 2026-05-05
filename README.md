@@ -13,7 +13,25 @@ Most -dle games are solo: solve the daily puzzle, share your score on Twitter, d
 
 ## Status
 
-Pre-implementation. Plan written, scope locked. See `plans/260505-0947-dleague-pvp-game/plan.md`.
+Phase 1 completed — foundation scaffolded. Phase 2 ready. See `plans/260505-0947-dleague-pvp-game/plan.md`.
+
+## Quickstart
+
+```bash
+# one-time: install buf + protoc-gen-go into $GOPATH/bin
+make tools
+
+# (re)generate protobuf Go code into shared/pb/
+make proto-gen
+
+# run server + WASM client (prod)
+make dev
+
+# run with -tags debug — every WS message logs as protojson on both sides
+make dev-debug
+```
+
+Open http://localhost:8080.
 
 ## Stack
 
@@ -41,7 +59,7 @@ Active plan: [`plans/260505-0947-dleague-pvp-game/plan.md`](plans/260505-0947-dl
 
 | Phase | Effort | Status |
 |-------|--------|--------|
-| 1. Foundation & monorepo | 1w | pending |
+| 1. Foundation & monorepo | 1w | completed |
 | 2. Game core (pluggable -dle) | 2w | pending |
 | 3. Backend + auth | 1.5w | pending |
 | 4. Async PvP | 1.5w | pending |

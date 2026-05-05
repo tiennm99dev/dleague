@@ -1,0 +1,81 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache: true
+
+      - name: Install buf + protoc-gen-go
+        run: |
+          go install github.com/bufbuild/buf/cmd/buf@latest
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: proto lint
+        run: cd proto && buf lint
+
+      - name: proto breaking (against main)
+        if: github.event_name == 'pull_request'
+        run: cd proto && buf breaking --against '../.git#branch=origin/main,subdir=proto'
+
+      - name: proto generate (verify no diff)
+        run: |
+          cd proto && buf generate
+          cd .. && git diff --exit-code -- shared/pb || \
+            { echo "::error::generated protobuf is stale; run 'make proto-gen' and commit"; exit 1; }
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout=5m
+          working-directory: server
+
+      - name: golangci-lint shared
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout=5m
+          working-directory: shared
+
+      - name: golangci-lint client
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout=5m
+          working-directory: client
+
+      - name: test shared
+        run: cd shared && go test ./...
+
+      - name: test server (prod)
+        run: cd server && go test ./...
+
+      - name: test server (debug build)
+        run: cd server && go build -tags debug ./...
+
+      - name: build server
+        run: cd server && go build ./cmd/api
+
+      - name: build wasm (prod)
+        run: cd client && GOOS=js GOARCH=wasm go build -o ../web/main.wasm ./cmd/web
+
+      - name: build wasm (debug)
+        run: cd client && GOOS=js GOARCH=wasm go build -tags debug -o /tmp/main-debug.wasm ./cmd/web
+
+      - name: upload wasm artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dleague-wasm
+          path: web/main.wasm

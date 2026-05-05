@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: dleague-postgres
+    environment:
+      POSTGRES_USER: dleague
+      POSTGRES_PASSWORD: dleague
+      POSTGRES_DB: dleague
+    ports:
+      - "5432:5432"
+    volumes:
+      - dleague-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dleague"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  dleague-postgres:

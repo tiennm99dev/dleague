@@ -41,7 +41,7 @@ Ship a competitive PvP twist on -dle puzzle games. Players race head-to-head (sy
 
 | # | Phase | File | Status | Effort |
 |---|-------|------|--------|--------|
-| 1 | Foundation & monorepo | [phase-01-foundation-monorepo.md](phase-01-foundation-monorepo.md) | pending | 1w |
+| 1 | Foundation & monorepo | [phase-01-foundation-monorepo.md](phase-01-foundation-monorepo.md) | completed | 1w |
 | 2 | Game core (pluggable -dle interface) | [phase-02-game-core-pluggable.md](phase-02-game-core-pluggable.md) | pending | 2w |
 | 3 | Backend + auth | [phase-03-backend-auth.md](phase-03-backend-auth.md) | pending | 1.5w |
 | 4 | Async PvP | [phase-04-async-pvp.md](phase-04-async-pvp.md) | pending | 1.5w |
