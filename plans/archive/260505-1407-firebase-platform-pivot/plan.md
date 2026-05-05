@@ -1,11 +1,12 @@
 ---
 title: "Firebase + React/TS + Capacitor platform pivot"
 description: "Drop Ebitengine WASM client and MySQL HeatWave backend store. Adopt React/TS + Capacitor web-first client and Firebase (Auth + Firestore + optional RTDB) as the backend store. Go server stays as referee/admin-SDK writer. Free tier only, testing scale."
-status: pending
+status: superseded
+superseded_by: ../260505-1604-firebase-couchbase-redis-pivot/plan.md
 priority: P1
 effort: 6-8w
 branch: main
-tags: [firebase, firestore, react, typescript, capacitor, websocket, pivot, free-tier]
+tags: [firebase, firestore, react, typescript, capacitor, websocket, pivot, free-tier, superseded]
 created: 2026-05-05
 parent_plan: 260505-0947-dleague-pvp-game/plan.md
 supersedes:

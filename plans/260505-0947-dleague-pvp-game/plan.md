@@ -1,14 +1,17 @@
 ---
-title: "Dleague — PvP -dle game (Ebitengine + Go)"
-description: "PvP variant of -dle puzzle games (Wordle/LoLdle style). Single game at launch with pluggable architecture. Sync + async PvP. Ebitengine WASM client + Go backend. Web first, mobile Phase 2."
-status: pending
+title: "Dleague — PvP -dle game (parent plan, partially superseded)"
+description: "Parent plan for the dleague PvP -dle game. Phase 1 (foundation+monorepo) shipped. Phases 2–6 superseded by `260505-1604-firebase-couchbase-redis-pivot/`: Ebitengine WASM client → React+Capacitor; Postgres → self-hosted Couchbase 8.0 + Redis 8.4. Frontmatter description below preserved as historical record."
+status: superseded_partially
+superseded_by: 260505-1604-firebase-couchbase-redis-pivot/plan.md
 priority: P2
 effort: 8-12w
 branch: main
-tags: [ebitengine, go, websocket, postgres, wasm, pvp, puzzle-game, dle]
+tags: [pvp, puzzle-game, dle, parent, superseded-partial]
 created: 2026-05-05
 brainstorm: reports/brainstorm-260505-0947-dleague-pvp-game-naming.md
 ---
+
+> **Status note (2026-05-05):** Phase 1 shipped (commit `9937c7d`). Phases 2–6 are superseded by `plans/260505-1604-firebase-couchbase-redis-pivot/`. The text below is preserved as historical record of the original Ebitengine/Postgres direction. Do **not** execute Phases 2–6 from this plan — execute the active plan instead.
 
 # Dleague Implementation Plan
 

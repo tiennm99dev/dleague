@@ -1,14 +1,14 @@
 ---
 title: "MySQL HeatWave Always-Free integration"
 description: "Provision OCI MySQL HeatWave Always-Free, wire it into the dleague Go server as the Phase 3 data layer, automate backups, and document the migration off the placeholder Postgres dev compose."
-status: pending
+status: superseded
+superseded_by: ../260505-1604-firebase-couchbase-redis-pivot/plan.md
 priority: P1
 effort: 1w
 branch: main
-tags: [oci, mysql, heatwave, infrastructure, phase-3-prereq]
+tags: [oci, mysql, heatwave, infrastructure, phase-3-prereq, superseded]
 created: 2026-05-05
 parent_plan: 260505-0947-dleague-pvp-game/plan.md
-blocks: [project:260505-0947-dleague-pvp-game]
 research:
   - reports/researcher-260505-1207-aiven-vs-cockroach.md
   - reports/researcher-260505-1207-cockroach-fitness-followup.md
