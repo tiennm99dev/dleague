@@ -7,31 +7,49 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
+	"github.com/tiennm99/dleague/server/internal/config"
 	srvhttp "github.com/tiennm99/dleague/server/internal/http"
+	"github.com/tiennm99/dleague/server/internal/store"
 	"github.com/tiennm99/dleague/server/internal/ws"
 )
 
 func main() {
-	addr := envOr("DLEAGUE_ADDR", ":8080")
-	webRoot := envOr("DLEAGUE_WEB", "./web")
-
-	var opts ws.UpgradeOptions
-	if origins := os.Getenv("DLEAGUE_WS_ORIGINS"); origins != "" {
-		opts.AllowedOrigins = splitCSV(origins)
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("config: %v", err)
 	}
 
+	bootCtx, cancelBoot := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancelBoot()
+
+	st, err := store.New(bootCtx, cfg.DatabaseURL)
+	if err != nil {
+		log.Fatalf("store: %v", err)
+	}
+	defer func() {
+		if err := st.Close(); err != nil {
+			log.Printf("store close: %v", err)
+		}
+	}()
+
+	if err := store.Migrate(bootCtx, st.DB()); err != nil {
+		log.Fatalf("migrate: %v", err)
+	}
+	log.Printf("migrations applied")
+
 	hub := ws.NewHub()
-	r, err := srvhttp.NewRouter(webRoot, hub, opts)
+	wsOpts := ws.UpgradeOptions{AllowedOrigins: cfg.AllowedOrigins}
+
+	r, err := srvhttp.NewRouter(cfg.WebRoot, hub, wsOpts, st)
 	if err != nil {
 		log.Fatalf("router: %v", err)
 	}
 
 	srv := &http.Server{
-		Addr:              addr,
+		Addr:              cfg.Addr,
 		Handler:           r,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
@@ -43,7 +61,7 @@ func main() {
 	defer stop()
 
 	go func() {
-		log.Printf("dleague server listening on %s (web=%s)", addr, webRoot)
+		log.Printf("dleague server listening on %s (web=%s)", cfg.Addr, cfg.WebRoot)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("listen: %v", err)
 		}
@@ -57,22 +75,4 @@ func main() {
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		log.Printf("shutdown: %v", err)
 	}
-}
-
-func envOr(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return fallback
-}
-
-func splitCSV(s string) []string {
-	parts := strings.Split(s, ",")
-	out := parts[:0]
-	for _, p := range parts {
-		if t := strings.TrimSpace(p); t != "" {
-			out = append(out, t)
-		}
-	}
-	return out
 }

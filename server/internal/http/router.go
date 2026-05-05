@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/tiennm99/dleague/server/internal/store"
 	"github.com/tiennm99/dleague/server/internal/ws"
 )
 
@@ -22,16 +23,20 @@ import (
 // return an error rather than panicking on first request.
 //
 // wsOpts is optional and forwarded to the WebSocket upgrade handler.
-func NewRouter(webRoot string, hub *ws.Hub, wsOpts ws.UpgradeOptions) (http.Handler, error) {
+//
+// st may be nil — /health then skips the DB ping and reports plain "ok".
+// In production main() wires a real Store; tests pass nil to keep setup
+// minimal until they explicitly cover the DB-degraded path.
+func NewRouter(webRoot string, hub *ws.Hub, wsOpts ws.UpgradeOptions, st *store.Store) (http.Handler, error) {
 	abs, err := filepath.Abs(webRoot)
 	if err != nil {
 		return nil, fmt.Errorf("resolve webRoot: %w", err)
 	}
-	st, err := os.Stat(abs)
+	info, err := os.Stat(abs)
 	if err != nil {
 		return nil, fmt.Errorf("webRoot %q: %w", abs, err)
 	}
-	if !st.IsDir() {
+	if !info.IsDir() {
 		return nil, fmt.Errorf("webRoot %q is not a directory", abs)
 	}
 
@@ -40,7 +45,7 @@ func NewRouter(webRoot string, hub *ws.Hub, wsOpts ws.UpgradeOptions) (http.Hand
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
 
-	r.Get("/health", health)
+	r.Get("/health", healthHandler(st))
 	r.Get("/ws", ws.UpgradeHandler(hub, wsOpts))
 
 	fs := http.FileServer(http.Dir(abs))
