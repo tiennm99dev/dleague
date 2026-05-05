@@ -1,0 +1,35 @@
+# Build output
+dist/
+bin/
+*.wasm
+*.exe
+
+# Go
+vendor/
+*.out
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+*.local
+
+# Postgres / docker
+postgres-data/
+data/
+
+# Test
+coverage.out
+*.test
+
+# Plan transient artifacts
+plans/visuals/cache/
