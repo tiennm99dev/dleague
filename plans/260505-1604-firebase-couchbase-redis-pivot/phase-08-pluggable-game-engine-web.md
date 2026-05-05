@@ -1,102 +1,125 @@
 ---
 phase: 8
-title: "Pluggable game-engine layer (web)"
+title: "Pluggable game variants on Phaser 4 (Svelte HUD)"
 status: pending
-priority: P2
+priority: P1
 effort: "2d"
 dependencies: [7]
 ---
 
-# Phase 8: Pluggable game-engine layer (web)
+# Phase 8: Pluggable game variants on Phaser 4
 
 ## Context Links
 
 - Plan: [plan.md](plan.md)
-- Prior superseded phase: `260505-1407-firebase-platform-pivot/phase-5-pluggable-game-engine-web.md`
+- Engine fitness: [researcher-260505-1728-dle-platform-engine-fitness.md](../reports/researcher-260505-1728-dle-platform-engine-fitness.md)
+- Phaser Scenes docs: https://docs.phaser.io/phaser/concepts/scenes
 
 ## Overview
 
-Define a thin TypeScript interface so individual game variants (`-dle` games like Wordle, Sumdle, Quordle) can plug in without touching auth/networking. First implementation: Wordle-style daily puzzle. Spike Phaser 4 to gauge whether a canvas engine is needed.
+Define the per-variant interface so individual `-dle` games (Wordle, Sumdle, Quordle, etc.) plug in as **Phaser 4 scenes** with **Svelte HUDs** without touching auth/networking. First implementation: Wordle-style daily puzzle. Each variant lives under `src/games/<name>/`.
 
 ## Key Insights
 
-- Most `-dle` games are HTML/CSS, not canvas. Phaser is overkill unless we need real-time animation.
-- The interface boundary keeps each game self-contained: receives input from `useAuth` + WS, renders state, dispatches attempts via callback.
-- Daily puzzle is fully client-side once the puzzle doc is fetched; only attempts go back to server.
+- Phaser **Scenes** are the natural primitive for "one game per scene" — register all variants on the Phaser game instance, switch via `scene.start(<key>)`.
+- Svelte components handle the HUD (score, attempt counter, win/lose modal) overlaid on the Phaser canvas via the EventBus from Phase 7.
+- Pure-canvas Wordle = animated tile flips, color reveals, particle wins → Phaser shines here vs DOM/CSS.
+- DOM accessibility: provide a hidden `<input>` for screen readers + keyboard input that proxies to Phaser (covered by template's input handling pattern).
 
 ## Requirements
 
-- Functional: `GameEngine` interface with `init`, `submitGuess`, `subscribe`, `dispose`. Wordle implementation as first concrete game.
-- Non-functional: lazy-loadable per game variant; bundle split per variant.
+- Functional: `GameVariant` interface with `key`, `Scene` (Phaser), `Hud` (Svelte component); Wordle implementation as first concrete game.
+- Non-functional: lazy-loadable per variant via Vite dynamic import; Phaser bundle weight stays single (~345 KB) even with N variants.
 
 ## Architecture
 
 ```typescript
-interface GameEngine<TState, TAction> {
-  init(puzzle: Puzzle, prevAttempt?: Attempt): TState;
-  step(state: TState, action: TAction): { state: TState; emit?: ServerEvent };
-  isComplete(state: TState): boolean;
+// games/types.ts
+interface GameVariant {
+  key: string;                    // 'wordle', 'sumdle', etc.
+  Scene: typeof Phaser.Scene;     // the Phaser scene class
+  Hud: typeof SvelteComponent;    // the HUD Svelte component
+  meta: { title: string; difficulty: 'easy'|'medium'|'hard'; tagline: string };
 }
-
-// React side:
-<GameRunner engine={WordleEngine} puzzle={puzzle} onComplete={postAttempt} />
 ```
 
 ```
 client/web/src/games/
-├── engine.ts              # interface + types
-├── wordle/
-│   ├── engine.ts          # implements GameEngine
-│   ├── Board.tsx          # render
-│   └── Keyboard.tsx
-└── runner/
-    └── GameRunner.tsx     # generic shell
+├── types.ts                  # GameVariant interface
+├── registry.ts               # all variants registered here (lazy imports)
+├── runner/
+│   ├── GameRunner.svelte     # generic shell: loads variant, mounts Phaser scene + HUD
+│   └── eventbus-helpers.ts   # typed wrappers around the shared EventBus
+└── wordle/
+    ├── WordleScene.ts        # Phaser scene: grid, keyboard, tile flips, win effects
+    ├── WordleHud.svelte      # HUD: score + attempts left + win/lose modal
+    ├── scoring.ts            # pure scoring func (server re-validates)
+    └── index.ts              # exports GameVariant
+```
+
+Flow on play:
+```
+Lobby → user clicks "Play today's puzzle"
+  → GameRunner loads `wordle` variant via dynamic import
+  → fetches today's puzzle via REST (Phase 9)
+  → fetches resume-state via /attempts/me/:date if exists
+  → registers WordleScene with Phaser game
+  → mounts WordleHud as Svelte sibling
+  → scene.start('wordle')
+  → on win/lose → EventBus.emit('attempt-complete', result)
+  → GameRunner POSTs /attempts (Phase 9)
 ```
 
 ## Related Code Files
 
 - Create:
-  - `client/web/src/games/engine.ts`
-  - `client/web/src/games/wordle/{engine.ts,Board.tsx,Keyboard.tsx,index.ts}`
-  - `client/web/src/games/runner/GameRunner.tsx`
+  - `client/web/src/games/types.ts`
+  - `client/web/src/games/registry.ts`
+  - `client/web/src/games/runner/{GameRunner.svelte,eventbus-helpers.ts}`
+  - `client/web/src/games/wordle/{WordleScene.ts,WordleHud.svelte,scoring.ts,index.ts}`
 - Modify:
-  - `client/web/src/pages/Lobby.tsx` → add "Play today's puzzle" button → renders `<GameRunner>`
+  - `client/web/src/routes/Lobby.svelte` → add "Play today's puzzle" button → renders `<GameRunner variantKey="wordle" />`
 
 ## Implementation Steps
 
-1. Define `GameEngine<TState,TAction>` interface in `games/engine.ts`.
-2. Implement `WordleEngine`:
-   - State: `{guesses: string[], evaluations: Eval[][], status: 'playing'|'won'|'lost'}`
-   - Actions: `{type: 'guess', word: string}`
-   - Pure logic, no I/O.
-3. `Board.tsx` + `Keyboard.tsx` consume state via props.
-4. `GameRunner.tsx`:
-   - Fetches `GET /puzzles/:date` (REST) on mount
-   - Restores previous attempt from `GET /attempts/me/:date` (resume in progress)
-   - Wires keyboard input → `engine.step` → render
-   - On complete, POST `/attempts` with final state
-5. Phaser 4 spike: load Phaser in dev, render a smoke-test scene; if perceptible bundle/perf cost vs HTML/CSS, document and skip; else add as optional renderer for future games.
+1. Define `GameVariant` interface in `games/types.ts`.
+2. `registry.ts`: `Map<string, () => Promise<GameVariant>>` for lazy-loaded variants.
+3. Implement `WordleScene` (Phaser):
+   - Grid: 6 rows × 5 columns of tiles
+   - Keyboard: 26 keys + Enter + Backspace
+   - Animations: tile flip on submit, color reveal, win confetti, lose shake
+   - State: `{guesses, evaluations, status}` — pure logic in `scoring.ts` (unit-tested), Phaser scene reads it
+   - Emit `attempt-complete` on win/lose with full state
+4. `WordleHud.svelte`: shows attempts remaining, current row, win/lose modal with score + share button.
+5. `GameRunner.svelte`:
+   - Props: `variantKey`
+   - On mount: fetch puzzle via REST, fetch resume-state, dynamic import variant, register scene, mount HUD, start scene
+   - Listen for `attempt-complete` → POST `/attempts` → emit `done` event
+6. `Lobby.svelte`: add CTA → `<GameRunner variantKey="wordle" />`
 
 ## Todo List
 
-- [ ] GameEngine interface + types
-- [ ] WordleEngine pure logic
-- [ ] Board + Keyboard components
-- [ ] GameRunner orchestrator
+- [ ] `GameVariant` interface + `registry.ts`
+- [ ] Wordle pure scoring func + unit tests
+- [ ] `WordleScene` (Phaser): grid + keyboard + animations + EventBus emits
+- [ ] `WordleHud.svelte`: attempts indicator + win/lose modal
+- [ ] `GameRunner.svelte` orchestrator
 - [ ] Lobby integration
-- [ ] Phaser 4 spike outcome documented
-- [ ] Resume-in-progress flow works (refresh page mid-game)
+- [ ] Resume-in-progress flow works (refresh page mid-game preserves state)
+- [ ] Adding a second variant = copy `wordle/` folder + register + done (no plumbing change)
 
 ## Success Criteria
 
-- [ ] Player can complete a Wordle attempt end-to-end: load puzzle → guess until win/lose → result persists across refresh
-- [ ] Adding a second game variant (`Sumdle`) is a copy-of-folder + register-in-runner exercise; no plumbing change
-- [ ] Bundle split per game variant via Vite dynamic import
+- [ ] Player completes a Wordle attempt end-to-end: load → guess until win/lose → result persists via REST → leaderboard updates
+- [ ] Tile flips animate cleanly at 60 fps on mid-tier mobile (Capacitor WebView)
+- [ ] Adding a stub `Sumdle` variant (different rules, same shape) takes <30 min — proves the seam works
+- [ ] Bundle: variant lazy-load works (only `wordle/` chunks load until played)
 
 ## Risk Assessment
 
-- **Over-engineering the interface** — start with minimum viable; expand as second game lands.
-- **Phaser eats bundle** — only adopt if a game variant genuinely needs canvas physics.
+- **Phaser scene churn** — switching between variants must clean up scenes properly (no leaked tweens/timers). Test by hammering the back-to-lobby button.
+- **Mobile WebView frame drops** — Android WebView can stutter on heavy animation. Mitigation: use Phaser 4 SpriteGPULayer for tile flips if needed; fall back to simpler easings.
+- **Accessibility** — canvas is opaque to screen readers. Mitigation: maintain a parallel hidden DOM mirror of state for SR users (Wordle's official site does this).
 
 ## Security Considerations
 
@@ -104,9 +127,9 @@ client/web/src/games/
 
 ## Next Steps
 
-Phase 9 wires the server side of `/puzzles/:date` and `/attempts` endpoints.
+Phase 9 wires server-side `/puzzles/:date`, `/attempts`, `/leaderboards` endpoints (already planned).
 
 ## Unresolved Questions
 
-- Use Zustand or React Context for game state? Defer; either is fine.
-- Animation library (framer-motion) needed? Probably yes for tile flips; defer to first variant landing.
+- DOM-mirror strategy for accessibility — depth: full state mirror, or only "current word entered + result"? Defer; ship Wordle, then add a11y pass.
+- Animation library — Phaser 4 has built-in tweens; avoid GSAP unless complexity demands it.

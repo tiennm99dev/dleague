@@ -17,7 +17,7 @@ dependencies: [9, 10]
 
 ## Overview
 
-Single docker-compose stack on the Coolify VM. Three services on an internal network: `couchbase`, `redis`, `dleague` (Go server, also serves the React build). Only `dleague:8080` exposed via Coolify reverse proxy. Firebase Auth is the only external dependency.
+Single docker-compose stack on the Coolify VM. Three services on an internal network: `couchbase`, `redis`, `dleague` (Go server, also serves the Svelte+Phaser web build). Only `dleague:8080` exposed via Coolify reverse proxy. Firebase Auth is the only external dependency.
 
 ## Key Insights
 

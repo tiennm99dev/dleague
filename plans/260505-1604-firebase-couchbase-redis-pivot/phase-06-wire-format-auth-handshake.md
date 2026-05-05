@@ -101,7 +101,7 @@ Extend the protobuf wire format with an `AUTH` envelope. WS upgrade no longer au
 
 ## Next Steps
 
-Phase 7 client implements the handshake on the React side. Phase 10 uses the per-conn UID for room authorization.
+Phase 7 client implements the handshake on the Svelte side (`src/net/ws.ts`). Phase 10 uses the per-conn UID for room authorization.
 
 ## Unresolved Questions
 

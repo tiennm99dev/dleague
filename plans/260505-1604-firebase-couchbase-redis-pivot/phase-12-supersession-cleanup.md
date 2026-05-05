@@ -52,7 +52,7 @@ docs/
   - `docs/project-overview-pdr.md` — update stack (Firebase Auth + self-hosted Couchbase 8.0 + Redis 8.4) + beta posture + Couchbase CE license review
   - `docs/system-architecture.md` — new diagram (single store, store-interface seam highlighted)
   - `docs/deployment-guide.md` — produced in Phase 11; finalize
-  - `docs/codebase-summary.md` — describe `internal/store/` (interface + couchbase impl + redis impl + composed glue + memstore impl), `internal/auth`, `client/web/`
+  - `docs/codebase-summary.md` — describe `internal/store/` (interface + couchbase impl + redis impl + composed glue + memstore impl), `internal/auth`, `client/web/` (Svelte 5 shell + Phaser 4 game scenes)
   - `docs/project-roadmap.md` — update progress + add "post-beta tech-stack reassessment" milestone with explicit migration-target evaluation criteria
   - `README.md` — update tech stack section + beta notice + migration-readiness statement
 - Optionally delete:

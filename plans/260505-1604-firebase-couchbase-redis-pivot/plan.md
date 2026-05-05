@@ -1,11 +1,11 @@
 ---
 title: "Firebase Auth + self-hosted Couchbase 8.0 + Redis 8.4 (beta)"
-description: "Self-hosted data plane via docker-compose: Couchbase Community 8.0 (primary store) + Redis 8.4 (cache/leaderboards). Firebase Auth external. React/Capacitor client + existing Go WS hub. Discards Aiven external-service path; everything but Firebase Auth runs on the Coolify VM. Go 1.25.5. **Beta posture: data loss acceptable on public release; early adopters tagged for future rewards. Migration-friendly via `store.Store` interface seam.**"
+description: "Self-hosted data plane via docker-compose: Couchbase Community 8.0 (primary store) + Redis 8.4 (cache/leaderboards). Firebase Auth external. **Svelte 5 + Phaser 4 client** wrapped in Capacitor + existing Go WS hub. Discards Aiven external-service path; everything but Firebase Auth runs on the Coolify VM. Go 1.25.5. **Beta posture: data loss acceptable on public release; early adopters tagged for future rewards. Migration-friendly via `store.Store` interface seam.**"
 status: pending
 priority: P1
 effort: 4-5w
 branch: main
-tags: [firebase-auth, couchbase, couchbase-community, redis, docker-compose, self-hosted, react, capacitor, websocket, pivot, beta]
+tags: [firebase-auth, couchbase, couchbase-community, redis, docker-compose, self-hosted, svelte, phaser, capacitor, websocket, pivot, beta]
 created: 2026-05-05
 parent_plan: 260505-0947-dleague-pvp-game/plan.md
 supersedes:
@@ -27,7 +27,7 @@ research:
 
 ## Goal
 
-Self-hosted data plane on the Coolify VM via docker-compose. **Couchbase Community 8.0** as primary document store (users, puzzles, matches, attempts). **Redis 8.4** as cache + leaderboards. **Firebase Auth** is the only external dependency (free Spark plan). React/Capacitor client + existing Go WS hub unchanged. Go 1.25.5.
+Self-hosted data plane on the Coolify VM via docker-compose. **Couchbase Community 8.0** as primary document store (users, puzzles, matches, attempts). **Redis 8.4** as cache + leaderboards. **Firebase Auth** is the only external dependency (free Spark plan). **Svelte 5 + Phaser 4 client wrapped in Capacitor** + existing Go WS hub unchanged. Go 1.25.5.
 
 ## Decisions locked
 
@@ -38,7 +38,7 @@ Self-hosted data plane on the Coolify VM via docker-compose. **Couchbase Communi
 - **Primary store: Couchbase Community 8.0** (self-hosted via `couchbase/server-community:8.0.0` Docker image). Bucket `dleague`, collections `users`/`puzzles`/`matches`/`attempts`.
 - **Cache + leaderboards: Redis 8.4** (self-hosted via `redis:8.4-alpine`). ZSETs for leaderboards, SET+TTL for presence, generic JSON cache.
 - Single VM (Coolify) hosts: Go server + Couchbase + Redis on a docker-compose internal network. Only Go server port exposed.
-- Client: React + Capacitor (web first, mobile later).
+- Client: Svelte 5 + Phaser 4 + Capacitor (web first, mobile later) — see expanded "Client framework" decision above.
 - Credentials: env-injected via Coolify, no file mounts. Service-to-service auth via docker-compose internal network + strong passwords.
 - Persistence: docker named volumes for Couchbase data + Redis AOF.
 
@@ -70,8 +70,8 @@ This is a *short-term* stack — optimized for self-hosted simplicity now, paid 
 | 4 | Redis 8.4 Go integration (go-redis v9, cache + leaderboards) | [phase-04-redis-go-integration.md](phase-04-redis-go-integration.md) | 1d | pending |
 | 5 | Firebase Admin SDK + token verifier + beta-tag user upsert | [phase-05-firebase-admin-token-verifier.md](phase-05-firebase-admin-token-verifier.md) | 1d | pending |
 | 6 | Wire-format auth handshake | [phase-06-wire-format-auth-handshake.md](phase-06-wire-format-auth-handshake.md) | 0.5d | pending |
-| 7 | React + Capacitor client scaffold + beta banner | [phase-07-react-capacitor-client-scaffold.md](phase-07-react-capacitor-client-scaffold.md) | 3d | pending |
-| 8 | Pluggable game-engine layer (web) | [phase-08-pluggable-game-engine-web.md](phase-08-pluggable-game-engine-web.md) | 2d | pending |
+| 7 | Svelte 5 + Phaser 4 + Capacitor client scaffold + beta banner | [phase-07-react-capacitor-client-scaffold.md](phase-07-react-capacitor-client-scaffold.md) | 3d | pending |
+| 8 | Pluggable game variants on Phaser 4 (Svelte HUD) | [phase-08-pluggable-game-engine-web.md](phase-08-pluggable-game-engine-web.md) | 2d | pending |
 | 9 | Async PvP via store.Store (Couchbase + Redis) | [phase-09-async-pvp-on-couchbase.md](phase-09-async-pvp-on-couchbase.md) | 2d | pending |
 | 10 | Sync PvP via Go WS (auth-gated) | [phase-10-sync-pvp-via-go-ws.md](phase-10-sync-pvp-via-go-ws.md) | 1d | pending |
 | 11 | Deploy on Coolify (single docker-compose) | [phase-11-deploy-coolify.md](phase-11-deploy-coolify.md) | 0.5d | pending |
@@ -101,6 +101,6 @@ Phases 3+4+5 are independent backend integrations; can fan out. Phase 7 unlocks 
 2. **Verify ARM64 manifests** for `couchbase/server-community:8.0.0` and `redis:8.4-alpine` (Phase 1).
 3. Couchbase CE license — confirm non-commercial-fit for our beta + rewards model in Phase 12.
 4. Sync PvP through Coolify proxy — WS upgrade behavior at scale.
-5. Phaser 4 spike outcome — adopt vs stay DOM (Phase 8).
+5. ~~Phaser 4 spike~~ — resolved: Phaser 4 adopted as default renderer (Svelte for shell, Phaser for game canvas).
 6. Early-adopter reward mechanism — out of scope here; revisit post-beta.
 7. Future managed-service migration target — Capella / Mongo Atlas / Postgres? Decide post-beta from collected usage data.
