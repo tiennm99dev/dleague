@@ -1,0 +1,164 @@
+DLEAGUE PROPRIETARY LICENSE
+
+Copyright (c) 2026 tiennm99
+All Rights Reserved.
+
+NOTICE
+======
+
+This software, including its source code, assets, design, documentation,
+and all related materials (collectively, the "Software"), is the
+proprietary and confidential property of the copyright holder.
+
+Unauthorized copying, distribution, modification, public display, or
+public performance of the Software, in whole or in part, is strictly
+prohibited.
+
+NO LICENSE GRANTED. By accessing the Software you do not acquire any
+ownership interest, intellectual property right, or license to use the
+Software, except as expressly granted in writing by the copyright holder.
+
+If you have not received explicit written permission from the copyright
+holder to access this Software, you must not view, download, store, or
+use any part of it.
+
+1. DEFINITIONS
+--------------
+
+"Software" means the Dleague source code, compiled binaries, game design
+documents, art assets, audio assets, plans, documentation, configuration
+files, infrastructure code, and any other material contained in this
+repository.
+
+"You" means the individual or legal entity accessing the Software.
+
+"Copyright Holder" means tiennm99 and any successor in interest.
+
+2. RESTRICTIONS
+---------------
+
+You shall NOT, without prior written permission from the Copyright Holder:
+
+  (a) copy, reproduce, fork, mirror, archive, or store the Software in
+      any form, except as strictly required to view it within authorized
+      access;
+
+  (b) modify, adapt, translate, or create derivative works of the Software;
+
+  (c) distribute, publish, transmit, sublicense, sell, lease, lend, or
+      otherwise transfer the Software or any portion of it to any third
+      party;
+
+  (d) reverse engineer, decompile, disassemble, or attempt to derive the
+      source code, algorithms, or design of any compiled, obfuscated, or
+      hosted portion of the Software, except to the minimal extent
+      permitted by applicable law that cannot be waived by contract;
+
+  (e) use any automated means (including bots, scrapers, crawlers, or
+      AI training pipelines) to extract, harvest, index, or ingest the
+      Software, its content, gameplay data, user data, or hosted services;
+
+  (f) develop, publish, or operate any product, service, game, or work
+      that is substantially similar to the Software, that is derived in
+      whole or in part from the Software, or that uses the Software as a
+      reference for replication ("Clone Derivatives");
+
+  (g) remove, obscure, or alter any copyright, trademark, or proprietary
+      notice contained in the Software;
+
+  (h) use the Software, or any data obtained from it, to train, fine-tune,
+      or evaluate machine learning models without prior written permission;
+
+  (i) circumvent any technical access control, license check, or security
+      mechanism in the Software or its hosted services.
+
+3. TRADEMARKS AND BRAND
+-----------------------
+
+"Dleague", the Dleague name, logo, mascots, and any associated trade
+dress are trademarks of the Copyright Holder. No license to use these
+trademarks is granted by this License. You shall not use these
+trademarks in any way that suggests endorsement of, affiliation with,
+or origin from the Copyright Holder without prior written permission.
+
+4. CONFIDENTIALITY
+------------------
+
+The Software may contain trade secrets and confidential information.
+If access has been granted to you (e.g., as a collaborator, contractor,
+or evaluator), you agree to:
+
+  (a) treat the Software as strictly confidential;
+  (b) not disclose any portion of the Software to any third party;
+  (c) use the Software solely for the purpose for which access was granted;
+  (d) return or destroy all copies of the Software upon request or when
+      the purpose for which access was granted has been completed.
+
+5. CONTRIBUTIONS
+----------------
+
+Any code, content, or material you submit to this repository (including
+via pull request, issue, or commit) is contributed under the terms of a
+Contributor License Agreement to be executed separately. Submission
+without such agreement does not grant the Copyright Holder any rights
+beyond those required to evaluate the contribution; any merge or
+incorporation requires an executed agreement.
+
+6. NO WARRANTY
+--------------
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NONINFRINGEMENT. THE ENTIRE
+RISK ARISING OUT OF ACCESS TO OR USE OF THE SOFTWARE REMAINS WITH YOU.
+
+7. LIMITATION OF LIABILITY
+--------------------------
+
+IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+OR INABILITY TO USE THE SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGE.
+
+8. TERMINATION
+--------------
+
+Any rights granted to you (whether by this License, a separate written
+agreement, or by implication of access) terminate automatically and
+without notice if you breach any term of this License. Upon termination
+you must immediately cease all use of the Software and destroy all
+copies in your possession or control. Sections 2 (Restrictions),
+3 (Trademarks), 4 (Confidentiality), 6 (No Warranty), 7 (Limitation of
+Liability), and 9 (Governing Law) survive termination.
+
+9. GOVERNING LAW
+----------------
+
+This License is governed by the laws of the Socialist Republic of
+Vietnam, without regard to its conflict-of-laws rules. Any dispute
+arising out of or in connection with this License shall be resolved by
+the competent courts of Vietnam, unless otherwise agreed in writing.
+
+10. SEVERABILITY
+----------------
+
+If any provision of this License is held to be unenforceable, the
+remaining provisions shall remain in full force and effect.
+
+11. CONTACT
+-----------
+
+For licensing inquiries, commercial use requests, or permission to
+deviate from any restriction in this License, contact the Copyright
+Holder via the repository owner channel on GitHub
+(https://github.com/tiennm99).
+
+---
+
+This License does not constitute legal advice. The Copyright Holder
+should consult a qualified attorney before relying on this document for
+any commercial enforcement.

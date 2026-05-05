@@ -50,4 +50,8 @@ Active plan: [`plans/260505-0947-dleague-pvp-game/plan.md`](plans/260505-0947-dl
 
 ## License
 
-TBD — likely Apache-2.0 or MIT (decide before first public release).
+**Proprietary — All Rights Reserved.** See [LICENSE](LICENSE).
+
+This is a private project. No copying, redistribution, modification, reverse
+engineering, scraping, AI training, or clone derivatives without prior written
+permission from the copyright holder.
