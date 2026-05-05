@@ -20,7 +20,8 @@ Ship a competitive PvP twist on -dle puzzle games. Players race head-to-head (sy
 
 - **Client:** Ebitengine (Go → WASM for web). Hybrid HTML/CSS overlay for text input + canvas for animations
 - **Backend:** Go (`chi` for static + WS upgrade only). All game/auth/match messages over **single WebSocket** transport
-- **Wire format:** **Protobuf schemas** via `buf` (`proto/dleague/v1/*.proto`). Generated Go code committed at `shared/pb/`. Wire = `protojson` (binary upgrade option later)
+- **Wire format:** **Binary protobuf** (`proto.Marshal/Unmarshal`) via `buf`-generated Go (`proto/dleague/v1/*.proto` → `shared/pb/`). Generated `.pb.go` files **committed** to git
+- **Debug logging:** When built with `-tags debug`, every WS message is also serialized via `protojson` and logged to browser console (client) / stdout (server). Production builds exclude `protojson` entirely (smaller bundle, ~700KB → ~400KB)
 - **No gRPC, no Envoy.** Plain WebSocket carrying protobuf-encoded messages. Drops bundle weight + ops complexity for a -dle game
 - **DB:** Postgres (users, sessions, games, matches, attempts, leaderboards)
 - **Auth:** session cookie set on HTML page load → bound to WS connection at upgrade
@@ -60,7 +61,8 @@ Ship a competitive PvP twist on -dle puzzle games. Players race head-to-head (sy
 | Game type at launch | Wordle-style word guessing | Most familiar, validates PvP loop fastest |
 | Ranked system | Simple win/loss + leaderboard | YAGNI — no ELO until volume proves need |
 | Monetization | None at MVP | Validate engagement first |
-| Wire format | Protobuf schemas + protojson over WS | Type safety across client/server, schema-first; protojson keeps WASM bundle small (~700KB) vs full gRPC (~3MB) |
+| Wire format | Binary protobuf + build-tag JSON debug logging | Smallest production bundle (~400KB protobuf-go alone), zero parsing overhead; debug builds add protojson for human-readable console logs |
+| Generated code | `.pb.go` committed to git | Consumers don't need protoc/buf installed to build. CI verifies regeneration produces no diff |
 | Transport | Single WebSocket | One channel for auth, game, match, sync. HTTP only serves static + upgrade. Simpler client, fewer reconnect paths |
 
 ### Plan revision impact (post-xia)

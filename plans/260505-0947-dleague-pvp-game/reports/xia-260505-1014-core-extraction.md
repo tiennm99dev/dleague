@@ -50,7 +50,7 @@
 
 | Decision | Source approach | Local approach | Verdict |
 |----------|----------------|----------------|---------|
-| Wire format | ratel: opaque `[]byte` Body + JSON helpers | Plan: typed Go structs | **PROTOBUF schemas via buf**. Generate Go structs. Wire = protojson initially, binary upgrade later |
+| Wire format | ratel: opaque `[]byte` Body + JSON helpers | Plan: typed Go structs | **PROTOBUF schemas via buf**. Generate Go structs. Wire = **binary** (`proto.Marshal`). Debug builds (`-tags debug`) additionally log every message as protojson to console (client) / stdout (server) for human-readable debugging. Production excludes protojson |
 | Transport | ratel: TCP + WS dual; HTTP for upgrade only | Plan: HTTP REST + WS for sync | **SINGLE WEBSOCKET** for all messages. HTTP only serves static + WS upgrade |
 | Length-prefix framing | 4-byte BigEndian length header | WS frames already framed | **DROP** — WebSocket message frames are self-delimiting |
 | Per-player blocking goroutine | `Run(player)` infinite loop with `Next/Exit` | Need 1k+ concurrent conns | **DROP** for Hub. Use event-driven hub with per-conn write goroutine |
@@ -123,15 +123,21 @@ Generated code → `shared/pb/dleague/v1/*.pb.go` (committed, not gitignored, so
 
 ### Bundle size budget revision
 
-| Item | Estimate |
-|------|----------|
-| Ebitengine runtime | 4-6MB |
-| protobuf-go runtime + protojson | ~700KB |
-| Application code | <1MB |
-| Wordlist (embedded) | ~50KB |
-| **Total target gzipped** | **<10MB** (unchanged) |
+| Item | Production estimate | Debug estimate |
+|------|---------------------|----------------|
+| Ebitengine runtime | 4-6MB | 4-6MB |
+| protobuf-go runtime (binary only) | ~400KB | ~400KB |
+| protojson (debug only via build tag) | 0 | ~300KB |
+| Application code | <1MB | <1MB |
+| Wordlist (embedded) | ~50KB | ~50KB |
+| **Total target gzipped** | **<10MB** (unchanged) | ~10.5MB (debug, only used in dev) |
 
 Drop full `google.golang.org/grpc` (~3MB) — never needed for our pattern.
+
+Build-tag pattern keeps debug logging code out of production WASM:
+- `*_debug.go` files have `//go:build debug` — calls into protojson
+- `*_noop.go` files have `//go:build !debug` — empty stubs
+- Default `go build` excludes protojson entirely
 
 ## Challenge Outcomes
 
@@ -144,7 +150,8 @@ Drop full `google.golang.org/grpc` (~3MB) — never needed for our pattern.
 | Use Packet `[]byte` envelope? | **NO** — replaced by protobuf typed messages |
 | Use `register()` factory pattern? | **YES** — for game-type registry in `shared/game/` |
 | HTTP REST + WS, or WS-only? | **WS-only** for game logic; HTTP only for static + upgrade |
-| gRPC, gRPC-Web, Connect, or proto-only? | **Proto-only** schemas, WebSocket transport, protojson wire |
+| gRPC, gRPC-Web, Connect, or proto-only? | **Proto-only** schemas, WebSocket transport, **binary** wire + debug-tag protojson logging |
+| Commit generated `.pb.go` files? | **YES** — committed. CI verifies regen produces no diff |
 
 ## Risk Assessment
 
@@ -176,8 +183,8 @@ Phase 3-5 phases need re-scoping later (merge HTTP handler work into WS handlers
 
 ## Unresolved Questions
 
-- Wire format binary upgrade trigger: protojson at v1, binary protobuf at v2, or stick with json indefinitely? (defer to load-test)
+- ~~Wire format binary upgrade trigger~~ → **RESOLVED:** binary from v1, debug builds add protojson via build tags
+- ~~Generated `*.pb.go` committed or gitignored?~~ → **RESOLVED:** committed
 - Cookie-based auth at WS upgrade vs token-in-first-message: which is simpler for WASM client? (decide in Phase 3 redesign)
 - Should `proto/` be a sibling top-level dir or nested under `shared/`? (cosmetic — prefer top-level for `buf` convention)
-- Generated `*.pb.go` committed or gitignored? (commit, smaller friction for consumers)
 - Phase 3-5 merge: combine into one phase "all-WS server" or keep separate? (post-Phase-2 decision)

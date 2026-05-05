@@ -23,7 +23,9 @@ Set up the Go workspace monorepo, Ebitengine WASM scaffold, **protobuf schema la
   - `server/` runs on `:8080` with `/health` (HTTP) and `/ws` (WebSocket upgrade)
   - `shared/pb/` contains generated protobuf Go code (committed)
   - `proto/dleague/v1/` holds `.proto` schema sources + `buf.yaml` + `buf.gen.yaml`
-  - `make proto-gen` regenerates `shared/pb/` from `proto/`
+  - `make proto-gen` regenerates `shared/pb/` from `proto/`. Generated `.pb.go` files are **committed** (not gitignored)
+  - WS messages travel as **binary** protobuf (`proto.Marshal/Unmarshal`)
+  - Debug build (`go build -tags debug`) additionally logs every send/recv as `protojson` to browser console (client) and stdout (server). Production build omits `protojson` entirely
   - Postgres runs locally via `docker-compose.yml`
   - `make dev` starts server + builds WASM
   - GitHub Actions CI: `proto-lint`, `proto-breaking`, `golangci-lint`, `go test ./...`, build WASM
@@ -106,9 +108,13 @@ dleague/
 8. Add `web/index.html` loading `wasm_exec.js` + `main.wasm`, CSS overlay placeholder div
 9. Scaffold `server/cmd/api/main.go` — `chi` router. Routes: `GET /` static, `GET /static/*` embedded, `GET /health`, `GET /ws` upgrade
 10. Use `nhooyr.io/websocket` (lighter than gorilla, modern API) for WS upgrade
-11. Scaffold `server/internal/ws/hub.go` — minimal hub: register/unregister conn, on Ping respond with Pong (using generated proto types via protojson marshal)
+11. Scaffold `server/internal/ws/hub.go` — minimal hub: register/unregister conn, on Ping respond with Pong via **binary** `proto.Marshal/Unmarshal`. WS messages sent as binary frames (`websocket.MessageBinary`)
+11b. Add debug-build wire logger:
+    - `server/internal/ws/debug_log.go` (build tag `//go:build debug`) → wraps marshal/unmarshal, logs as protojson to stdout
+    - `server/internal/ws/debug_log_noop.go` (build tag `//go:build !debug`) → empty stub
+    - Same pattern in `client/internal/net/debug_log.go` + `debug_log_noop.go` (client logs to browser console via `js.Global().Get("console")`)
 12. Add `docker-compose.yml` with `postgres:16` on `:5432`, persistent volume
-13. Write `Makefile` targets: `dev`, `build-wasm`, `build-server`, `test`, `lint`, `db-up`, `proto-gen`, `proto-lint`, `proto-breaking`
+13. Write `Makefile` targets: `dev`, `dev-debug` (passes `-tags debug` to both server and WASM build), `build-wasm`, `build-server`, `test`, `lint`, `db-up`, `proto-gen`, `proto-lint`, `proto-breaking`
 14. Install `buf` in dev dependencies (CI runs: `go install github.com/bufbuild/buf/cmd/buf@latest`)
 15. Configure `golangci-lint` (default + `gofmt`, `revive`, `unused`)
 16. CI workflow: Go 1.23, run `proto-lint` + `proto-breaking` + lint + test + build WASM, upload artifact
@@ -124,7 +130,9 @@ dleague/
 - [ ] Ebitengine hello-world WASM (port `Game{Layout/Update/Draw}` w/ Apache attribution)
 - [ ] HTML shell + CSS overlay scaffold
 - [ ] Go server: chi router with /health + /ws upgrade
-- [ ] WS hub stub: ping/pong via protobuf
+- [ ] WS hub stub: ping/pong via **binary** protobuf
+- [ ] Debug-tag wire logger: `protojson` to console (client) / stdout (server) under `//go:build debug`
+- [ ] Production build excludes protojson via build tags
 - [ ] WS client wrapper in client/internal/net (syscall/js bridge)
 - [ ] docker-compose Postgres
 - [ ] Makefile (dev/build/test/proto-gen/proto-lint/proto-breaking)
@@ -136,7 +144,9 @@ dleague/
 
 - [ ] `make dev` starts server on :8080, browser loads "Dleague" title screen
 - [ ] `curl localhost:8080/health` returns 200 OK
-- [ ] Browser WS connects to `/ws`, sends Ping, receives Pong (visible in devtools network tab)
+- [ ] Browser WS connects to `/ws`, sends Ping, receives Pong (binary frames in devtools network tab)
+- [ ] `make dev-debug` build prints human-readable JSON for every send/recv message
+- [ ] Production WASM bundle (no `-tags debug`) does NOT include protojson symbols (verified via `go tool nm` or bundle size diff)
 - [ ] `make proto-gen` regenerates without diff (CI verifies)
 - [ ] CI green on push: proto-lint + proto-breaking + lint + test + build WASM
 - [ ] WASM bundle <8MB
@@ -153,5 +163,6 @@ dleague/
 | `buf` adds first-run setup friction | One-shot `go install` in Makefile + CI; document in README |
 | Generated `*.pb.go` drift in PRs | CI step: `buf generate` then `git diff --exit-code` to fail on uncommitted regen |
 | Workspace + 3 modules feels heavy day-1 | Keep `shared/` minimal — only types/interfaces + Registry, no logic |
-| protobuf-go runtime adds ~700KB to WASM | Acceptable within <10MB total budget; track in CI |
+| protobuf-go runtime adds ~400KB to WASM (binary only, no protojson in prod) | Acceptable within <10MB total budget; track in CI |
+| Debug-tag drift: dev runs with debug, prod without — behavior divergence | Tag only affects logging, not message correctness. Add CI build of both `-tags debug` and default to catch tag-gated compile errors |
 | Air / file-watcher complexity | Skip auto-rebuild MVP; just `make build-wasm` manually |
