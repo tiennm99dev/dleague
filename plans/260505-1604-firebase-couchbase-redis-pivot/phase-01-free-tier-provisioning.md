@@ -1,7 +1,7 @@
 ---
 phase: 1
 title: "Provisioning (Firebase + docker-compose)"
-status: pending
+status: in_progress
 priority: P1
 effort: "0.5d"
 dependencies: []
@@ -82,14 +82,19 @@ Browser/iOS/Android → Firebase JS SDK → Firebase Auth → Go server (Bearer 
 
 ## Todo List
 
+**Code-side (this branch):**
+- [x] `docker-compose.yml` defines couchbase + redis + dleague + named volumes + internal network
+- [x] Redis configured with AOF + maxmemory 256mb + password (compose `command:`)
+- [x] `.env.example` committed (placeholders only)
+- [x] `scripts/cb-init.sh` checked in for reproducible Couchbase init
+- [x] `docs/deployment-guide.md` walks through Firebase signup + compose bring-up + init + verify
+
+**External / on-VM (out-of-repo work, blocks "phase complete" stamp):**
 - [ ] Firebase project created, providers enabled, service-account JSON downloaded
-- [ ] **ARM64 manifests verified** for both Couchbase + Redis tags (or arm64 fallbacks chosen)
-- [ ] docker-compose.yml defines couchbase + redis + dleague + named volumes + internal network
-- [ ] Couchbase cluster initialized: bucket + collections + app user + primary indexes
-- [ ] Redis runs with AOF + maxmemory 256mb + password
-- [ ] `.env.example` committed (no secrets)
-- [ ] All three services pinged successfully from local host
-- [ ] Couchbase Web UI port re-internalized (not exposed to host) after setup
+- [ ] **ARM64 manifests verified** for both Couchbase + Redis tags (or ARM64 fallbacks chosen and `image:` line updated in compose)
+- [ ] Couchbase cluster initialized via `scripts/cb-init.sh` (or manual Option B in deployment guide): bucket + collections + app user + primary indexes
+- [ ] All three services pinged successfully from VM host
+- [ ] Couchbase Web UI port (8091) re-internalized (not exposed to host) after setup — already off by default in compose
 
 ## Success Criteria
 
