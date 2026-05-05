@@ -10,8 +10,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/tiennm99/dleague/server/internal/auth"
 	"github.com/tiennm99/dleague/server/internal/config"
 	srvhttp "github.com/tiennm99/dleague/server/internal/http"
+	"github.com/tiennm99/dleague/server/internal/store"
+	"github.com/tiennm99/dleague/server/internal/store/composed"
+	"github.com/tiennm99/dleague/server/internal/store/couchbase"
+	rstore "github.com/tiennm99/dleague/server/internal/store/redis"
 	"github.com/tiennm99/dleague/server/internal/ws"
 )
 
@@ -21,12 +26,53 @@ func main() {
 		log.Fatalf("config: %v", err)
 	}
 
-	hub := ws.NewHub()
-	wsOpts := ws.UpgradeOptions{AllowedOrigins: cfg.AllowedOrigins}
+	bootCtx, cancelBoot := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancelBoot()
 
-	// Storage clients (Couchbase + Redis) and Firebase token verifier wire
-	// in here once Phases 3-5 land. For Phase 2 the server boots stateless.
-	r, err := srvhttp.NewRouter(cfg.WebRoot, hub, wsOpts)
+	cb, err := couchbase.New(bootCtx, couchbase.Config{
+		ConnString: cfg.CouchbaseConnString,
+		Username:   cfg.CouchbaseUsername,
+		Password:   cfg.CouchbasePassword,
+		Bucket:     cfg.CouchbaseBucket,
+	})
+	if err != nil {
+		log.Fatalf("couchbase: %v", err)
+	}
+	rdb, err := rstore.New(bootCtx, rstore.Config{
+		Addr:     cfg.RedisAddr,
+		Password: cfg.RedisPassword,
+	})
+	if err != nil {
+		_ = cb.Close()
+		log.Fatalf("redis: %v", err)
+	}
+
+	composedStore, err := composed.New(cb, rdb)
+	if err != nil {
+		_ = cb.Close()
+		_ = rdb.Close()
+		log.Fatalf("composed store: %v", err)
+	}
+	defer func() {
+		if err := composedStore.Close(); err != nil {
+			log.Printf("store close: %v", err)
+		}
+	}()
+
+	var st store.Store = composedStore
+
+	verifier, err := auth.NewFirebase(bootCtx, cfg.FirebaseCredentialsJSON, cfg.FirebaseProjectID)
+	if err != nil {
+		log.Fatalf("firebase auth: %v", err)
+	}
+
+	hub := ws.NewHub()
+	wsOpts := ws.UpgradeOptions{
+		AllowedOrigins: cfg.AllowedOrigins,
+		Verifier:       auth.NewGate(verifier, st),
+	}
+
+	r, err := srvhttp.NewRouter(cfg.WebRoot, hub, wsOpts, st, verifier)
 	if err != nil {
 		log.Fatalf("router: %v", err)
 	}

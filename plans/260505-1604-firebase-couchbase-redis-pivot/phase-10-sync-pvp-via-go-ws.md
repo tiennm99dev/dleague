@@ -1,7 +1,7 @@
 ---
 phase: 10
 title: "Sync PvP via Go WS (auth-gated)"
-status: pending
+status: completed
 priority: P2
 effort: "1d"
 dependencies: [4, 6]
@@ -65,13 +65,13 @@ Wire frames added (extend protobuf):
 
 ## Todo List
 
-- [ ] Proto frames added
-- [ ] Room registry + lifecycle
-- [ ] JOIN_ROOM authorization (UID ∈ players)
-- [ ] TURN forwarding
-- [ ] MATCH_END persistence + leaderboard
-- [ ] Integration test
-- [ ] Presence (Phase 4) integration: SADD on AUTH, SREM on disconnect
+- [x] Proto frames added: JOIN_ROOM, JOIN_ROOM_ACK, TURN, MATCH_END + JoinRoom/JoinRoomAck/Turn/MatchEnd messages; regenerated via buf
+- [x] Room registry + lifecycle — `Room{matchID, conns, createdAt}`; `Hub.rooms map[string]*Room` with auto-cleanup on last unregister
+- [x] JOIN_ROOM authorization — handler verifies `c.uid != ""` and `roleOf(uid, match.players) != ""`; returns ack with role + opponent_uid
+- [x] TURN forwarding — match_id check vs `c.matchID` defends against cross-room frame injection; broadcast to peers via `hub.broadcastRoom`
+- [x] MATCH_END persistence + leaderboard — winner ∈ players check, `UpsertMatch` with state=ended/winner/endedAt, dual `SubmitScore` per player (daily + global)
+- [x] Integration test — 3 tests covering full join→turn→end flow with two real WS clients, plus forbidden non-player and match-not-found cases
+- [ ] Presence (Phase 4) integration — deferred; presence helpers exist on the store but not yet wired into the AUTH handshake / disconnect path
 
 ## Success Criteria
 

@@ -74,6 +74,7 @@ docs/
 
 ## Todo List
 
+- [x] **Migration-export CLI** — `server/cmd/dleague-export/main.go` opens Couchbase from same env vars as the server, streams JSONL of all 4 collections to stdout. Redis state intentionally NOT exported (derivable from attempts).
 - [ ] PDR updated
 - [ ] System architecture diagram + doc
 - [ ] Deployment guide finalized

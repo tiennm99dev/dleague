@@ -21,14 +21,18 @@ const (
 
 // Conn is one client WebSocket connection. The hub owns its lifecycle.
 type Conn struct {
-	ws  *websocket.Conn
-	hub *Hub
-	uid string // populated by the AUTH handshake; immutable for life of conn
+	ws      *websocket.Conn
+	hub     *Hub
+	uid     string // populated by the AUTH handshake; immutable for life of conn
+	matchID string // populated by JOIN_ROOM; cleared on hub.unregister
 }
 
 // UID returns the authenticated user ID for this connection. Empty before
 // the handshake completes; populated by performHandshake on success.
 func (c *Conn) UID() string { return c.uid }
+
+// MatchID returns the room's match ID after a successful JOIN_ROOM.
+func (c *Conn) MatchID() string { return c.matchID }
 
 // UpgradeOptions controls WebSocket Accept behaviour. Zero value enforces the
 // nhooyr default same-origin policy. To allow cross-origin clients, populate
@@ -109,7 +113,7 @@ func (c *Conn) handle(ctx context.Context, data []byte) error {
 	}
 	logRecv(&env)
 
-	resp, err := c.hub.dispatch(&env, time.Now().UnixMilli())
+	resp, err := c.hub.dispatch(c, &env, time.Now().UnixMilli())
 	if err != nil {
 		return err
 	}

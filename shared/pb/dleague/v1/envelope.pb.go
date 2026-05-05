@@ -33,6 +33,13 @@ const (
 	// frames pre-handshake.
 	MessageType_MESSAGE_TYPE_AUTH_REQUEST  MessageType = 3
 	MessageType_MESSAGE_TYPE_AUTH_RESPONSE MessageType = 4
+	// Sync-PvP room lifecycle. Player joins a room keyed by matchId; server
+	// verifies UID is in match.players. Once joined, TURN frames are
+	// forwarded to room peers and MATCH_END persists the result.
+	MessageType_MESSAGE_TYPE_JOIN_ROOM     MessageType = 5
+	MessageType_MESSAGE_TYPE_JOIN_ROOM_ACK MessageType = 6
+	MessageType_MESSAGE_TYPE_TURN          MessageType = 7
+	MessageType_MESSAGE_TYPE_MATCH_END     MessageType = 8
 )
 
 // Enum value maps for MessageType.
@@ -43,6 +50,10 @@ var (
 		2: "MESSAGE_TYPE_PONG",
 		3: "MESSAGE_TYPE_AUTH_REQUEST",
 		4: "MESSAGE_TYPE_AUTH_RESPONSE",
+		5: "MESSAGE_TYPE_JOIN_ROOM",
+		6: "MESSAGE_TYPE_JOIN_ROOM_ACK",
+		7: "MESSAGE_TYPE_TURN",
+		8: "MESSAGE_TYPE_MATCH_END",
 	}
 	MessageType_value = map[string]int32{
 		"MESSAGE_TYPE_UNSPECIFIED":   0,
@@ -50,6 +61,10 @@ var (
 		"MESSAGE_TYPE_PONG":          2,
 		"MESSAGE_TYPE_AUTH_REQUEST":  3,
 		"MESSAGE_TYPE_AUTH_RESPONSE": 4,
+		"MESSAGE_TYPE_JOIN_ROOM":     5,
+		"MESSAGE_TYPE_JOIN_ROOM_ACK": 6,
+		"MESSAGE_TYPE_TURN":          7,
+		"MESSAGE_TYPE_MATCH_END":     8,
 	}
 )
 
@@ -356,6 +371,260 @@ func (x *AuthResponse) GetError() string {
 	return ""
 }
 
+// JoinRoom requests entry to a sync-PvP room keyed by matchId.
+type JoinRoom struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MatchId       string                 `protobuf:"bytes,1,opt,name=match_id,json=matchId,proto3" json:"match_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *JoinRoom) Reset() {
+	*x = JoinRoom{}
+	mi := &file_dleague_v1_envelope_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *JoinRoom) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JoinRoom) ProtoMessage() {}
+
+func (x *JoinRoom) ProtoReflect() protoreflect.Message {
+	mi := &file_dleague_v1_envelope_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JoinRoom.ProtoReflect.Descriptor instead.
+func (*JoinRoom) Descriptor() ([]byte, []int) {
+	return file_dleague_v1_envelope_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *JoinRoom) GetMatchId() string {
+	if x != nil {
+		return x.MatchId
+	}
+	return ""
+}
+
+// JoinRoomAck. role ∈ {"p1","p2"}; opponent_uid filled on success only.
+type JoinRoomAck struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	MatchId       string                 `protobuf:"bytes,2,opt,name=match_id,json=matchId,proto3" json:"match_id,omitempty"`
+	Role          string                 `protobuf:"bytes,3,opt,name=role,proto3" json:"role,omitempty"`
+	OpponentUid   string                 `protobuf:"bytes,4,opt,name=opponent_uid,json=opponentUid,proto3" json:"opponent_uid,omitempty"`
+	Error         string                 `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *JoinRoomAck) Reset() {
+	*x = JoinRoomAck{}
+	mi := &file_dleague_v1_envelope_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *JoinRoomAck) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*JoinRoomAck) ProtoMessage() {}
+
+func (x *JoinRoomAck) ProtoReflect() protoreflect.Message {
+	mi := &file_dleague_v1_envelope_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use JoinRoomAck.ProtoReflect.Descriptor instead.
+func (*JoinRoomAck) Descriptor() ([]byte, []int) {
+	return file_dleague_v1_envelope_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *JoinRoomAck) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+func (x *JoinRoomAck) GetMatchId() string {
+	if x != nil {
+		return x.MatchId
+	}
+	return ""
+}
+
+func (x *JoinRoomAck) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *JoinRoomAck) GetOpponentUid() string {
+	if x != nil {
+		return x.OpponentUid
+	}
+	return ""
+}
+
+func (x *JoinRoomAck) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+// Turn carries one player's move. Body is opaque to the server in v1 —
+// it's relayed verbatim to the opponent.
+type Turn struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MatchId       string                 `protobuf:"bytes,1,opt,name=match_id,json=matchId,proto3" json:"match_id,omitempty"`
+	TurnIndex     uint32                 `protobuf:"varint,2,opt,name=turn_index,json=turnIndex,proto3" json:"turn_index,omitempty"`
+	Payload       []byte                 `protobuf:"bytes,3,opt,name=payload,proto3" json:"payload,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Turn) Reset() {
+	*x = Turn{}
+	mi := &file_dleague_v1_envelope_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Turn) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Turn) ProtoMessage() {}
+
+func (x *Turn) ProtoReflect() protoreflect.Message {
+	mi := &file_dleague_v1_envelope_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Turn.ProtoReflect.Descriptor instead.
+func (*Turn) Descriptor() ([]byte, []int) {
+	return file_dleague_v1_envelope_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *Turn) GetMatchId() string {
+	if x != nil {
+		return x.MatchId
+	}
+	return ""
+}
+
+func (x *Turn) GetTurnIndex() uint32 {
+	if x != nil {
+		return x.TurnIndex
+	}
+	return 0
+}
+
+func (x *Turn) GetPayload() []byte {
+	if x != nil {
+		return x.Payload
+	}
+	return nil
+}
+
+// MatchEnd reports the result. Server validates winner ∈ players,
+// persists, and updates leaderboards.
+type MatchEnd struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MatchId       string                 `protobuf:"bytes,1,opt,name=match_id,json=matchId,proto3" json:"match_id,omitempty"`
+	WinnerUid     string                 `protobuf:"bytes,2,opt,name=winner_uid,json=winnerUid,proto3" json:"winner_uid,omitempty"` // empty for draw
+	ScoreP1       int64                  `protobuf:"varint,3,opt,name=score_p1,json=scoreP1,proto3" json:"score_p1,omitempty"`
+	ScoreP2       int64                  `protobuf:"varint,4,opt,name=score_p2,json=scoreP2,proto3" json:"score_p2,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MatchEnd) Reset() {
+	*x = MatchEnd{}
+	mi := &file_dleague_v1_envelope_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MatchEnd) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MatchEnd) ProtoMessage() {}
+
+func (x *MatchEnd) ProtoReflect() protoreflect.Message {
+	mi := &file_dleague_v1_envelope_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MatchEnd.ProtoReflect.Descriptor instead.
+func (*MatchEnd) Descriptor() ([]byte, []int) {
+	return file_dleague_v1_envelope_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *MatchEnd) GetMatchId() string {
+	if x != nil {
+		return x.MatchId
+	}
+	return ""
+}
+
+func (x *MatchEnd) GetWinnerUid() string {
+	if x != nil {
+		return x.WinnerUid
+	}
+	return ""
+}
+
+func (x *MatchEnd) GetScoreP1() int64 {
+	if x != nil {
+		return x.ScoreP1
+	}
+	return 0
+}
+
+func (x *MatchEnd) GetScoreP2() int64 {
+	if x != nil {
+		return x.ScoreP2
+	}
+	return 0
+}
+
 var File_dleague_v1_envelope_proto protoreflect.FileDescriptor
 
 const file_dleague_v1_envelope_proto_rawDesc = "" +
@@ -378,13 +647,36 @@ const file_dleague_v1_envelope_proto_rawDesc = "" +
 	"\fAuthResponse\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x10\n" +
 	"\x03uid\x18\x02 \x01(\tR\x03uid\x12\x14\n" +
-	"\x05error\x18\x03 \x01(\tR\x05error*\x98\x01\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error\"%\n" +
+	"\bJoinRoom\x12\x19\n" +
+	"\bmatch_id\x18\x01 \x01(\tR\amatchId\"\x85\x01\n" +
+	"\vJoinRoomAck\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x19\n" +
+	"\bmatch_id\x18\x02 \x01(\tR\amatchId\x12\x12\n" +
+	"\x04role\x18\x03 \x01(\tR\x04role\x12!\n" +
+	"\fopponent_uid\x18\x04 \x01(\tR\vopponentUid\x12\x14\n" +
+	"\x05error\x18\x05 \x01(\tR\x05error\"Z\n" +
+	"\x04Turn\x12\x19\n" +
+	"\bmatch_id\x18\x01 \x01(\tR\amatchId\x12\x1d\n" +
+	"\n" +
+	"turn_index\x18\x02 \x01(\rR\tturnIndex\x12\x18\n" +
+	"\apayload\x18\x03 \x01(\fR\apayload\"z\n" +
+	"\bMatchEnd\x12\x19\n" +
+	"\bmatch_id\x18\x01 \x01(\tR\amatchId\x12\x1d\n" +
+	"\n" +
+	"winner_uid\x18\x02 \x01(\tR\twinnerUid\x12\x19\n" +
+	"\bscore_p1\x18\x03 \x01(\x03R\ascoreP1\x12\x19\n" +
+	"\bscore_p2\x18\x04 \x01(\x03R\ascoreP2*\x87\x02\n" +
 	"\vMessageType\x12\x1c\n" +
 	"\x18MESSAGE_TYPE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11MESSAGE_TYPE_PING\x10\x01\x12\x15\n" +
 	"\x11MESSAGE_TYPE_PONG\x10\x02\x12\x1d\n" +
 	"\x19MESSAGE_TYPE_AUTH_REQUEST\x10\x03\x12\x1e\n" +
-	"\x1aMESSAGE_TYPE_AUTH_RESPONSE\x10\x04B<Z:github.com/tiennm99/dleague/shared/pb/dleague/v1;dleaguev1b\x06proto3"
+	"\x1aMESSAGE_TYPE_AUTH_RESPONSE\x10\x04\x12\x1a\n" +
+	"\x16MESSAGE_TYPE_JOIN_ROOM\x10\x05\x12\x1e\n" +
+	"\x1aMESSAGE_TYPE_JOIN_ROOM_ACK\x10\x06\x12\x15\n" +
+	"\x11MESSAGE_TYPE_TURN\x10\a\x12\x1a\n" +
+	"\x16MESSAGE_TYPE_MATCH_END\x10\bB<Z:github.com/tiennm99/dleague/shared/pb/dleague/v1;dleaguev1b\x06proto3"
 
 var (
 	file_dleague_v1_envelope_proto_rawDescOnce sync.Once
@@ -399,7 +691,7 @@ func file_dleague_v1_envelope_proto_rawDescGZIP() []byte {
 }
 
 var file_dleague_v1_envelope_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_dleague_v1_envelope_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_dleague_v1_envelope_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_dleague_v1_envelope_proto_goTypes = []any{
 	(MessageType)(0),     // 0: dleague.v1.MessageType
 	(*Envelope)(nil),     // 1: dleague.v1.Envelope
@@ -407,6 +699,10 @@ var file_dleague_v1_envelope_proto_goTypes = []any{
 	(*Pong)(nil),         // 3: dleague.v1.Pong
 	(*AuthRequest)(nil),  // 4: dleague.v1.AuthRequest
 	(*AuthResponse)(nil), // 5: dleague.v1.AuthResponse
+	(*JoinRoom)(nil),     // 6: dleague.v1.JoinRoom
+	(*JoinRoomAck)(nil),  // 7: dleague.v1.JoinRoomAck
+	(*Turn)(nil),         // 8: dleague.v1.Turn
+	(*MatchEnd)(nil),     // 9: dleague.v1.MatchEnd
 }
 var file_dleague_v1_envelope_proto_depIdxs = []int32{
 	0, // 0: dleague.v1.Envelope.type:type_name -> dleague.v1.MessageType
@@ -428,7 +724,7 @@ func file_dleague_v1_envelope_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_dleague_v1_envelope_proto_rawDesc), len(file_dleague_v1_envelope_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   5,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

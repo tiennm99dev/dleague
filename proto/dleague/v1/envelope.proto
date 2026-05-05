@@ -14,6 +14,13 @@ enum MessageType {
   // frames pre-handshake.
   MESSAGE_TYPE_AUTH_REQUEST = 3;
   MESSAGE_TYPE_AUTH_RESPONSE = 4;
+  // Sync-PvP room lifecycle. Player joins a room keyed by matchId; server
+  // verifies UID is in match.players. Once joined, TURN frames are
+  // forwarded to room peers and MATCH_END persists the result.
+  MESSAGE_TYPE_JOIN_ROOM = 5;
+  MESSAGE_TYPE_JOIN_ROOM_ACK = 6;
+  MESSAGE_TYPE_TURN = 7;
+  MESSAGE_TYPE_MATCH_END = 8;
 }
 
 // Envelope is the wire frame for every WebSocket message.
@@ -48,4 +55,35 @@ message AuthResponse {
   bool ok = 1;
   string uid = 2;
   string error = 3;
+}
+
+// JoinRoom requests entry to a sync-PvP room keyed by matchId.
+message JoinRoom {
+  string match_id = 1;
+}
+
+// JoinRoomAck. role ∈ {"p1","p2"}; opponent_uid filled on success only.
+message JoinRoomAck {
+  bool ok = 1;
+  string match_id = 2;
+  string role = 3;
+  string opponent_uid = 4;
+  string error = 5;
+}
+
+// Turn carries one player's move. Body is opaque to the server in v1 —
+// it's relayed verbatim to the opponent.
+message Turn {
+  string match_id = 1;
+  uint32 turn_index = 2;
+  bytes payload = 3;
+}
+
+// MatchEnd reports the result. Server validates winner ∈ players,
+// persists, and updates leaderboards.
+message MatchEnd {
+  string match_id = 1;
+  string winner_uid = 2; // empty for draw
+  int64 score_p1 = 3;
+  int64 score_p2 = 4;
 }

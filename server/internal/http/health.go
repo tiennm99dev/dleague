@@ -1,13 +1,32 @@
 package http
 
-import "net/http"
+import (
+	"context"
+	"net/http"
+	"time"
 
-// healthHandler reports plain liveness. Storage-dependent health checks come
-// back in Phase 3 once the `store.Store` interface lands; for now the server
-// is considered healthy if the goroutine can serve.
-func healthHandler() http.HandlerFunc {
-	return func(w http.ResponseWriter, _ *http.Request) {
+	"github.com/tiennm99/dleague/server/internal/store"
+)
+
+const healthPingTimeout = 2 * time.Second
+
+// healthHandler reports liveness plus storage reachability. Nil store →
+// plain "ok" (the Phase-2 fallback).
+func healthHandler(s store.Store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		if s == nil {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("ok"))
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), healthPingTimeout)
+		defer cancel()
+		if err := s.Ping(ctx); err != nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_, _ = w.Write([]byte("degraded: store unreachable"))
+			return
+		}
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	}

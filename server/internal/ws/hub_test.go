@@ -24,7 +24,7 @@ func TestDispatchPingProducesPong(t *testing.T) {
 	}
 
 	serverNow := clientNow + 10
-	out, err := h.dispatch(in, serverNow)
+	out, err := h.dispatch(nil, in, serverNow)
 	if err != nil {
 		t.Fatalf("dispatch: %v", err)
 	}
@@ -53,7 +53,7 @@ func TestDispatchPingProducesPong(t *testing.T) {
 func TestDispatchUnknownTypeReturnsNil(t *testing.T) {
 	h := NewHub()
 	in := &dleaguev1.Envelope{Type: dleaguev1.MessageType_MESSAGE_TYPE_UNSPECIFIED}
-	out, err := h.dispatch(in, 0)
+	out, err := h.dispatch(nil, in, 0)
 	if err != nil {
 		t.Fatalf("dispatch: %v", err)
 	}
