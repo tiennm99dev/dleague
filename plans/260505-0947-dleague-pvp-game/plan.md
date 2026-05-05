@@ -19,9 +19,11 @@ Ship a competitive PvP twist on -dle puzzle games. Players race head-to-head (sy
 ## Stack (HARD)
 
 - **Client:** Ebitengine (Go → WASM for web). Hybrid HTML/CSS overlay for text input + canvas for animations
-- **Backend:** Go HTTP API + WebSocket for sync PvP. `chi` or `echo` for routing
-- **DB:** Postgres (users, games, matches, attempts, leaderboards)
-- **Auth:** session cookies + email/password OR magic link (decide Phase 3)
+- **Backend:** Go (`chi` for static + WS upgrade only). All game/auth/match messages over **single WebSocket** transport
+- **Wire format:** **Protobuf schemas** via `buf` (`proto/dleague/v1/*.proto`). Generated Go code committed at `shared/pb/`. Wire = `protojson` (binary upgrade option later)
+- **No gRPC, no Envoy.** Plain WebSocket carrying protobuf-encoded messages. Drops bundle weight + ops complexity for a -dle game
+- **DB:** Postgres (users, sessions, games, matches, attempts, leaderboards)
+- **Auth:** session cookie set on HTML page load → bound to WS connection at upgrade
 - **Deploy:** Fly.io / Railway for backend; static WASM bundle on Cloudflare Pages or same backend
 - **Mobile:** gomobile bindings (Phase 6 stub, full build deferred)
 - **Repo:** monorepo, Go workspaces, kebab-case dirs, files <200 LOC
@@ -58,6 +60,15 @@ Ship a competitive PvP twist on -dle puzzle games. Players race head-to-head (sy
 | Game type at launch | Wordle-style word guessing | Most familiar, validates PvP loop fastest |
 | Ranked system | Simple win/loss + leaderboard | YAGNI — no ELO until volume proves need |
 | Monetization | None at MVP | Validate engagement first |
+| Wire format | Protobuf schemas + protojson over WS | Type safety across client/server, schema-first; protojson keeps WASM bundle small (~700KB) vs full gRPC (~3MB) |
+| Transport | Single WebSocket | One channel for auth, game, match, sync. HTTP only serves static + upgrade. Simpler client, fewer reconnect paths |
+
+### Plan revision impact (post-xia)
+
+Phase 3-5 phase files reflect the original HTTP-REST + WS-for-sync design. Single-WS pivot means:
+- Phase 3: most "endpoints" become WS message handlers; HTTP layer reduced to static + upgrade
+- Phase 4-5: share dispatch infra under `server/internal/ws/handlers/`
+- Recommend re-scoping Phase 3-5 after Phase 1+2 ship. Existing files remain valid as feature spec; only transport binding changes
 
 ## Dependencies
 

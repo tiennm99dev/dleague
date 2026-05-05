@@ -13,6 +13,8 @@ dependencies: [1]
 
 Build the pluggable `Game` interface and ship the first concrete game: Wordle-style 5-letter word guessing. Single-player offline only — no backend yet. Architecture must accept future games (music, geography, image) without rewriting client core.
 
+> **Porting reference:** Tile animation pattern adapted from `hajimehoshi/ebiten/examples/2048/2048/tile.go` (Apache-2.0). See `reports/xia-260505-1014-core-extraction.md` for full mapping.
+
 ## Requirements
 
 - **Functional:**
@@ -68,7 +70,10 @@ func Register(id string, f Factory) // wordle, music, geo register here
 - `client/internal/scene/game.go`
 - `client/internal/scene/results.go`
 - `client/internal/ui/keyboard_overlay.go` (syscall/js bridge)
-- `client/internal/ui/animation.go` (tile flip, shake)
+- `client/internal/scene/wordle/tile.go` — port Tile struct + counter-based animation from ebiten/2048/tile.go (Apache-2.0 header preserved). Replace movingCount/poppingCount semantics with flipCount/shakeCount for Wordle reveal animation
+- `client/internal/scene/wordle/board.go` — port grid composition pattern from ebiten/2048/board.go. 5×6 fixed grid (vs 2048's 4×4 dynamic)
+- `client/internal/scene/wordle/colors.go` — Wordle palette (green/yellow/gray) — inspired by 2048/colors.go pattern, original implementation
+- `client/internal/scene/wordle/input.go` — keyboard mapping, port pattern from ebiten/2048/input.go
 - `web/index.html` (extend with input overlay div)
 - `web/styles.css` (overlay grid styling)
 
@@ -78,6 +83,7 @@ func Register(id string, f Factory) // wordle, music, geo register here
 ## Implementation Steps
 
 1. Define `Game` interface + `State`/`Result`/`Key` types in `shared/game/`
+1b. Port Ebitengine Tile pattern: `current/next` data + counter-based `Update()` decrements + `Draw()` interpolation via linear blend (`mean()`). Replace 2048's `movingCount` (translation) + `poppingCount` (scale pop) with `flipCount` (Y-axis rotation 0°→90°→hide→90°→0° with new color) + `shakeCount` (X-axis offset oscillation on invalid word). Keep Apache-2.0 copyright header at top of `tile.go`.
 2. Build `WordleGame`: word validation, attempt tracking, hint computation (green/yellow/gray)
 3. Embed wordlists (answers ~2315, dictionary ~10k for valid-guess check)
 4. Unit-test `WordleGame` exhaustively (correct guess, partial, repeated letters edge case, invalid word)

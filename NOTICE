@@ -1,0 +1,65 @@
+Dleague
+Copyright (c) 2026 tiennm99
+All Rights Reserved. See LICENSE for terms.
+
+================================================================================
+Third-Party Attributions
+================================================================================
+
+This product includes patterns and/or code adapted from the following
+projects. Where their code is incorporated, original copyright notices
+and license headers are preserved in the relevant source files.
+
+--------------------------------------------------------------------------------
+Ebitengine — https://github.com/hajimehoshi/ebiten
+Copyright (c) 2013-present The Ebiten Authors
+Licensed under the Apache License, Version 2.0
+http://www.apache.org/licenses/LICENSE-2.0
+
+Patterns adapted: Game{Layout/Update/Draw} interface, tile animation
+counter+interpolation pattern (examples/2048/tile.go), grid-based scene
+composition, keyboard input handling.
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+ratel-online — https://github.com/ratel-online
+Copyright (c) 2021 ratel-online contributors
+Licensed under the MIT License
+
+Patterns adapted: register() factory pattern for pluggable types,
+ReadWriteCloser transport-agnostic interface, multiplayer room/match
+state composition concepts.
+--------------------------------------------------------------------------------
+
+================================================================================
+Apache License 2.0 — Full Text
+================================================================================
+
+A copy of the Apache License, Version 2.0 is available at:
+http://www.apache.org/licenses/LICENSE-2.0
+
+================================================================================
+MIT License — Full Text
+================================================================================
+
+The MIT License (MIT)
+
+Copyright (c) 2021 ratel-online contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.

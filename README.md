@@ -48,6 +48,17 @@ Active plan: [`plans/260505-0947-dleague-pvp-game/plan.md`](plans/260505-0947-dl
 | 5. Sync PvP (WebSocket) | 2w | pending |
 | 6. Polish + deploy + mobile prep | 1.5w | pending |
 
+## Credits & References
+
+This project draws on patterns from the following permissively-licensed projects.
+Where their code is incorporated, original copyright + license notices are
+preserved per their license terms.
+
+| Project | License | Used for |
+|---------|---------|----------|
+| [ratel-online/server](https://github.com/ratel-online/server), [/core](https://github.com/ratel-online/core), [/client](https://github.com/ratel-online/client) | MIT | Go networking patterns: client-server protocol, room-based multiplayer, message dispatch |
+| [hajimehoshi/ebiten](https://github.com/hajimehoshi/ebiten) — official examples | Apache-2.0 | Game loop, scene management, grid-based input (`2048`, `blocks`), keyboard handling, animation |
+
 ## License
 
 **Proprietary — All Rights Reserved.** See [LICENSE](LICENSE).
