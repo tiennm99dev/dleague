@@ -9,9 +9,11 @@ dependencies: [1, 2]
 
 # Phase 3: Backend + auth
 
+> **DB binding:** see [`plans/260505-1319-mysql-heatwave-integration/plan.md`](../260505-1319-mysql-heatwave-integration/plan.md) for the data layer plan. **DB committed: OCI MySQL HeatWave Always-Free** (not PostgreSQL — see research reports under `plans/reports/researcher-260505-12*` and `260505-1308-*`). Schema fragments below are still PG-flavored as originally drafted; Phase D of the integration plan translates them to MySQL idiom (`citext` → `LOWER(email)` unique index, `uuid` PK → `BINARY(16)`, `JSONB` → `JSON`). Implementation should follow the MySQL flavor.
+
 ## Overview
 
-Stand up Go API: user accounts, session-cookie auth, Postgres schema for users/games/attempts. Server can validate any client-submitted Wordle attempt independently (anti-cheat foundation). No PvP yet — this phase just enables identity + persistence.
+Stand up Go API: user accounts, session-cookie auth, MySQL schema (via OCI MySQL HeatWave Always-Free) for users/games/attempts. Server can validate any client-submitted Wordle attempt independently (anti-cheat foundation). No PvP yet — this phase just enables identity + persistence.
 
 ## Requirements
 
