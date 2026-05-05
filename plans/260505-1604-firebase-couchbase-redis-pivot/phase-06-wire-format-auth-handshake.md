@@ -1,7 +1,7 @@
 ---
 phase: 6
 title: "Wire-format auth handshake (protobuf)"
-status: pending
+status: completed
 priority: P1
 effort: "0.5d"
 dependencies: [5]
@@ -73,12 +73,12 @@ Extend the protobuf wire format with an `AUTH` envelope. WS upgrade no longer au
 
 ## Todo List
 
-- [ ] Proto AUTH messages added + regenerated
-- [ ] Hub tracks per-conn UID
-- [ ] Conn handshake state machine
-- [ ] 5s handshake timeout enforced
-- [ ] Tests cover all three paths
-- [ ] Existing ping-pong test still passes
+- [x] Proto AUTH messages added (`AUTH_REQUEST=3`, `AUTH_RESPONSE=4`, `AuthRequest{id_token,version}`, `AuthResponse{ok,uid,error}`); regenerated via `buf generate`
+- [x] Conn carries `uid` field (immutable post-handshake), `Conn.UID()` accessor
+- [x] Conn handshake state machine — `performHandshake` runs before `hub.register`; failure path closes with code 4001
+- [x] 5s handshake timeout enforced via `HandshakeTimeout` constant + per-read context
+- [x] Tests cover all paths — valid (ack + post-handshake ping-pong), invalid (AUTH_RESPONSE{ok:false} + close), timeout (close after 5s), disabled-verifier fallback (Phase 1 behaviour preserved)
+- [x] Existing ping-pong test still passes (router_test.go `TestWSEndToEndPingPong` unchanged)
 
 ## Success Criteria
 

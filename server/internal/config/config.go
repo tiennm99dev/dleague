@@ -6,6 +6,7 @@
 package config
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -24,31 +25,88 @@ type Config struct {
 	// Empty slice means same-origin only.
 	AllowedOrigins []string
 
-	// DatabaseURL is the MySQL driver DSN. Required.
-	// Format: user:pass@tcp(host:port)/dbname?tls=true&parseTime=true&loc=UTC
-	DatabaseURL string
+	// Firebase Admin SDK service-account JSON (single-line stringified) and
+	// project ID. Required.
+	FirebaseCredentialsJSON string
+	FirebaseProjectID       string
+
+	// Couchbase 8.0 connection details. Required.
+	// Conn string typically `couchbase://couchbase` (docker service name) in
+	// prod, `couchbase://127.0.0.1` for local dev.
+	CouchbaseConnString string
+	CouchbaseUsername   string
+	CouchbasePassword   string
+	CouchbaseBucket     string
+
+	// Redis 8.4 connection details. Required.
+	RedisAddr     string
+	RedisPassword string
 }
 
-// ErrMissingDatabaseURL signals that DATABASE_URL is unset or empty.
-var ErrMissingDatabaseURL = errors.New("DATABASE_URL is required")
+// Required-env errors. Sentinels rather than dynamic strings so callers can
+// `errors.Is` if they ever need to distinguish missing-key from malformed.
+var (
+	ErrMissingFirebaseCredentials = errors.New("FIREBASE_CREDENTIALS_JSON is required")
+	ErrMalformedFirebaseJSON      = errors.New("FIREBASE_CREDENTIALS_JSON must be valid JSON")
+	ErrMissingFirebaseProject     = errors.New("FIREBASE_PROJECT_ID is required")
+	ErrMissingCouchbaseConn       = errors.New("COUCHBASE_CONN_STRING is required")
+	ErrMissingCouchbaseUser       = errors.New("COUCHBASE_USERNAME is required")
+	ErrMissingCouchbasePassword   = errors.New("COUCHBASE_PASSWORD is required")
+	ErrMissingCouchbaseBucket     = errors.New("COUCHBASE_BUCKET is required")
+	ErrMissingRedisAddr           = errors.New("REDIS_ADDR is required")
+	ErrMissingRedisPassword       = errors.New("REDIS_PASSWORD is required")
+)
 
 // Load reads configuration from the process environment.
 func Load() (Config, error) {
 	cfg := Config{
-		Addr:           envOr("DLEAGUE_ADDR", ":8080"),
-		WebRoot:        envOr("DLEAGUE_WEB", "./web"),
-		AllowedOrigins: splitCSV(os.Getenv("DLEAGUE_WS_ORIGINS")),
-		DatabaseURL:    os.Getenv("DATABASE_URL"),
+		Addr:                    envOr("DLEAGUE_ADDR", ":8080"),
+		WebRoot:                 envOr("DLEAGUE_WEB", "./web"),
+		AllowedOrigins:          splitCSV(os.Getenv("DLEAGUE_WS_ORIGINS")),
+		FirebaseCredentialsJSON: os.Getenv("FIREBASE_CREDENTIALS_JSON"),
+		FirebaseProjectID:       os.Getenv("FIREBASE_PROJECT_ID"),
+		CouchbaseConnString:     os.Getenv("COUCHBASE_CONN_STRING"),
+		CouchbaseUsername:       os.Getenv("COUCHBASE_USERNAME"),
+		CouchbasePassword:       os.Getenv("COUCHBASE_PASSWORD"),
+		CouchbaseBucket:         os.Getenv("COUCHBASE_BUCKET"),
+		RedisAddr:               os.Getenv("REDIS_ADDR"),
+		RedisPassword:           os.Getenv("REDIS_PASSWORD"),
 	}
 
-	if cfg.DatabaseURL == "" {
-		return Config{}, ErrMissingDatabaseURL
-	}
 	if cfg.Addr == "" {
 		return Config{}, fmt.Errorf("DLEAGUE_ADDR must not be empty")
 	}
 	if cfg.WebRoot == "" {
 		return Config{}, fmt.Errorf("DLEAGUE_WEB must not be empty")
+	}
+	if cfg.FirebaseCredentialsJSON == "" {
+		return Config{}, ErrMissingFirebaseCredentials
+	}
+	// Fail fast on malformed service-account JSON — Phase 5 wants a sane
+	// shape before constructing the Admin SDK client.
+	if !json.Valid([]byte(cfg.FirebaseCredentialsJSON)) {
+		return Config{}, ErrMalformedFirebaseJSON
+	}
+	if cfg.FirebaseProjectID == "" {
+		return Config{}, ErrMissingFirebaseProject
+	}
+	if cfg.CouchbaseConnString == "" {
+		return Config{}, ErrMissingCouchbaseConn
+	}
+	if cfg.CouchbaseUsername == "" {
+		return Config{}, ErrMissingCouchbaseUser
+	}
+	if cfg.CouchbasePassword == "" {
+		return Config{}, ErrMissingCouchbasePassword
+	}
+	if cfg.CouchbaseBucket == "" {
+		return Config{}, ErrMissingCouchbaseBucket
+	}
+	if cfg.RedisAddr == "" {
+		return Config{}, ErrMissingRedisAddr
+	}
+	if cfg.RedisPassword == "" {
+		return Config{}, ErrMissingRedisPassword
 	}
 
 	return cfg, nil

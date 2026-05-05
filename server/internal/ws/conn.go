@@ -23,13 +23,23 @@ const (
 type Conn struct {
 	ws  *websocket.Conn
 	hub *Hub
+	uid string // populated by the AUTH handshake; immutable for life of conn
 }
+
+// UID returns the authenticated user ID for this connection. Empty before
+// the handshake completes; populated by performHandshake on success.
+func (c *Conn) UID() string { return c.uid }
 
 // UpgradeOptions controls WebSocket Accept behaviour. Zero value enforces the
 // nhooyr default same-origin policy. To allow cross-origin clients, populate
 // AllowedOrigins (host:port matched case-insensitively).
+//
+// Verifier is optional: when non-nil, the upgrade handler runs an AUTH
+// handshake before registering the conn with the hub. When nil, the conn
+// registers immediately (preserves the Phase-1 ping-pong-only behaviour).
 type UpgradeOptions struct {
 	AllowedOrigins []string
+	Verifier       TokenVerifier
 }
 
 // UpgradeHandler returns an http.HandlerFunc that upgrades to WebSocket and
@@ -48,6 +58,20 @@ func UpgradeHandler(hub *Hub, opts UpgradeOptions) http.HandlerFunc {
 		c.SetReadLimit(readLimit)
 
 		conn := &Conn{ws: c, hub: hub}
+
+		// Pre-auth phase. Conns are NOT in the hub's broadcast pool until the
+		// handshake completes — DoS via never-AUTH'd conns is bounded to the
+		// HandshakeTimeout window.
+		if opts.Verifier != nil {
+			claims, err := performHandshake(r.Context(), c, opts.Verifier)
+			if err != nil {
+				log.Printf("ws handshake: %v", err)
+				_ = c.Close(CloseUnauthenticated, "unauthenticated")
+				return
+			}
+			conn.uid = claims.UID
+		}
+
 		hub.register(conn)
 		defer hub.unregister(conn)
 		defer c.CloseNow()

@@ -12,7 +12,6 @@ import (
 
 	"github.com/tiennm99/dleague/server/internal/config"
 	srvhttp "github.com/tiennm99/dleague/server/internal/http"
-	"github.com/tiennm99/dleague/server/internal/store"
 	"github.com/tiennm99/dleague/server/internal/ws"
 )
 
@@ -22,28 +21,12 @@ func main() {
 		log.Fatalf("config: %v", err)
 	}
 
-	bootCtx, cancelBoot := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancelBoot()
-
-	st, err := store.New(bootCtx, cfg.DatabaseURL)
-	if err != nil {
-		log.Fatalf("store: %v", err)
-	}
-	defer func() {
-		if err := st.Close(); err != nil {
-			log.Printf("store close: %v", err)
-		}
-	}()
-
-	if err := store.Migrate(bootCtx, st.DB()); err != nil {
-		log.Fatalf("migrate: %v", err)
-	}
-	log.Printf("migrations applied")
-
 	hub := ws.NewHub()
 	wsOpts := ws.UpgradeOptions{AllowedOrigins: cfg.AllowedOrigins}
 
-	r, err := srvhttp.NewRouter(cfg.WebRoot, hub, wsOpts, st)
+	// Storage clients (Couchbase + Redis) and Firebase token verifier wire
+	// in here once Phases 3-5 land. For Phase 2 the server boots stateless.
+	r, err := srvhttp.NewRouter(cfg.WebRoot, hub, wsOpts)
 	if err != nil {
 		log.Fatalf("router: %v", err)
 	}

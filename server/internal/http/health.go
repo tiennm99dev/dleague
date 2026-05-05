@@ -1,37 +1,13 @@
 package http
 
-import (
-	"context"
-	"net/http"
-	"time"
+import "net/http"
 
-	"github.com/tiennm99/dleague/server/internal/store"
-)
-
-const healthPingTimeout = 2 * time.Second
-
-// healthHandler returns a handler that reports liveness plus DB reachability.
-//
-// st may be nil (e.g. in tests where no DB is wired up); the handler then
-// degrades to a plain "ok" without a DB check.
-func healthHandler(st *store.Store) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+// healthHandler reports plain liveness. Storage-dependent health checks come
+// back in Phase 3 once the `store.Store` interface lands; for now the server
+// is considered healthy if the goroutine can serve.
+func healthHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-
-		if st == nil {
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte("ok"))
-			return
-		}
-
-		ctx, cancel := context.WithTimeout(r.Context(), healthPingTimeout)
-		defer cancel()
-
-		if err := st.Ping(ctx); err != nil {
-			w.WriteHeader(http.StatusServiceUnavailable)
-			_, _ = w.Write([]byte("degraded: db unreachable"))
-			return
-		}
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	}

@@ -1,7 +1,7 @@
 ---
 phase: 3
 title: "Couchbase 8.0 Go integration (gocb v2, primary store)"
-status: pending
+status: in_progress
 priority: P1
 effort: "2d"
 dependencies: [2]
@@ -82,18 +82,18 @@ Document shapes (flat; one entity = one doc):
 
 ## Todo List
 
-- [ ] gocb v2 added to go.mod
-- [ ] `store.Store` interface + entity types + sentinel errors
-- [ ] `couchbase.Client` New/Ping/Close + WaitUntilReady
-- [ ] User upsert with first-write-only beta fields (subdoc INSERT)
-- [ ] Puzzle Get/Put
-- [ ] Attempt Get/Upsert
-- [ ] Match Get/Upsert
-- [ ] N1QL `ListUserMatches` + supporting index
-- [ ] `Export` JSONL streamer
-- [ ] `memstore` full impl
-- [ ] Health endpoint Pings Couchbase
-- [ ] Integration test passes with live Couchbase
+- [x] gocb v2 added to go.mod (v2.12.2)
+- [x] `store.Store` interface + entity types (User/Puzzle/Attempt/Match/Rank/AuthClaims) + sentinel errors (ErrNotFound, ErrClosed)
+- [x] `couchbase.Client` New/Ping/Close + WaitUntilReady on KV+Query services
+- [x] User upsert with first-write-only beta fields (Insert→on-exists fall-through to CAS-protected Replace)
+- [x] Puzzle Get/Put
+- [x] Attempt Get/Upsert (key = `<uid>::<date>`)
+- [x] Match Get/Upsert
+- [x] N1QL `ListUserMatches` (parameterized; relies on Phase 1 primary index — secondary on `players` is post-beta optimization)
+- [x] `Export` JSONL streamer (per-collection N1QL scan, JSON encode `{collection,doc}`)
+- [x] `memstore` full impl + 9-test suite (beta-stamp, round-trip, list ordering, GT semantics, presence/cache TTL, export, close)
+- [ ] Health endpoint Pings Couchbase (deferred — health currently returns plain "ok"; rewires once `composed.Store` is wired into main)
+- [ ] Integration test passes with live Couchbase (gated test exists; runs only when `COUCHBASE_TEST_CONN` is set on a dev box)
 
 ## Success Criteria
 

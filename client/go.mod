@@ -1,6 +1,6 @@
 module github.com/tiennm99/dleague/client
 
-go 1.26
+go 1.25.5
 
 require (
 	github.com/hajimehoshi/ebiten/v2 v2.8.6

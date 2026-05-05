@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: "Strip MySQL store + revise config"
-status: pending
+status: completed
 priority: P1
 effort: "0.5d"
 dependencies: [1]
@@ -72,15 +72,15 @@ Phases 3+4 fill the nil. Health endpoint reports plain "ok" until store is wired
 
 ## Todo List
 
-- [ ] Delete MySQL store files
-- [ ] Go toolchain downgraded to 1.25.5 across `go.work` + all `go.mod` files
-- [ ] Config rewrite to new env schema
-- [ ] main.go wiring updated to nil placeholders
-- [ ] Router signature updated
-- [ ] Health nil-tolerant
-- [ ] go.mod dependencies cleaned (no MySQL deps)
-- [ ] `go build ./server/...` green on Go 1.25.5
-- [ ] `go test ./server/...` green
+- [x] Delete MySQL store files (entire `server/internal/store/` removed)
+- [x] Go toolchain downgraded to 1.25.5 across `go.work` + all `go.mod` files
+- [x] Config rewrite to new env schema (Firebase + Couchbase + Redis groups, JSON validation, sentinel errors per missing key)
+- [x] main.go wiring updated — store import removed; router gets 3-arg signature
+- [x] Router signature updated — `store.Store` parameter dropped (Phase 3 reintroduces as interface)
+- [x] Health simplified — returns plain "ok"; storage-aware health returns in Phase 3
+- [x] go.mod dependencies cleaned — `go-sql-driver/mysql`, `google/uuid`, `filippo.io/edwards25519` all gone
+- [x] `go build ./server/...` green on Go 1.25.5
+- [x] `go test ./server/...` green (config + http + ws all pass; new `config_test.go` covers happy path + 8 missing-key cases + malformed JSON)
 
 ## Success Criteria
 

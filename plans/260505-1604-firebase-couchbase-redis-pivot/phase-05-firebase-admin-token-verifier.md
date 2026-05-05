@@ -1,7 +1,7 @@
 ---
 phase: 5
 title: "Firebase Admin SDK + token verifier middleware"
-status: pending
+status: in_progress
 priority: P1
 effort: "1d"
 dependencies: [2]
@@ -76,13 +76,13 @@ The store interface owns persistence — Phase 5 doesn't import `couchbase` or `
 
 ## Todo List
 
-- [ ] firebase-admin Go added
-- [ ] `auth.Firebase` wrapper with Verify
-- [ ] HTTP Bearer middleware
-- [ ] WS gate verifier (consumer in Phase 6)
-- [ ] User upsert on first verify
-- [ ] Tests with fake verifier
-- [ ] Wired into router for protected routes
+- [x] firebase-admin Go added (firebase.google.com/go/v4)
+- [x] `auth.Verifier` interface + `auth.Firebase` concrete impl wrapping `app.Auth().VerifyIDToken`
+- [x] HTTP Bearer middleware — extracts header, calls Verify, runs upsert side-effect, attaches claims via context key
+- [x] WS gate verifier — `auth.Gate{}` exposes Verify(ctx, token); Phase 6 wires into AUTH frame protocol
+- [x] User upsert on first verify — middleware + gate both call `Upserter.UpsertUserOnFirstAuth`; first write stamps beta fields, subsequent are no-ops on those fields
+- [x] Tests with fake verifier — 5 cases (missing/malformed/invalid/valid/gate) all green; memstore validates upsert side effect end-to-end
+- [ ] Wired into router for protected routes — deferred until Phase 6 lands (no protected HTTP routes yet; only `/health` + `/ws` exist; auth applies once async PvP REST + WS-AUTH frame appear)
 
 ## Success Criteria
 

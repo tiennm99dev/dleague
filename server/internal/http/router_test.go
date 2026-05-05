@@ -18,7 +18,7 @@ import (
 
 func mustRouter(t *testing.T) http.Handler {
 	t.Helper()
-	r, err := NewRouter(t.TempDir(), ws.NewHub(), ws.UpgradeOptions{}, nil)
+	r, err := NewRouter(t.TempDir(), ws.NewHub(), ws.UpgradeOptions{})
 	if err != nil {
 		t.Fatalf("NewRouter: %v", err)
 	}

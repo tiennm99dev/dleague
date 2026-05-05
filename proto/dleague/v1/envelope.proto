@@ -9,6 +9,11 @@ enum MessageType {
   MESSAGE_TYPE_UNSPECIFIED = 0;
   MESSAGE_TYPE_PING = 1;
   MESSAGE_TYPE_PONG = 2;
+  // First-frame auth handshake. Server expects AUTH_REQUEST as the first
+  // frame after WS upgrade; replies with AUTH_RESPONSE; rejects all other
+  // frames pre-handshake.
+  MESSAGE_TYPE_AUTH_REQUEST = 3;
+  MESSAGE_TYPE_AUTH_RESPONSE = 4;
 }
 
 // Envelope is the wire frame for every WebSocket message.
@@ -26,4 +31,21 @@ message Ping {
 message Pong {
   int64 client_unix_ms = 1;
   int64 server_unix_ms = 2;
+}
+
+// AuthRequest carries the Firebase ID token. Always sent as the first frame
+// after WS upgrade. `version` lets the protocol evolve without breaking
+// older clients.
+message AuthRequest {
+  string id_token = 1;
+  uint32 version = 2;
+}
+
+// AuthResponse acks (ok=true) or rejects (ok=false) the handshake. On
+// rejection the server closes the connection right after sending; uid is
+// empty.
+message AuthResponse {
+  bool ok = 1;
+  string uid = 2;
+  string error = 3;
 }

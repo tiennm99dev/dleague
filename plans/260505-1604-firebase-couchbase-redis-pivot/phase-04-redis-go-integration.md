@@ -1,7 +1,7 @@
 ---
 phase: 4
 title: "Redis 8.4 Go integration (cache + leaderboards)"
-status: pending
+status: in_progress
 priority: P1
 effort: "1d"
 dependencies: [2]
@@ -81,14 +81,15 @@ Key namespaces (Redis side):
 
 ## Todo List
 
-- [ ] go-redis v9 added
-- [ ] `redis.Client` New/Ping/Close + keepalive
-- [ ] Leaderboard Submit/TopN/RebuildDaily
-- [ ] Presence MarkOnline/IsOnline
-- [ ] Generic Cache Get/Set
-- [ ] `composed.Store` glues couchbase + redis behind `store.Store`
-- [ ] Health endpoint Pings Redis
-- [ ] Integration test green
+- [x] go-redis v9 added (v9.19.0); miniredis v2 added for tests
+- [x] `redis.Client` New/Ping/Close (PoolSize 10 default, configurable)
+- [x] Leaderboard Submit/TopN — ZADD GT semantics + ZRemRangeByRank cap to top-1000
+- [ ] `RebuildDaily` from Couchbase — deferred to Phase 9 where the attempts→leaderboard mapping is consumed
+- [x] Presence MarkOnline/IsOnline (SET key 1 EX ttl + EXISTS)
+- [x] Generic Cache Get/Set (CacheGet returns (val, hit, err); miss → no error)
+- [x] `composed.Store` glues couchbase + redis behind `store.Store`; both halves passthrough; Ping/Close fan out
+- [ ] Health endpoint Pings Redis (deferred with Couchbase ping; both wire at main.go integration)
+- [x] Tests green via miniredis — GT semantics, TopN ordering, presence TTL fast-forward, cache TTL fast-forward + miss
 
 ## Success Criteria
 
