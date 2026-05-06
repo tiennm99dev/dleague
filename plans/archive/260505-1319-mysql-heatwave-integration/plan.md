@@ -19,6 +19,8 @@ research:
 
 # MySQL HeatWave Always-Free integration
 
+> **Superseded by:** [`260505-1604-firebase-couchbase-redis-pivot/`](../../260505-1604-firebase-couchbase-redis-pivot/plan.md). MySQL HeatWave Always-Free was abandoned during the platform pivot — the project moved to a document-store model (Couchbase 8.0) on the same Coolify VM, eliminating cross-cloud network hops and the relational schema overhead. Kept here as historical context for the OCI/MySQL evaluation.
+
 ## Goal
 
 Provision and integrate **OCI MySQL HeatWave Always-Free** as the dleague backend's data layer. Replace the placeholder Postgres dev container, scaffold a Go `store` package, design the MySQL-flavored schema for Phase 3 auth + game tables, and automate backups beyond Oracle's 1-day retention.

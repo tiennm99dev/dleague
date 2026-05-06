@@ -55,8 +55,7 @@ Migration-ready: every store backend lives behind a Go `Store` interface so a fu
 
 ```
 dleague/
-├── client/web/         # Svelte 5 + Phaser 4 + Capacitor (active)
-├── client/             # Ebitengine WASM (legacy; Phase 12 decision pending)
+├── client/web/         # Svelte 5 + Phaser 4 + Capacitor (active web client)
 ├── server/             # Go HTTP API + WebSocket hub + export CLI
 ├── shared/pb/          # Generated protobuf code
 ├── proto/              # .proto sources

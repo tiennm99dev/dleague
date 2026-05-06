@@ -7,7 +7,6 @@ self-hosted Couchbase + Redis pivot (`plans/260505-1604-…`).
 
 ```
 dleague/
-├── client/         # Legacy Ebitengine WASM (deprecated; pending Phase 12 decision)
 ├── client/web/     # Active web client: Svelte 5 + Phaser 4 + Capacitor
 ├── server/         # Go HTTP + WS hub
 ├── shared/         # Shared Go module (protobuf-generated only)
@@ -131,7 +130,7 @@ docs/
 
 ## Removed / deferred
 
-- **`client/` Ebitengine WASM** — Phase 12 decision pending. Currently retained as historical artifact. New work targets `client/web/` only.
-- **`web/`** — minimal static shell from the WASM era; superseded by SvelteKit's adapter-static output but still present for the legacy WASM build.
+- **`client/` Ebitengine WASM (Go module)** — removed in Phase 12. The legacy `client/cmd/`, `client/internal/`, `client/go.mod`, `client/go.sum` are gone; only `client/web/` remains. Historical context preserved in git history.
+- **`web/`** — minimal static shell from the WASM era; superseded by SvelteKit's adapter-static output. Retained pending a future cleanup pass; no longer load-bearing.
 - **MySQL HeatWave path** — fully removed. Plans archived at `plans/archive/260505-1319-mysql-heatwave-integration/`.
 - **Firebase platform pivot path** — superseded by self-hosted plan. Archived at `plans/archive/260505-1407-firebase-platform-pivot/`.

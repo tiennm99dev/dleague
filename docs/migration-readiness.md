@@ -107,14 +107,43 @@ VM, the export file is the canonical seed for a future store.
 
 ## License watchout
 
-Couchbase Community Edition is **non-commercial** since 2024. The
-beta-with-rewards model is borderline. Required actions before public
-launch:
+Couchbase Community Edition's 2024 BSL 1.1 source license added
+non-commercial-only language. After review (see report
+`plans/reports/researcher-260506-0939-couchbase-ce-license-fit.md`), the
+practical effect for dleague is:
 
-- **Re-read** Couchbase CE license terms and confirm fit (or accept the
-  cost of the Capella migration earlier than planned).
-- **Document outcome** here, with date + reviewer.
+- **Restricted:** building a forked Couchbase source distribution and
+  offering it as a managed service (DBaaS / SaaS resale).
+- **Permitted:** self-hosting CE binaries inside a commercial product
+  whose business is something other than reselling the database. Dleague
+  is a *game*; Couchbase is internal infrastructure → permitted.
+
+### Posture vs. license, by phase
+
+| Phase | Reward shape | License status |
+|-------|--------------|----------------|
+| **Now (unpaid public beta)** | None; `isBetaTester` flag only | ✓ Compliant on CE |
+| Beta + cosmetic rewards | Skins, emotes, in-game-only currency | ✓ Compliant on CE |
+| Beta + in-game perks | XP boosts, queue priority | ✓ Compliant on CE |
+| Future: redeemable credits | "Beta tokens → store credit ($)" | ⚠ Re-review before launch |
+| Future: cash rewards / subscriptions | Monetized in any form | ✗ Move off CE before launch |
+
+**Trigger for migration (or commercial license):** any reward that
+converts beta participation into external monetary value.
+
+**Cheapest exit:** Couchbase Capella free tier — same SDK (`gocb`),
+connection string + auth swap, ~1-day cutover. Free tier limits:
+1 cluster, ~8 GB storage, auto-pauses on inactivity (mitigate with a
+keep-alive job).
+
+**Other fallbacks (if leaving Couchbase entirely):** FerretDB
+(Apache 2.0, MongoDB-wire-compatible) and MongoDB CE (SSPL — more
+permissive for self-hosted commercial use than BSL) rank above
+PostgreSQL+JSONB on migration cost; PostgreSQL wins on legal clarity but
+costs the most code churn. Full ranking in the research report.
+
+### Review log
 
 | Date | Reviewer | Outcome |
 |------|----------|---------|
-| (pending) | — | — |
+| 2026-05-06 | researcher subagent + project lead | Stay on CE for unpaid beta. Re-review before any monetized reward goes live. |

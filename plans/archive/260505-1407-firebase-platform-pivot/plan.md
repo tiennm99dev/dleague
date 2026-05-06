@@ -23,6 +23,8 @@ research:
 
 # Firebase platform pivot
 
+> **Superseded by:** [`260505-1604-firebase-couchbase-redis-pivot/`](../../260505-1604-firebase-couchbase-redis-pivot/plan.md). The Firestore-as-primary-store path was discarded in favor of a self-hosted Couchbase 8.0 + Redis 8.4 data plane on the Coolify VM (Firebase Auth retained). Reasons: free-tier Firestore quotas + sync-PvP write fan-out costs, vendor lock-in, and `store.Store` migration seam easier to enforce on Go-owned drivers. Kept here as historical context.
+
 ## Goal
 
 Re-baseline dleague onto a **web-first React/TS + Capacitor** client and **Firebase Auth + Firestore (+ optional Realtime DB)** backend store, while preserving the Go server as the gameplay referee. Eliminate self-hosted SQL operational burden at testing scale. Stay on free tier with explicit migration-back triggers.

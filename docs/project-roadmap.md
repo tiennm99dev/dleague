@@ -31,7 +31,7 @@ Last updated: 2026-05-06.
 
 - **Phase 12 — re-enable GitHub CI**: rewrite `.github/workflows/ci.yml.disabled` for Go 1.25.5 + Svelte+Phaser client (drop WASM + MySQL refs).
 - **Plan + phase status sync** — bump `phase-08` and partial `phase-12` to `completed`/`in_progress`.
-- **Decision: drop legacy `client/` Ebitengine WASM** — currently retained; the active path is `client/web/`. Awaits user decision.
+- **Decision: drop legacy `client/` Ebitengine WASM** — done. Removed in Phase 12; `client/` now contains only `client/web/` (active). Recoverable via git history.
 
 ## Up next (requires external infra)
 

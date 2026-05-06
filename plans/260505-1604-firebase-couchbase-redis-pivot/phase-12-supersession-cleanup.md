@@ -69,7 +69,7 @@ docs/
 4. Decision on `client/` legacy: present to user; if delete, `git rm -r client/` (keep `client/web/`).
 5. Run `/ck:journal` to write the technical journal entry covering the pivot.
 6. Update `docs/project-roadmap.md` with completion date and next-up items.
-7. **Verify Couchbase Community Edition license terms** for the beta usage profile (incl. early-adopter rewards). Document outcome in `docs/migration-readiness.md`.
+7. ~~**Verify Couchbase Community Edition license terms** for the beta usage profile~~ — done 2026-05-06. Research at `plans/reports/researcher-260506-0939-couchbase-ce-license-fit.md`; outcome logged in `docs/migration-readiness.md` § License watchout. Verdict: unpaid beta is compliant; re-review required before any monetized reward.
 8. Final commit: `chore: docs/cleanup post self-hosted couchbase+redis beta pivot`.
 
 ## Todo List
@@ -81,11 +81,12 @@ docs/
 - [x] Codebase summary updated (`docs/codebase-summary.md` created)
 - [x] Roadmap updated (`docs/project-roadmap.md` created)
 - [x] README tech stack section refreshed
-- [ ] Superseded plans cross-linked — frontmatter already has `supersedes:`; per-file top-of-doc note still pending
-- [ ] Legacy `client/` decision made (delete vs retain) — awaiting user decision
+- [x] Superseded plans cross-linked — frontmatter `superseded_by:` + top-of-doc "**Superseded by:**" banner added to both archived `plan.md` files
+- [x] Legacy `client/` decision made — **delete** confirmed by user. Removed `client/cmd/`, `client/internal/`, `client/go.mod`, `client/go.sum` via `git rm`; `client/` now contains only `client/web/` (active). Docs (README, codebase-summary, project-roadmap) updated.
 - [x] **GitHub CI rewritten** for Go 1.25.5 + Svelte/Phaser client (dropped WASM build + MySQL refs); separated server + client jobs. **File kept as `ci.yml.disabled`** per user — they will rename to `ci.yml` and verify on first PR after deploy.
-- [ ] Journal entry via `/ck:journal` — final step
+- [x] Journal entry via `/ck:journal` — `plans/journals/260506-0933-phase-12-supersession-cleanup.md`
 - [x] Migration-readiness doc (`docs/migration-readiness.md`)
+- [x] **Couchbase CE license review** — 2026-05-06; report at `plans/reports/researcher-260506-0939-couchbase-ce-license-fit.md`; verdict logged in `docs/migration-readiness.md` § License watchout. Stay on CE for unpaid beta; re-review before any monetized reward.
 
 ## Success Criteria
 
@@ -109,5 +110,6 @@ Project enters maintenance / feature-add mode. Future phases land as new plans.
 
 ## Unresolved Questions
 
-- Does the user want to keep `client/` Ebitengine WASM as a historical artifact or delete?
+- ~~Does the user want to keep `client/` Ebitengine WASM as a historical artifact or delete?~~ — resolved 2026-05-06: delete. Recoverable via git history.
 - Any docs (e.g. PDR) need user review before merge?
+- Deployment guide finalization remains blocked on Phase 11 (Coolify live-VM walkthrough). Phase 12 carries the placeholder until then.

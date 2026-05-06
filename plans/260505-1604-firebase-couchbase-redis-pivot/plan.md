@@ -75,7 +75,7 @@ This is a *short-term* stack — optimized for self-hosted simplicity now, paid 
 | 9 | Async PvP via store.Store (Couchbase + Redis) | [phase-09-async-pvp-on-couchbase.md](phase-09-async-pvp-on-couchbase.md) | 2d | completed |
 | 10 | Sync PvP via Go WS (auth-gated) | [phase-10-sync-pvp-via-go-ws.md](phase-10-sync-pvp-via-go-ws.md) | 1d | completed |
 | 11 | Deploy on Coolify (single docker-compose) | [phase-11-deploy-coolify.md](phase-11-deploy-coolify.md) | 0.5d | pending (out of local scope) |
-| 12 | Supersession + cleanup + migration-export CLI | [phase-12-supersession-cleanup.md](phase-12-supersession-cleanup.md) | 0.5d | in_progress (docs sweep + CI re-enable shipped; journal + plan cross-link pending) |
+| 12 | Supersession + cleanup + migration-export CLI | [phase-12-supersession-cleanup.md](phase-12-supersession-cleanup.md) | 0.5d | in_progress (cross-links + legacy `client/` deletion + license review + journal shipped; only deployment-guide finalization remains, blocked on Phase 11) |
 
 ## Sequencing
 
@@ -99,7 +99,7 @@ Phases 3+4+5 are independent backend integrations; can fan out. Phase 7 unlocks 
 
 1. ~~Coolify VM size~~ — **resolved: 24 GB RAM, 4 OCPU ARM64**.
 2. **Verify ARM64 manifests** for `couchbase/server-community:8.0.0` and `redis:8.4-alpine` (Phase 1).
-3. Couchbase CE license — confirm non-commercial-fit for our beta + rewards model in Phase 12.
+3. ~~Couchbase CE license — confirm non-commercial-fit for our beta + rewards model in Phase 12.~~ — resolved 2026-05-06: unpaid beta is compliant; re-review before any monetized reward. See `docs/migration-readiness.md` § License watchout.
 4. Sync PvP through Coolify proxy — WS upgrade behavior at scale.
 5. ~~Phaser 4 spike~~ — resolved: Phaser 4 adopted as default renderer (Svelte for shell, Phaser for game canvas).
 6. Early-adopter reward mechanism — out of scope here; revisit post-beta.
