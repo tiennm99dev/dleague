@@ -91,7 +91,7 @@ Phases 3+4+5 are independent backend integrations; can fan out. Phase 7 unlocks 
 - **VM RAM ceiling:** **24 GB on the VM — non-issue.** Stack uses ~2 GB total (Couchbase 1 GB + Redis 256 MB + Go 100 MB + Coolify 500 MB). Bump Couchbase quotas to 2 GB data + 1 GB index for headroom.
 - **Couchbase 8.0 GA status:** if `couchbase/server-community:8.0.0` tag isn't published (or not published for arm64), fall back to `7.6` ARM64.
 - **Redis 8.4 image availability:** if `redis:8.4-alpine` tag isn't published, fall back to `redis:8.0-alpine` or latest stable (both multi-arch).
-- **Couchbase Community licensing:** CE is non-commercial-only since the 2024 license update. Public beta with rewards/monetization signal could be borderline. **Verify license terms before going public** (Phase 12 todo).
+- **Couchbase Community licensing:** ~~CE is non-commercial-only since the 2024 license update.~~ — verified 2026-05-06: the CE License Agreement explicitly grants commercial use ("install and use … to develop or commercialize products that interact with the Community Software"). Hard caps: ≤ 5 nodes, ≤ 4 cores/node, no XDCR. dleague is fully compliant for beta and for monetized production within those caps. See `docs/migration-readiness.md` § License watchout.
 - **Single-VM SPOF:** VM dies → all data gone. Acceptable under beta data-loss policy; export CLI is the escape hatch.
 - **Beta data loss is by design:** users informed via banner + signup copy; no backup work needed.
 
@@ -99,7 +99,7 @@ Phases 3+4+5 are independent backend integrations; can fan out. Phase 7 unlocks 
 
 1. ~~Coolify VM size~~ — **resolved: 24 GB RAM, 4 OCPU ARM64**.
 2. **Verify ARM64 manifests** for `couchbase/server-community:8.0.0` and `redis:8.4-alpine` (Phase 1).
-3. ~~Couchbase CE license — confirm non-commercial-fit for our beta + rewards model in Phase 12.~~ — resolved 2026-05-06: unpaid beta is compliant; re-review before any monetized reward. See `docs/migration-readiness.md` § License watchout.
+3. ~~Couchbase CE license — confirm non-commercial-fit for our beta + rewards model in Phase 12.~~ — resolved 2026-05-06: CE License Agreement grants commercial use directly; hard caps are 5 nodes / 4 cores per node / no XDCR. Earlier "non-commercial only" framing was wrong (conflated BSL source license with CE binary license). See `docs/migration-readiness.md` § License watchout + `plans/reports/researcher-260506-1029-couchbase-ce-license-verbatim.md`.
 4. Sync PvP through Coolify proxy — WS upgrade behavior at scale.
 5. ~~Phaser 4 spike~~ — resolved: Phaser 4 adopted as default renderer (Svelte for shell, Phaser for game canvas).
 6. Early-adopter reward mechanism — out of scope here; revisit post-beta.

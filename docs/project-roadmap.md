@@ -38,7 +38,7 @@ Last updated: 2026-05-06.
 - **Phase 11 — Coolify deploy** (skipped in this iteration per user instruction).
 - **Phase 1 external** — Firebase project signup + service-account JSON.
 - **Phase 1 external** — ARM64 manifest verification on the OCI VM.
-- **Phase 12 license review** — verify Couchbase Community license for beta-with-rewards posture.
+- ~~**Phase 12 license review**~~ — done 2026-05-06. CE License grants self-hosted commercial use; hard caps are 5 nodes / 4 cores per node / no XDCR. See `docs/migration-readiness.md` § License watchout.
 
 ## Post-beta milestones
 
@@ -52,6 +52,6 @@ Last updated: 2026-05-06.
 
 ## Known risks
 
-- **Couchbase Community license** — non-commercial since 2024. Public beta with rewards is borderline; license review required before public launch.
+- **Couchbase Community license** — CE License Agreement permits commercial use; the hard caps are 5 nodes / 4 cores per node / no XDCR. Crossing any cap means moving to Capella or Enterprise. See `docs/migration-readiness.md` § License watchout.
 - **Single-VM SPOF** — VM dies → all data gone. Acceptable under beta posture; export CLI is the escape hatch.
 - **ARM64 image availability** — Couchbase 8.0 CE ARM64 manifest must be verified at deploy time.

@@ -107,43 +107,52 @@ VM, the export file is the canonical seed for a future store.
 
 ## License watchout
 
-Couchbase Community Edition's 2024 BSL 1.1 source license added
-non-commercial-only language. After review (see report
-`plans/reports/researcher-260506-0939-couchbase-ce-license-fit.md`), the
-practical effect for dleague is:
+Couchbase Community Edition is governed by the [Couchbase CE License
+Agreement](https://www.couchbase.com/community-license-agreement/). Per
+primary-source review (full report:
+`plans/reports/researcher-260506-1029-couchbase-ce-license-verbatim.md`),
+the license **explicitly permits** building commercial products on top
+of CE:
 
-- **Restricted:** building a forked Couchbase source distribution and
-  offering it as a managed service (DBaaS / SaaS resale).
-- **Permitted:** self-hosting CE binaries inside a commercial product
-  whose business is something other than reselling the database. Dleague
-  is a *game*; Couchbase is internal infrastructure → permitted.
+> *"Couchbase grants you a non-exclusive, non-transferable, …license to
+> install and use the Community Software at no charge for your internal
+> business purposes and to develop or commercialize products that
+> interact with the Community Software, subject to the restrictions in
+> Section 5..."*
 
-### Posture vs. license, by phase
+There is **no production-use restriction** and **no "Productive Use"
+auto-conversion** clause in the CE License. (That language exists in
+Couchbase's *Enterprise* subscription agreements — a separate document.)
 
-| Phase | Reward shape | License status |
-|-------|--------------|----------------|
-| **Now (unpaid public beta)** | None; `isBetaTester` flag only | ✓ Compliant on CE |
-| Beta + cosmetic rewards | Skins, emotes, in-game-only currency | ✓ Compliant on CE |
-| Beta + in-game perks | XP boosts, queue priority | ✓ Compliant on CE |
-| Future: redeemable credits | "Beta tokens → store credit ($)" | ⚠ Re-review before launch |
-| Future: cash rewards / subscriptions | Monetized in any form | ✗ Move off CE before launch |
+### Hard restrictions (Section 5)
 
-**Trigger for migration (or commercial license):** any reward that
-converts beta participation into external monetary value.
+| Limit | Effect on dleague |
+|---|---|
+| **≤ 5 nodes** per Couchbase cluster | ✓ We run 1 node on the Coolify VM. Headroom is large. |
+| **≤ 4 cores per node** | ✓ Single-VM deploy comfortably fits. |
+| **No XDCR** (cross-datacenter replication) | ✓ Single-region beta does not need XDCR. |
+| **No use to "support a workload also supported by any commercial Couchbase offering"** | ✓ dleague is a game, not a Couchbase competitor. Practical reading: don't build DBaaS on CE. |
 
-**Cheapest exit:** Couchbase Capella free tier — same SDK (`gocb`),
-connection string + auth swap, ~1-day cutover. Free tier limits:
-1 cluster, ~8 GB storage, auto-pauses on inactivity (mitigate with a
-keep-alive job).
+If we ever exceed any of those, the move is to **Couchbase Capella**
+(managed, paid) or buy an Enterprise license — same `gocb` SDK, ~1-day
+cutover.
 
-**Other fallbacks (if leaving Couchbase entirely):** FerretDB
-(Apache 2.0, MongoDB-wire-compatible) and MongoDB CE (SSPL — more
-permissive for self-hosted commercial use than BSL) rank above
-PostgreSQL+JSONB on migration cost; PostgreSQL wins on legal clarity but
-costs the most code churn. Full ranking in the research report.
+### Capella migration (operational, not legal)
+
+Capella is no longer required for license reasons. It remains an
+**operational** option if we want managed backups, multi-AZ, or vendor
+support. Free tier: 1 cluster, ~8 GB storage, auto-pauses on inactivity.
+
+### What we are NOT going to do
+
+- We are **not** migrating to MongoDB / FerretDB / Postgres for license
+  reasons. The CE license fits the project; alternative DBs would only
+  make sense if we hit the 5-node / 4-core cap or wanted a different
+  data model — neither is in scope.
 
 ### Review log
 
 | Date | Reviewer | Outcome |
 |------|----------|---------|
-| 2026-05-06 | researcher subagent + project lead | Stay on CE for unpaid beta. Re-review before any monetized reward goes live. |
+| 2026-05-06 (a.m.) | researcher subagent #1 (`researcher-260506-0939-couchbase-ce-license-fit.md`) | **Superseded.** Conflated BSL source-license terms with CE binary license; introduced an over-cautious reward-shape table that was wrong. |
+| 2026-05-06 (mid-day) | researcher subagent #2 (`researcher-260506-1029-couchbase-ce-license-verbatim.md`) | **In force.** CE License grants commercial use directly. Hard caps are 5 nodes / 4 cores per node / no XDCR / no DBaaS-style competitive use. dleague is fully compliant for beta and for monetized production within those caps. |

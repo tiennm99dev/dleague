@@ -69,7 +69,7 @@ docs/
 4. Decision on `client/` legacy: present to user; if delete, `git rm -r client/` (keep `client/web/`).
 5. Run `/ck:journal` to write the technical journal entry covering the pivot.
 6. Update `docs/project-roadmap.md` with completion date and next-up items.
-7. ~~**Verify Couchbase Community Edition license terms** for the beta usage profile~~ — done 2026-05-06. Research at `plans/reports/researcher-260506-0939-couchbase-ce-license-fit.md`; outcome logged in `docs/migration-readiness.md` § License watchout. Verdict: unpaid beta is compliant; re-review required before any monetized reward.
+7. ~~**Verify Couchbase Community Edition license terms** for the beta usage profile~~ — done 2026-05-06. Final verdict logged in `docs/migration-readiness.md` § License watchout; primary-source verification at `plans/reports/researcher-260506-1029-couchbase-ce-license-verbatim.md`. CE License Agreement permits commercial use; hard caps are 5 nodes / 4 cores per node / no XDCR. (Earlier report `researcher-260506-0939-couchbase-ce-license-fit.md` is superseded — it conflated BSL source license with CE binary license.)
 8. Final commit: `chore: docs/cleanup post self-hosted couchbase+redis beta pivot`.
 
 ## Todo List
@@ -86,7 +86,7 @@ docs/
 - [x] **GitHub CI rewritten** for Go 1.25.5 + Svelte/Phaser client (dropped WASM build + MySQL refs); separated server + client jobs. **File kept as `ci.yml.disabled`** per user — they will rename to `ci.yml` and verify on first PR after deploy.
 - [x] Journal entry via `/ck:journal` — `plans/journals/260506-0933-phase-12-supersession-cleanup.md`
 - [x] Migration-readiness doc (`docs/migration-readiness.md`)
-- [x] **Couchbase CE license review** — 2026-05-06; report at `plans/reports/researcher-260506-0939-couchbase-ce-license-fit.md`; verdict logged in `docs/migration-readiness.md` § License watchout. Stay on CE for unpaid beta; re-review before any monetized reward.
+- [x] **Couchbase CE license review** — 2026-05-06; final verdict logged in `docs/migration-readiness.md` § License watchout (primary-source verification at `plans/reports/researcher-260506-1029-couchbase-ce-license-verbatim.md`). CE License Agreement explicitly permits commercial use of Community Edition binaries; hard caps are 5 nodes / 4 cores per node / no XDCR. Earlier "non-commercial-only" framing in `researcher-260506-0939-couchbase-ce-license-fit.md` was wrong — that report conflated the BSL source license with the CE binary license and is **superseded**.
 
 ## Success Criteria
 

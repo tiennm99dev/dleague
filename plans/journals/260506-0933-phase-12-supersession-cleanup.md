@@ -85,3 +85,23 @@ The license ambiguity reflected real tension in Couchbase's 2024 BSL 1.1 shift: 
 
 **Archive sweep validation:**
 - Confirmed two superseded plans (`archive/260505-1407-firebase-platform-pivot/`, `archive/260505-1319-mysql-heatwave-integration/`) now have `superseded_by: 260505-1604-firebase-couchbase-redis-pivot` frontmatter + "Superseded by" banner at doc top. Both human-readable and machine-indexable.
+
+---
+
+## Postscript — License retraction (2026-05-06, ~11:00)
+
+The license analysis above is **wrong** and was retracted ~90 minutes after this entry was written. A second researcher pass against primary sources (`plans/reports/researcher-260506-1029-couchbase-ce-license-verbatim.md`) found:
+
+- The first researcher (`researcher-260506-0939-couchbase-ce-license-fit.md`) **conflated the BSL 1.1 source-code license with the CE binary License Agreement**. They are separate documents with different rules. CE binaries are governed by the CE License Agreement, not BSL.
+- The Couchbase CE License Agreement **explicitly grants commercial use**: *"…install and use the Community Software at no charge for your internal business purposes and to develop or commercialize products that interact with the Community Software, subject to the restrictions in Section 5..."*
+- There is **no production-use restriction** and **no "Productive Use" auto-conversion clause** in the CE License. (That language is from Couchbase's *Enterprise* subscription agreements — different document, different rules.)
+- The actual hard caps are **5 nodes / 4 cores per node / no XDCR / no DBaaS-style competitive use**. dleague is fully compliant for beta and for monetized production within those caps.
+
+**What this changes:**
+- The reward-shape table above (cosmetics safe / cash blocks) is **wrong**. There is no monetized-reward trigger for migration. Rewards of any kind are fine on CE as long as we stay under the 5-node / 4-core cap.
+- The "MongoDB / FerretDB / PostgreSQL fallback" thread is **dropped**. There was no legal pressure to leave Couchbase. Capella remains as an *operational* upgrade path, not a license-driven one.
+- `docs/migration-readiness.md` § License watchout has been rewritten to reflect the corrected facts.
+- `docs/project-roadmap.md`, `docs/project-overview-pdr.md`, `plans/260505-1604-…/plan.md`, and `plans/260505-1604-…/phase-01-…md` were also cleaned up to drop "non-commercial-only / borderline / Phase 12 review pending" framing.
+- The original (wrong) report has been frontmatter-marked `status: superseded` with a banner pointing to the verbatim report.
+
+**Lesson for future me:** when a Bing/Google search-engine summary returns license clauses for a URL I can't fetch directly (403), do not quote the summary as if it were the source. Either fetch through alternate means (Wayback, Docker image LICENSE.txt, GitHub mirrors) or say "I cannot verify." The first researcher pass took the summary at face value; the second pass — explicitly briefed to verify or falsify the earlier claim — found the conflation in 4 minutes. Accuracy is cheaper than retraction.

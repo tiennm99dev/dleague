@@ -47,13 +47,13 @@ Short-term self-hosted stack, designed so the swap to managed services costs ~1 
 - Production-grade backups (current beta accepts data loss).
 - Real-time spectator mode for sync PvP.
 - Cross-region presence / multi-VM deployment.
-- Couchbase CE → Capella (paid) migration: blocked on usage data + license review.
+- Couchbase CE → Capella (paid) migration: optional (operational, not legal); decided based on usage data, ops budget, or hitting CE's 5-node / 4-core caps.
 - Early-adopter reward mechanism for beta testers.
 
 ## License & legal
 
 - **Proprietary** — All Rights Reserved (see `LICENSE`).
-- **Couchbase Community Edition** license is non-commercial since 2024 — **must verify fit** for beta-with-rewards model before public launch.
+- **Couchbase Community Edition** is governed by the [CE License Agreement](https://www.couchbase.com/community-license-agreement/). It explicitly permits commercial use ("develop or commercialize products that interact with the Community Software"). Hard caps: ≤ 5 nodes, ≤ 4 cores/node, no XDCR. See `docs/migration-readiness.md` § License watchout.
 
 ## Active plan
 

@@ -24,7 +24,7 @@ Two parallel tracks: (1) external Firebase project signup for Auth (only externa
 - Redis 8.4 image: `redis:8.4-alpine` — Redis official images are multi-arch including ARM64 (low risk). Fallback `8.0-alpine`.
 - Firebase Spark: 50K MAU/mo, all sign-in providers free; only Auth used here.
 - Internal docker network means Go server addresses Couchbase via service name (`couchbase:8091`) and Redis via `redis:6379`. No public exposure for either store.
-- Couchbase Community license: free for non-commercial use; flag for Phase 12 review.
+- Couchbase Community license: free for self-hosted use including commercial products. Hard caps: ≤ 5 nodes, ≤ 4 cores/node, no XDCR. (Verified 2026-05-06; see `docs/migration-readiness.md` § License watchout.)
 
 ## Requirements
 
@@ -125,5 +125,5 @@ Phase 2: strip MySQL code, downgrade Go to 1.25.5, swap config schema.
 
 1. ~~VM RAM size~~ — resolved: 24 GB.
 2. Couchbase 8.0 image GA — verify; otherwise pick stable fallback.
-3. Couchbase CE license fit for beta-with-rewards — Phase 12 review.
+3. ~~Couchbase CE license fit for beta-with-rewards — Phase 12 review.~~ — resolved 2026-05-06; CE License Agreement permits commercial use; hard caps 5 nodes / 4 cores/node / no XDCR.
 4. Coolify volume mount strategy — named volumes vs host bind mounts; pick during compose write.

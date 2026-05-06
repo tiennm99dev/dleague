@@ -1,10 +1,15 @@
 ---
 title: Couchbase Community Edition License Fit for dleague Beta
 date: 2026-05-06
-status: complete
+status: superseded
+superseded_by: researcher-260506-1029-couchbase-ce-license-verbatim.md
+supersession_reason: "Conflated the Couchbase BSL 1.1 source license with the CE binary License Agreement. The 'non-commercial-only' framing and the reward-shape decision table that follows from it are wrong. The CE License Agreement explicitly grants commercial use of CE binaries; hard caps are 5 nodes / 4 cores per node / no XDCR. See the superseding report for the verbatim license-grant clause and primary-source verification."
 ---
 
 # Couchbase CE License Fit for dleague Beta
+
+> **⚠ SUPERSEDED 2026-05-06 by `researcher-260506-1029-couchbase-ce-license-verbatim.md`.**
+> The "non-commercial-only since 2024" framing and the resulting reward-shape table in this report are wrong — they conflated the BSL source-code license with the CE binary License Agreement. Read the superseding report for the verified verbatim clauses and the corrected verdict (CE explicitly grants commercial use; hard caps are 5 nodes / 4 cores per node / no XDCR). This file is retained as historical context.
 
 ## Executive Summary
 
