@@ -44,6 +44,8 @@ func Mount(parent chi.Router, s store.Store, verifier auth.Verifier, upserter au
 			}
 			r.Post("/attempts", attempts.submit)
 			r.Get("/attempts/me/{date}", attempts.mine)
+			r.Get("/puzzles/me/today", puzzles.meToday)
+			r.Get("/puzzles/me/{date}", puzzles.meGet)
 		})
 	})
 }

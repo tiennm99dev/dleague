@@ -1,149 +1,187 @@
 # Code Standards
 
-This document captures the patterns and constraints enforced in the dleague codebase. New contributors should follow these rules starting in Phase 2.
+Patterns and constraints enforced in the dleague codebase. Updated for the Firebase Auth + Couchbase + Redis + Svelte/Phaser stack.
 
 ## File & Module Structure
 
 ### Go Files
-- **Max 200 LOC per file** — Split early if approaching limit. Prefer small, focused modules.
-- **kebab-case directory names** (e.g., `internal/game-state/`, `internal/ws-hub/`)
-- **snake_case Go filenames** (e.g., `ws_client.go`, `debug_log.go`)
-- **Modules must compile independently** — each module has its own `go.mod` (workspace root uses `go.work`)
+
+- **Max 200 LOC per file** — Split early. Prefer small, focused modules.
+- **kebab-case directory names** when there's a useful disambiguator (`store/composed/`).
+- **snake_case Go filenames** (`router_test.go`, `cb_init.sh`).
 - **Module layout:**
-  - `cmd/{appname}/main.go` — single entry point per app
-  - `internal/` — unexported packages (not importable from other modules)
-  - `shared/pb/` — generated protobuf code only (committed to git, not gitignored)
+  - `cmd/{appname}/main.go` — single entry point per binary (`cmd/api`, `cmd/dleague-export`).
+  - `internal/` — unexported packages.
+  - `shared/pb/` — generated protobuf code (committed).
+- **Store-interface boundary** is load-bearing for migration:
+  - `gocb` import only inside `internal/store/couchbase/`.
+  - `go-redis` import only inside `internal/store/redis/`.
+  - Composed store wires both behind `store.Store`.
+  - Memstore impl ships alongside as test backend + proof of seam.
+
+### Frontend (Svelte 5 + Phaser 4) Files
+
+- **Pluggable -dle variants** under `client/web/src/games/<name>/` — each variant exports a `GameVariant` (Scene class + Hud component).
+- **Phaser scenes** in PascalCase (`WordleScene.ts`) — matches Phaser ecosystem.
+- **Svelte components** in PascalCase (`WordleHud.svelte`, `Lobby.svelte`).
+- **Pure utilities** in lowercase (`scoring.ts`, `registry.ts`, `eventbus-helpers.ts`).
+- **Shared events** routed through `game/EventBus.ts` — typed wrappers in `games/runner/eventbus-helpers.ts`.
 
 ### Directory Structure
+
 ```
 dleague/
-├── client/              # Ebitengine WASM entry
-│   ├── cmd/web/        # main.go only
-│   ├── internal/       # Unexported
-│   │   ├── game/       # Client-side game state
-│   │   ├── net/        # WS client + debug logging
-│   │   └── ui/         # HTML/CSS overlay
-│   └── go.mod
-├── server/              # Go HTTP + WebSocket
-│   ├── cmd/api/        # main.go only
-│   ├── internal/
-│   │   ├── http/       # Router + handlers
-│   │   ├── ws/         # WebSocket hub + conn + dispatch
-│   │   ├── game/       # Game state + match logic (Phase 2)
-│   │   ├── store/      # Postgres repos (Phase 3)
-│   │   └── config/
-│   └── go.mod
-└── shared/              # Exported types + interfaces
-    ├── game/           # Game interface + Registry
-    ├── pb/             # Generated protobuf (committed)
-    └── go.mod
+├── client/web/                   # Svelte 5 + Phaser 4 + Capacitor
+│   └── src/
+│       ├── auth/                 # Firebase JS SDK wrapper
+│       ├── components/           # Svelte UI: Lobby, SignIn, BetaBanner
+│       ├── game/                 # Phaser game shell + EventBus
+│       ├── games/                # Pluggable -dle variants (Phase 8)
+│       │   ├── types.ts          # GameVariant interface
+│       │   ├── registry.ts       # lazy variant loader
+│       │   ├── runner/           # GameRunner + EventBus helpers
+│       │   └── wordle/           # First concrete variant
+│       └── net/                  # WS client + protobuf
+├── server/
+│   ├── cmd/api/                  # Main HTTP/WS server
+│   ├── cmd/dleague-export/       # Migration export CLI (Phase 12)
+│   └── internal/
+│       ├── api/                  # Async-PvP REST under /api/v1
+│       ├── auth/                 # Firebase Admin token verifier
+│       ├── config/
+│       ├── http/                 # Top-level router + health
+│       ├── store/                # Migration seam
+│       │   ├── store.go          # Store interface
+│       │   ├── couchbase/        # gocb impl
+│       │   ├── redis/            # go-redis impl
+│       │   ├── composed/         # wires couchbase + redis
+│       │   └── memstore/         # in-memory impl for tests
+│       └── ws/                   # WebSocket hub
+├── shared/pb/                    # Generated protobuf
+├── proto/dleague/v1/             # .proto sources
+├── docs/
+└── plans/
 ```
 
 ## Wire Format & Serialization
 
-### Protobuf
-- **Binary format always** — messages sent as `proto.Marshal(msg)` over WebSocket
-- **Schema sources** live in `proto/dleague/v1/` (`.proto` files)
-- **Generated code** committed to git (`shared/pb/dleague/v1/*.pb.go`)
-  - CI verifies `make proto-gen` produces no diff
-  - Consumers build without needing protoc/buf installed
-- **Validation:** `buf lint` and `buf breaking` run in CI
+### Protobuf (WebSocket frames)
+
+- **Binary format always** — `proto.Marshal(msg)` over WS.
+- **Schema sources** in `proto/dleague/v1/`.
+- **Generated code** committed to git (`shared/pb/dleague/v1/*.pb.go`).
+- **Validation:** `buf lint` + `buf breaking` in CI.
+
+### REST (async-PvP HTTP API)
+
+- **JSON over HTTP** under `/api/v1/`.
+- **Auth:** `Authorization: Bearer <firebase-id-token>`; verified by `auth.Middleware`.
+- **Public endpoints** never leak puzzle solutions; auth'd `/puzzles/me/*` returns the full puzzle (server still re-scores in `/attempts`).
 
 ### Debug Logging
-- **Production build** (default `go build`): Binary protobuf only. No serialization overhead, no protojson symbols in WASM.
-- **Debug build** (`go build -tags debug`): Every WS message also serialized to `protojson` and logged:
-  - **Server:** stdout (human-readable JSON)
-  - **Client:** browser console (dev tools)
-- **Implementation:** Build-tag conditionals in `**/debug_log.go` and `**/debug_log_noop.go` (zero-cost abstraction in production)
+
+- **Production build** (default `go build`): binary protobuf only.
+- **Debug build** (`go build -tags debug`): every WS message also logged as `protojson`.
+- **Implementation:** build-tag conditionals (`debug_log.go` / `debug_log_noop.go`).
 
 ## Transport & Network
 
-- **Single WebSocket endpoint** — all game, auth, and match messages travel over one `/ws` connection
-- **HTTP only for static serving** — no REST endpoints for game state (use WS messages instead)
-- **Connection upgrade:** Session cookie bound at WS upgrade time (Phase 3 auth)
-- **Message frame type:** `websocket.MessageBinary` for all WS sends
-- **Recovery:** Connection drop = client reconnects; server resets player state. State durability added in Phase 4 (async PvP).
+- **WebSocket** for sync PvP and presence (`/ws`).
+- **REST** for async daily puzzle / attempts / leaderboards (`/api/v1/*`).
+- **Auth handshake:** first WS frame is `AUTH_REQUEST` containing the Firebase ID token; HTTP API uses Bearer header per request.
+- **Reconnect:** client refreshes the ID token before each reconnect (1h Firebase expiry).
 
 ## Game Architecture
 
-### Game Interface (Phase 2)
-- **Define:** `shared/game/Game` interface with pluggable `-dle` types (Wordle, music, geography, etc.)
-- **Registry:** Factory pattern in `shared/game/registry.go` — register games by ID, lookup at match start
-- **Constraint:** Single active game per match. Variants ship in separate releases, not runtime selection.
+### Pluggable variants (Phase 8)
+
+```typescript
+interface GameVariant {
+  key: string;                    // 'wordle', 'sumdle', etc.
+  Scene: typeof Phaser.Scene;
+  Hud: typeof SvelteComponent;
+  meta: { title: string; difficulty: 'easy'|'medium'|'hard'; tagline: string };
+}
+```
+
+- Variants register in `client/web/src/games/registry.ts` as lazy imports.
+- `GameRunner.svelte` fetches puzzle + resume state, mounts the scene, mounts the HUD, posts the final attempt.
+- Adding a new variant = copy `wordle/` folder + register in `registry.ts`.
 
 ## Code Quality Rules
 
 ### Testing
-- **Unit tests** in `*_test.go` files alongside implementation
-- **Coverage target:** >70% on game logic + WS handlers
-- **Test-first for bug fixes** — failing test before fix
+
+- **Unit tests** in `*_test.go` (Go) / `*.test.ts` (TypeScript via vitest).
+- **Coverage target:** >70% on game logic, store impls, auth, API handlers.
+- **Memstore** validates the upper-layer test surface; live Couchbase/Redis tests are gated by env vars (`COUCHBASE_TEST_CONN`, etc.).
 
 ### Error Handling
-- **Named return errors** only for recoverable conditions (e.g., "this player already in queue")
-- **Panic only for** programming errors (e.g., unregistered game type). Use `errors.New()` for operational errors.
-- **Wrap errors** with `fmt.Errorf()` to preserve context
+
+- **Sentinel errors** in `internal/store/errors.go` (`ErrNotFound`, `ErrClosed`).
+- **Wrap errors** with `fmt.Errorf("%w", …)` to preserve sentinel.
+- **Panic only for** programming errors. Use `errors.New()` / `fmt.Errorf()` for operational errors.
 
 ### Comments
-- **Capitalize comment sentences** — "This function handles X, not "this function handles X"
-- **Exported functions must have doc comments** — `// FunctionName does Y.`
-- **Complex logic:** Explain *why*, not *what* (code shows what)
+
+- **Doc comments** on every exported Go func.
+- **Explain the *why*** for non-obvious decisions (e.g. "first-write-only beta fields via CAS").
+- Skip comments that just narrate what the code already says.
 
 ## CI/CD & Validation
 
 ### Pre-commit
-- Run `make lint` to catch `golangci-lint` issues (gofmt, revive, unused)
-- Run `make test` to ensure tests pass
-- Run `make proto-gen && git diff --exit-code proto/` to verify no protobuf regressions
+
+- `make lint` (`golangci-lint`).
+- `go test ./...` (server).
+- `npm test` + `npm run build-nolog` (client).
+- `make proto-gen && git diff --exit-code proto/` for protobuf regressions.
 
 ### CI Pipeline (GitHub Actions)
-- `buf lint` — protobuf schema linting
-- `buf breaking` — backward-incompatible schema changes rejected
-- `golangci-lint run ./...` — Go linting
-- `go test ./...` — unit tests
-- Build WASM (`GOOS=js GOARCH=wasm`)
-- Artifact upload (dist/wasm/main.wasm)
 
-### Bundle Size
-- **Target:** WASM <10MB gzipped (Phase 1 baseline: ~5-8MB protobuf-go + Ebitengine hello-world)
-- **Monitor:** Each `buf` schema add, each `go` dependency
-- **If over-budget:** Defer feature to v2 or switch implementation approach
+- Re-enabled in Phase 12 for Go 1.25.5 + Svelte/Phaser client.
+- `buf lint` + `buf breaking`.
+- `golangci-lint run ./...`.
+- `go test ./...`.
+- `npm run build-nolog` + `npm test`.
 
 ## Naming Conventions
 
 | Type | Convention | Example |
 |------|-----------|---------|
-| Packages | lowercase, short | `game`, `net`, `store` |
-| Exported types | PascalCase | `Connection`, `GameState`, `Envelope` |
-| Unexported vars/funcs | camelCase | `connHub`, `readMessage()` |
-| Constants | UPPER_SNAKE_CASE | `MAX_MESSAGE_SIZE`, `PING_INTERVAL` |
-| Interfaces | PascalCase (often `-er` suffix) | `Game`, `Reader`, `Handler` |
-| Protobuf messages | PascalCase | `Envelope`, `Ping`, `GameMove` |
-| Protobuf fields | snake_case | `message_type`, `request_id`, `payload` |
+| Go packages | lowercase, short | `api`, `store`, `auth` |
+| Go exported types | PascalCase | `Store`, `AuthClaims`, `Puzzle` |
+| Go unexported | camelCase | `puzzleHandler`, `dateInWindow()` |
+| Go constants | UPPER_SNAKE | `MAX_GUESSES`, `MaxGuesses` (mixed; PascalCase preferred for new) |
+| Protobuf messages | PascalCase | `AuthRequest`, `Envelope` |
+| Protobuf fields | snake_case | `message_type`, `request_id` |
+| TS modules (utility) | camelCase / kebab-case | `scoring.ts`, `eventbus-helpers.ts` |
+| TS classes & components | PascalCase | `WordleScene`, `WordleHud.svelte` |
 
-## Dependencies & Vendoring
+## Dependencies
 
-- **No Go vendoring** — use `go.mod` + `go.sum`. Lock file committed to git.
-- **Review before adding heavy deps** — impacts WASM bundle size
-- **Current core deps:**
-  - `nhooyr.io/websocket` (WS, lighter than gorilla)
-  - `chi` (HTTP router, minimal)
-  - `protobuf-go` (generated code only, ~400KB baseline)
-  - `ebitengine` (Go → WASM game engine)
+- **Go core:**
+  - `chi` — HTTP router.
+  - `nhooyr.io/websocket` — WS.
+  - `gocb v2` — Couchbase (only in `store/couchbase/`).
+  - `go-redis v9` — Redis (only in `store/redis/`).
+  - `firebase.google.com/go/v4` — Admin SDK token verifier.
+- **Frontend core:**
+  - `svelte` 5, `@sveltejs/kit`, `vite`.
+  - `phaser` 4 — game canvas.
+  - `firebase` JS SDK — Auth.
+  - `@capacitor/core` + `@capacitor-firebase/authentication` — mobile shell.
+  - `protobufjs` — WS framing.
+  - `vitest` — unit tests.
 
 ## Attribution & Licensing
 
-- **Proprietary code:** All rights reserved (see LICENSE)
-- **Third-party code:** Copyright + license header on ported files
-  - Apache-2.0: Ebitengine examples (e.g., `client/cmd/web/main.go`)
-  - MIT: ratel-online patterns (e.g., `shared/game/registry.go`)
-- **Update NOTICE** when adding new attributed dependencies
+- **Proprietary code:** All rights reserved (see LICENSE).
+- **Third-party code:** copyright + license header on ported files.
+- **NOTICE** updated when adding attributed dependencies.
 
-## Process & Next Steps
+## Process
 
-These standards apply to **Phase 2+** work. Phase 1 is scaffolding; Phase 2 introduces game core logic where these patterns become critical.
-
-**Before opening Phase 2 PRs:**
-1. Ensure all files <200 LOC
-2. Run `make lint && make test`
-3. No uncommitted generated code (`buf generate` should produce no diff)
-4. New exported funcs have doc comments
+- New phase work follows the `plans/` directory templates.
+- Plans link to the active `plan.md` overview; phase files capture detailed steps.
+- Status fields in plan frontmatter are kept current — `pending` → `in_progress` → `completed`.

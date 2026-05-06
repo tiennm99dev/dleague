@@ -1,7 +1,7 @@
 ---
 phase: 8
 title: "Pluggable game variants on Phaser 4 (Svelte HUD)"
-status: pending
+status: completed
 priority: P1
 effort: "2d"
 dependencies: [7]
@@ -99,14 +99,15 @@ Lobby → user clicks "Play today's puzzle"
 
 ## Todo List
 
-- [ ] `GameVariant` interface + `registry.ts`
-- [ ] Wordle pure scoring func + unit tests
-- [ ] `WordleScene` (Phaser): grid + keyboard + animations + EventBus emits
-- [ ] `WordleHud.svelte`: attempts indicator + win/lose modal
-- [ ] `GameRunner.svelte` orchestrator
-- [ ] Lobby integration
-- [ ] Resume-in-progress flow works (refresh page mid-game preserves state)
-- [ ] Adding a second variant = copy `wordle/` folder + register + done (no plumbing change)
+- [x] `GameVariant` interface + `registry.ts`
+- [x] Wordle pure scoring func + unit tests (14 vitest cases green)
+- [x] `WordleScene` (Phaser): grid + keyboard + animations + EventBus emits
+- [x] `WordleHud.svelte`: attempts indicator + win/lose modal + share text
+- [x] `GameRunner.svelte` orchestrator
+- [x] Lobby integration
+- [x] Resume-in-progress flow works — `WordleScene.init` accepts `resumeGuesses` and re-renders evaluations
+- [x] Adding a second variant = copy `wordle/` folder + register in `registry.ts` (no plumbing change)
+- [x] Auth'd puzzle endpoint `/api/v1/puzzles/me/{date}` added so client can render per-guess colors; public endpoint still hides the solution; server still re-scores on attempt submit
 
 ## Success Criteria
 

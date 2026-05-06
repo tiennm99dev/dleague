@@ -3,11 +3,10 @@
   import { auth } from '../auth/auth.svelte';
   import { WsClient, defaultWsUrl } from '../net/ws';
   import BetaBanner from './BetaBanner.svelte';
-  import PhaserGame, { type TPhaserRef } from '../PhaserGame.svelte';
+  import GameRunner from '../games/runner/GameRunner.svelte';
 
   const client = new WsClient(defaultWsUrl());
   let showGame = $state(false);
-  let phaserRef: TPhaserRef = { game: null, scene: null };
 
   onMount(() => {
     client.connect().catch(() => {
@@ -19,6 +18,10 @@
 
   function startPlay() {
     showGame = true;
+  }
+
+  function exitGame() {
+    showGame = false;
   }
 </script>
 
@@ -44,8 +47,7 @@
     <p>Welcome back. Today's puzzle is waiting.</p>
     <button class="play" onclick={startPlay}>Play today's puzzle</button>
   {:else}
-    <!-- Phase 8 will populate scenes that consume EventBus signals from here. -->
-    <PhaserGame bind:phaserRef />
+    <GameRunner variantKey="wordle" onExit={exitGame} />
   {/if}
 </main>
 

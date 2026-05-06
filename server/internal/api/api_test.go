@@ -71,6 +71,44 @@ func TestPuzzleGetReturnsHintNotSolution(t *testing.T) {
 	}
 }
 
+func TestAuthedPuzzleMeIncludesWord(t *testing.T) {
+	srv, mem := setup(t, "u1")
+	if err := mem.PutPuzzle(context.Background(), store.Puzzle{
+		Date: todayUTC(), Word: "league", Hint: "noun", Difficulty: 3,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	req, _ := http.NewRequest("GET", srv.URL+"/api/v1/puzzles/me/today", nil)
+	req.Header.Set("Authorization", "Bearer fake")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		t.Fatalf("status = %d", resp.StatusCode)
+	}
+	var got store.Puzzle
+	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Word != "league" {
+		t.Errorf("word = %q, want league", got.Word)
+	}
+}
+
+func TestAuthedPuzzleMeRequiresAuth(t *testing.T) {
+	srv, _ := setup(t, "u1")
+	resp, err := http.Get(srv.URL + "/api/v1/puzzles/me/today")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 401 {
+		t.Fatalf("status = %d, want 401", resp.StatusCode)
+	}
+}
+
 func TestPuzzleGetUnknownDate404(t *testing.T) {
 	srv, _ := setup(t, "u1")
 	resp, err := http.Get(srv.URL + "/api/v1/puzzles/2026-05-05")

@@ -1,7 +1,7 @@
 ---
 phase: 12
 title: "Supersession + cleanup"
-status: pending
+status: in_progress
 priority: P3
 effort: "0.5d"
 dependencies: [11]
@@ -75,16 +75,17 @@ docs/
 ## Todo List
 
 - [x] **Migration-export CLI** — `server/cmd/dleague-export/main.go` opens Couchbase from same env vars as the server, streams JSONL of all 4 collections to stdout. Redis state intentionally NOT exported (derivable from attempts).
-- [ ] PDR updated
-- [ ] System architecture diagram + doc
-- [ ] Deployment guide finalized
-- [ ] Codebase summary updated
-- [ ] Roadmap updated
-- [ ] README tech stack section refreshed
-- [ ] Superseded plans cross-linked
-- [ ] Legacy `client/` decision made (delete vs retain)
-- [ ] **Re-enable GitHub CI**: rewrite `.github/workflows/ci.yml.disabled` to match new stack (Go 1.25.5, Svelte+Phaser client build instead of WASM, drop MySQL refs), verify green on PR, rename back to `ci.yml`
-- [ ] Journal entry via `/ck:journal`
+- [x] PDR updated (`docs/project-overview-pdr.md` created)
+- [x] System architecture diagram + doc (`docs/system-architecture.md` created with ASCII stack diagram)
+- [ ] Deployment guide finalized — Phase 11 deferred; existing `docs/deployment-guide.md` covers compose + Coolify scaffold, but the live-VM walkthrough lands with Phase 11
+- [x] Codebase summary updated (`docs/codebase-summary.md` created)
+- [x] Roadmap updated (`docs/project-roadmap.md` created)
+- [x] README tech stack section refreshed
+- [ ] Superseded plans cross-linked — frontmatter already has `supersedes:`; per-file top-of-doc note still pending
+- [ ] Legacy `client/` decision made (delete vs retain) — awaiting user decision
+- [x] **GitHub CI rewritten** for Go 1.25.5 + Svelte/Phaser client (dropped WASM build + MySQL refs); separated server + client jobs. **File kept as `ci.yml.disabled`** per user — they will rename to `ci.yml` and verify on first PR after deploy.
+- [ ] Journal entry via `/ck:journal` — final step
+- [x] Migration-readiness doc (`docs/migration-readiness.md`)
 
 ## Success Criteria
 

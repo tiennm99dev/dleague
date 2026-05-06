@@ -6,14 +6,14 @@ on:
   pull_request:
 
 jobs:
-  build-test:
+  server:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.26"
+          go-version: "1.25.5"
           cache: true
 
       - name: Install buf + protoc-gen-go
@@ -35,7 +35,7 @@ jobs:
           cd .. && git diff --exit-code -- shared/pb || \
             { echo "::error::generated protobuf is stale; run 'make proto-gen' and commit"; exit 1; }
 
-      - name: golangci-lint
+      - name: golangci-lint server
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
@@ -49,13 +49,6 @@ jobs:
           args: --timeout=5m
           working-directory: shared
 
-      - name: golangci-lint client
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          args: --timeout=5m
-          working-directory: client
-
       - name: test shared
         run: cd shared && go test ./...
 
@@ -68,14 +61,34 @@ jobs:
       - name: build server
         run: cd server && go build ./cmd/api
 
-      - name: build wasm (prod)
-        run: cd client && GOOS=js GOARCH=wasm go build -o ../web/main.wasm ./cmd/web
+      - name: build dleague-export CLI
+        run: cd server && go build ./cmd/dleague-export
 
-      - name: build wasm (debug)
-        run: cd client && GOOS=js GOARCH=wasm go build -tags debug -o /tmp/main-debug.wasm ./cmd/web
+  client:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client/web
+    steps:
+      - uses: actions/checkout@v4
 
-      - name: upload wasm artifact
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: client/web/package-lock.json
+
+      - name: install
+        run: npm ci
+
+      - name: unit tests (vitest)
+        run: npm test
+
+      - name: production build
+        run: npm run build-nolog
+
+      - name: upload web artifact
         uses: actions/upload-artifact@v4
         with:
-          name: dleague-wasm
-          path: web/main.wasm
+          name: dleague-web
+          path: client/web/build

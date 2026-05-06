@@ -64,18 +64,18 @@ This is a *short-term* stack — optimized for self-hosted simplicity now, paid 
 
 | # | Phase | File | Effort | Status |
 |---|-------|------|--------|--------|
-| 1 | Provisioning (Firebase + docker-compose) | [phase-01-free-tier-provisioning.md](phase-01-free-tier-provisioning.md) | 0.5d | pending |
-| 2 | Strip MySQL + revise config + Go 1.25.5 downgrade | [phase-02-strip-mysql-revise-config.md](phase-02-strip-mysql-revise-config.md) | 0.5d | pending |
-| 3 | Couchbase 8.0 Go integration (gocb v2, primary store) | [phase-03-couchbase-go-integration.md](phase-03-couchbase-go-integration.md) | 2d | pending |
-| 4 | Redis 8.4 Go integration (go-redis v9, cache + leaderboards) | [phase-04-redis-go-integration.md](phase-04-redis-go-integration.md) | 1d | pending |
-| 5 | Firebase Admin SDK + token verifier + beta-tag user upsert | [phase-05-firebase-admin-token-verifier.md](phase-05-firebase-admin-token-verifier.md) | 1d | pending |
-| 6 | Wire-format auth handshake | [phase-06-wire-format-auth-handshake.md](phase-06-wire-format-auth-handshake.md) | 0.5d | pending |
-| 7 | Svelte 5 + Phaser 4 + Capacitor client scaffold + beta banner | [phase-07-react-capacitor-client-scaffold.md](phase-07-react-capacitor-client-scaffold.md) | 3d | pending |
-| 8 | Pluggable game variants on Phaser 4 (Svelte HUD) | [phase-08-pluggable-game-engine-web.md](phase-08-pluggable-game-engine-web.md) | 2d | pending |
-| 9 | Async PvP via store.Store (Couchbase + Redis) | [phase-09-async-pvp-on-couchbase.md](phase-09-async-pvp-on-couchbase.md) | 2d | pending |
-| 10 | Sync PvP via Go WS (auth-gated) | [phase-10-sync-pvp-via-go-ws.md](phase-10-sync-pvp-via-go-ws.md) | 1d | pending |
-| 11 | Deploy on Coolify (single docker-compose) | [phase-11-deploy-coolify.md](phase-11-deploy-coolify.md) | 0.5d | pending |
-| 12 | Supersession + cleanup + migration-export CLI | [phase-12-supersession-cleanup.md](phase-12-supersession-cleanup.md) | 0.5d | pending |
+| 1 | Provisioning (Firebase + docker-compose) | [phase-01-free-tier-provisioning.md](phase-01-free-tier-provisioning.md) | 0.5d | in_progress (code-side complete) |
+| 2 | Strip MySQL + revise config + Go 1.25.5 downgrade | [phase-02-strip-mysql-revise-config.md](phase-02-strip-mysql-revise-config.md) | 0.5d | completed |
+| 3 | Couchbase 8.0 Go integration (gocb v2, primary store) | [phase-03-couchbase-go-integration.md](phase-03-couchbase-go-integration.md) | 2d | in_progress (code-side complete) |
+| 4 | Redis 8.4 Go integration (go-redis v9, cache + leaderboards) | [phase-04-redis-go-integration.md](phase-04-redis-go-integration.md) | 1d | in_progress (code-side complete) |
+| 5 | Firebase Admin SDK + token verifier + beta-tag user upsert | [phase-05-firebase-admin-token-verifier.md](phase-05-firebase-admin-token-verifier.md) | 1d | in_progress (code-side complete) |
+| 6 | Wire-format auth handshake | [phase-06-wire-format-auth-handshake.md](phase-06-wire-format-auth-handshake.md) | 0.5d | completed |
+| 7 | Svelte 5 + Phaser 4 + Capacitor client scaffold + beta banner | [phase-07-react-capacitor-client-scaffold.md](phase-07-react-capacitor-client-scaffold.md) | 3d | completed |
+| 8 | Pluggable game variants on Phaser 4 (Svelte HUD) | [phase-08-pluggable-game-engine-web.md](phase-08-pluggable-game-engine-web.md) | 2d | completed |
+| 9 | Async PvP via store.Store (Couchbase + Redis) | [phase-09-async-pvp-on-couchbase.md](phase-09-async-pvp-on-couchbase.md) | 2d | completed |
+| 10 | Sync PvP via Go WS (auth-gated) | [phase-10-sync-pvp-via-go-ws.md](phase-10-sync-pvp-via-go-ws.md) | 1d | completed |
+| 11 | Deploy on Coolify (single docker-compose) | [phase-11-deploy-coolify.md](phase-11-deploy-coolify.md) | 0.5d | pending (out of local scope) |
+| 12 | Supersession + cleanup + migration-export CLI | [phase-12-supersession-cleanup.md](phase-12-supersession-cleanup.md) | 0.5d | in_progress (docs sweep + CI re-enable shipped; journal + plan cross-link pending) |
 
 ## Sequencing
 

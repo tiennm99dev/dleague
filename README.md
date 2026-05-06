@@ -13,7 +13,7 @@ Most -dle games are solo: solve the daily puzzle, share your score on Twitter, d
 
 ## Status
 
-Phase 1 completed — foundation scaffolded. Phase 2 ready. See `plans/260505-0947-dleague-pvp-game/plan.md`.
+**Beta** — data may reset. Active plan: `plans/260505-1604-firebase-couchbase-redis-pivot/`. Phases 2–10 + 8 complete; Phase 11 (deploy) + Phase 12 (cleanup) in progress. See [`docs/project-roadmap.md`](docs/project-roadmap.md).
 
 ## Quickstart
 
@@ -24,47 +24,51 @@ make tools
 # (re)generate protobuf Go code into shared/pb/
 make proto-gen
 
-# run server + WASM client (prod)
-make dev
+# bring up Couchbase + Redis + Go server
+docker compose up -d
 
-# run with -tags debug — every WS message logs as protojson on both sides
-make dev-debug
+# in another terminal: run the Svelte/Phaser client in dev mode
+cd client/web && npm install && npm run dev
 ```
 
-Open http://localhost:8080.
+Server health: <http://localhost:8080/health>. Client dev server: <http://localhost:5173>.
 
 ## Stack
 
-- **Client:** [Ebitengine](https://ebitengine.org/) (Go → WASM for web), HTML/CSS overlay for input + canvas for animations
-- **Backend:** Go (`chi` HTTP + `nhooyr.io/websocket` for sync PvP)
-- **DB:** Postgres
-- **Deploy:** Fly.io (web first), gomobile compile target prepped for Phase 2 mobile launch
+- **Web client:** Svelte 5 (shell + HUD) + Phaser 4 (game canvas), Vite, vitest
+- **Mobile shell:** Capacitor (web first; iOS/Android later)
+- **Auth:** Firebase Auth (Spark plan: Email/Google/Anonymous)
+- **Backend:** Go 1.25.5 (`chi` HTTP + `nhooyr.io/websocket`)
+- **Primary store:** Couchbase Community 8.0 (self-hosted)
+- **Cache + leaderboards:** Redis 8.4 (self-hosted)
+- **Hosting:** OCI Always-Free Ampere A1 Flex (4 OCPU + 24 GB RAM, ARM64) via Coolify
 
-## Repo layout (planned)
+Migration-ready: every store backend lives behind a Go `Store` interface so a future swap to a managed service (Capella, Atlas, etc.) costs ~1 week. See [`docs/migration-readiness.md`](docs/migration-readiness.md).
+
+## Beta posture
+
+- Sign-in screens show a "Beta — data may reset" banner.
+- Every user is tagged `isBetaTester: true` + `betaSignupAt` on first auth (early-adopter ledger).
+- VM disk failure or `docker compose down -v` is acceptable data loss; `cmd/dleague-export` is the escape hatch.
+
+## Repo layout
 
 ```
 dleague/
-├── client/           # Ebitengine WASM + mobile entry
-├── server/           # Go HTTP API + WebSocket hub
-├── shared/           # Game interface, DTOs, pluggable -dle registry
-├── web/              # static HTML shell + CSS overlay
-├── docs/             # design docs, deployment guide
-├── plans/            # implementation plans (this is where you are now)
+├── client/web/         # Svelte 5 + Phaser 4 + Capacitor (active)
+├── client/             # Ebitengine WASM (legacy; Phase 12 decision pending)
+├── server/             # Go HTTP API + WebSocket hub + export CLI
+├── shared/pb/          # Generated protobuf code
+├── proto/              # .proto sources
+├── web/                # Static legacy shell
+├── docs/               # PDR, architecture, code standards, roadmap, migration
+├── plans/              # Implementation plans (active + archived)
 └── docker-compose.yml
 ```
 
 ## Plan
 
-Active plan: [`plans/260505-0947-dleague-pvp-game/plan.md`](plans/260505-0947-dleague-pvp-game/plan.md)
-
-| Phase | Effort | Status |
-|-------|--------|--------|
-| 1. Foundation & monorepo | 1w | completed |
-| 2. Game core (pluggable -dle) | 2w | pending |
-| 3. Backend + auth | 1.5w | pending |
-| 4. Async PvP | 1.5w | pending |
-| 5. Sync PvP (WebSocket) | 2w | pending |
-| 6. Polish + deploy + mobile prep | 1.5w | pending |
+Active plan: [`plans/260505-1604-firebase-couchbase-redis-pivot/plan.md`](plans/260505-1604-firebase-couchbase-redis-pivot/plan.md). See [`docs/project-roadmap.md`](docs/project-roadmap.md) for current phase status.
 
 ## Credits & References
 
