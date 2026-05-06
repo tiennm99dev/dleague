@@ -119,7 +119,37 @@ The Go server gets started by Coolify in production, or with
 `docker compose up -d dleague` for local end-to-end. Health check at
 `http://localhost:8080/health`.
 
-## 6. Security checklist
+## 6. Image build (multi-arch via buildx)
+
+`server/Dockerfile` is a 3-stage build:
+
+1. `golang:1.25.5-alpine` → builds `cmd/api` and `cmd/dleague-export` (static, trimpath).
+2. `node:22-alpine` → `npm ci && npm run build-nolog` for the SvelteKit
+   client. With `adapter-static`, output lands in `client/web/build/`.
+3. `alpine:3.20` runtime — both binaries on `PATH`, web build at `/app/web`,
+   `HEALTHCHECK` against `/health`.
+
+Default env baked in: `DLEAGUE_ADDR=:8080`, `DLEAGUE_WEB=/app/web`. The
+container `HEALTHCHECK` makes `dleague` `service_healthy` in compose.
+
+Build targets:
+
+```bash
+# Multi-arch image, no local load (buildx restriction).
+make image                 IMAGE=ghcr.io/you/dleague IMAGE_TAG=v0.1
+
+# Single-arch local image (host arch), loaded into docker daemon.
+make image-load            IMAGE=dleague-server IMAGE_TAG=dev
+
+# Multi-arch image, push to registry.
+make image-push            IMAGE=ghcr.io/you/dleague IMAGE_TAG=v0.1
+```
+
+Defaults: `IMAGE=dleague-server`, `IMAGE_TAG=dev`,
+`IMAGE_PLATFORMS=linux/amd64,linux/arm64`. Coolify pulls the ARM64
+manifest on the OCI Ampere VM.
+
+## 7. Security checklist
 
 - [ ] `8091` (Couchbase Web UI) **not exposed to host** in steady state
 - [ ] `6379` (Redis) **not exposed to host**
@@ -128,7 +158,7 @@ The Go server gets started by Coolify in production, or with
 - [ ] `FIREBASE_CREDENTIALS_JSON` only as env var, never on disk in repo
 - [ ] Couchbase app user has bucket-scoped role, not cluster admin
 
-## 7. CI
+## 8. CI
 
 The GitHub Actions workflow at `.github/workflows/ci.yml` is **disabled
 during the pivot** — the file is renamed `ci.yml.disabled` because it

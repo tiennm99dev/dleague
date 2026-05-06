@@ -74,7 +74,7 @@ This is a *short-term* stack — optimized for self-hosted simplicity now, paid 
 | 8 | Pluggable game variants on Phaser 4 (Svelte HUD) | [phase-08-pluggable-game-engine-web.md](phase-08-pluggable-game-engine-web.md) | 2d | completed |
 | 9 | Async PvP via store.Store (Couchbase + Redis) | [phase-09-async-pvp-on-couchbase.md](phase-09-async-pvp-on-couchbase.md) | 2d | completed |
 | 10 | Sync PvP via Go WS (auth-gated) | [phase-10-sync-pvp-via-go-ws.md](phase-10-sync-pvp-via-go-ws.md) | 1d | completed |
-| 11 | Deploy on Coolify (single docker-compose) | [phase-11-deploy-coolify.md](phase-11-deploy-coolify.md) | 0.5d | pending (out of local scope) |
+| 11 | Deploy on Coolify (single docker-compose) | [phase-11-deploy-coolify.md](phase-11-deploy-coolify.md) | 0.5d | in_progress (code-side complete: multi-stage Dockerfile, dleague healthcheck, DLEAGUE_* env wiring, `make image` buildx; live VM provisioning out of local scope) |
 | 12 | Supersession + cleanup + migration-export CLI | [phase-12-supersession-cleanup.md](phase-12-supersession-cleanup.md) | 0.5d | in_progress (cross-links + legacy `client/` deletion + license review + journal shipped; only deployment-guide finalization remains, blocked on Phase 11) |
 
 ## Sequencing

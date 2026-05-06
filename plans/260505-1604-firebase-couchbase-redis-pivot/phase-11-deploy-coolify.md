@@ -1,7 +1,7 @@
 ---
 phase: 11
 title: "Deploy on Coolify (single docker-compose)"
-status: pending
+status: in_progress
 priority: P1
 effort: "0.5d"
 dependencies: [9, 10]
@@ -95,14 +95,16 @@ REDIS_PASSWORD=***
 
 ## Todo List
 
-- [ ] Dockerfile multi-stage with Go 1.25.5 base
-- [ ] docker-compose.yml: couchbase + redis + dleague services + healthchecks + depends_on
-- [ ] cb-init.sh idempotent first-run script
-- [ ] Coolify project configured + 11 env vars set
-- [ ] Domain + TLS provisioned via Coolify
-- [ ] Smoke test on production URL: full sign-in → puzzle → leaderboard
-- [ ] Deployment guide doc'd
-- [ ] Volumes confirmed persistent across `docker compose restart`
+- [x] Dockerfile multi-stage with Go 1.25.5 base — `server/Dockerfile`: 3-stage (Go 1.25.5 → Node 22 / Vite → Alpine 3.20), builds both `dleague` + `dleague-export` binaries, copies SvelteKit `client/web/build` to `/app/web`, sets `DLEAGUE_ADDR`/`DLEAGUE_WEB`, declares `HEALTHCHECK`
+- [x] docker-compose.yml: couchbase + redis + dleague services + healthchecks + depends_on — added `dleague` healthcheck (`wget /health`), wired `DLEAGUE_ADDR` / `DLEAGUE_WEB` / `DLEAGUE_WS_ORIGINS`
+- [x] cb-init.sh idempotent first-run script — `scripts/cb-init.sh`
+- [ ] Coolify project configured + 11 env vars set — out of local scope
+- [ ] Domain + TLS provisioned via Coolify — out of local scope
+- [ ] Smoke test on production URL: full sign-in → puzzle → leaderboard — out of local scope
+- [x] Deployment guide doc'd — `docs/deployment-guide.md` covers Firebase + ARM64 verification + compose + cb-init + verify steps; live-VM walkthrough lands when Coolify deploy actually runs
+- [ ] Volumes confirmed persistent across `docker compose restart` — verify on the Coolify VM as part of out-of-local smoke test
+- [x] Multi-arch buildx target — `make image` / `make image-load` / `make image-push` (linux/amd64,linux/arm64)
+- [x] `.env.example` updated with `DLEAGUE_ADDR` / `DLEAGUE_WEB` / `DLEAGUE_WS_ORIGINS`
 
 ## Success Criteria
 
