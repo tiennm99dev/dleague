@@ -90,9 +90,9 @@ docs/
 
 ## Success Criteria
 
-- [ ] Fresh contributor can read `docs/` and bring up local dev in <30 min
-- [ ] No references to MySQL HeatWave or Firestore in production code or live docs (only in archived plans)
-- [ ] Roadmap reflects current state honestly
+- [x] Fresh contributor can read `docs/` and bring up local dev in <30 min — verified 2026-05-07: README quickstart is 4 commands (`make tools`, `make proto-gen`, `docker compose up -d`, `cd client/web && npm i && npm run dev`); `docs/deployment-guide.md` covers the Firebase one-time setup; `docs/codebase-summary.md` tours the directories.
+- [x] No references to MySQL HeatWave or Firestore in production code or live docs (only in archived plans) — audited 2026-05-07: residual hits in `docs/codebase-summary.md`, `docs/project-roadmap.md` are "removed / Strip MySQL phase" historical framing; only code hit is `cloud.google.com/go/firestore` as **indirect** transitive dep of Firebase Admin SDK (unavoidable, no direct import).
+- [x] Roadmap reflects current state honestly — refreshed 2026-05-07.
 
 ## Risk Assessment
 
@@ -112,4 +112,4 @@ Project enters maintenance / feature-add mode. Future phases land as new plans.
 
 - ~~Does the user want to keep `client/` Ebitengine WASM as a historical artifact or delete?~~ — resolved 2026-05-06: delete. Recoverable via git history.
 - Any docs (e.g. PDR) need user review before merge?
-- Deployment guide finalization remains blocked on Phase 11 (Coolify live-VM walkthrough). Phase 12 carries the placeholder until then.
+- Deployment guide finalization remains blocked on Phase 11 (Coolify live-VM walkthrough). Phase 12 carries the placeholder until then. **All non-deploy Phase 12 work shipped 2026-05-07; phase stays `in_progress` purely on the deploy-guide tail.**

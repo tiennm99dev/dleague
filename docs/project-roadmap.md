@@ -1,6 +1,6 @@
 # Project Roadmap
 
-Last updated: 2026-05-06.
+Last updated: 2026-05-07.
 
 ## Active plan
 
@@ -19,10 +19,11 @@ Last updated: 2026-05-06.
 | 9 | Async PvP via store.Store | completed |
 | 10 | Sync PvP via Go WS | completed |
 | 11 | Deploy on Coolify | pending (out of scope for local-only iteration) |
-| 12 | Supersession + cleanup + migration-export CLI | partially complete (export CLI shipped; docs sweep done in this iteration; CI re-enable pending) |
+| 12 | Supersession + cleanup + migration-export CLI | non-deploy work complete (export CLI shipped, docs sweep done, residual-ref audit clean as of 2026-05-07); deploy-guide finalization blocked on Phase 11 |
 
 ## Recently shipped
 
+- **Phase 12 audit pass (2026-05-07)** — verified Phase 12 success criteria: residual `mysql`/`heatwave`/`firestore` sweep clean (only "removed/Strip MySQL" historical framing in live docs; `firestore` is indirect transitive of Firebase Admin SDK); fresh-contributor onboarding via README quickstart confirmed; roadmap refreshed. Phase 12 stays `in_progress` solely on the deploy-guide tail (blocked on Phase 11).
 - **Phase 8 (Pluggable Wordle)** — `client/web/src/games/{types,registry}.ts`, `runner/GameRunner.svelte`, `wordle/{WordleScene.ts,WordleHud.svelte,scoring.ts}`. Lobby integrates the runner. 14 unit tests pass; production build green.
 - **Auth'd puzzle endpoint** — added `GET /api/v1/puzzles/me/today` and `/{date}` so authenticated clients can render per-guess color feedback. Public endpoint still hides the solution.
 - **Doc sweep** — refreshed `code-standards.md`; created `project-overview-pdr.md`, `system-architecture.md`, `codebase-summary.md`, `migration-readiness.md`, `project-roadmap.md`.
