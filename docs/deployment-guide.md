@@ -2,8 +2,9 @@
 
 Dev/beta deploy walkthrough for the dleague stack:
 **Firebase Auth + MongoDB Atlas + Go server**, all behind one
-`docker-compose.yml`. Authoritative plan:
-[`plans/260507-1648-mongodb-atlas-only-migration/plan.md`](../plans/260507-1648-mongodb-atlas-only-migration/plan.md).
+`docker-compose.yml`. Background:
+[`plans/archive/260507-1648-mongodb-atlas-only-migration/plan.md`](../plans/archive/260507-1648-mongodb-atlas-only-migration/plan.md)
+(shipped 2026-05-07).
 
 > **Beta posture:** data loss is acceptable on this stack; backups are not
 > in scope. `mongodump --uri "$MONGODB_URI"` is the escape hatch for
@@ -130,7 +131,7 @@ Optional overrides (have safe defaults):
 ## 8. CI
 
 The GitHub Actions workflow at `.github/workflows/ci.yml.disabled` is
-disabled. Re-enabling is tracked in
-[`phase-07-cleanup-and-docs.md`](../plans/260507-1648-mongodb-atlas-only-migration/phase-07-cleanup-and-docs.md);
-the rewrite drops the WASM/MySQL stack assumptions and runs `go test ./...`,
-`make grep-isolation`, `make web-build`.
+disabled — it still targets Go 1.26 + the WASM client. The rewrite drops
+the WASM/MySQL stack assumptions and runs `go test ./...`,
+`make grep-isolation`, `make web-build`. Tracked in
+[`docs/project-roadmap.md`](./project-roadmap.md) under "Open work".

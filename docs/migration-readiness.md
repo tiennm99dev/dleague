@@ -129,6 +129,7 @@ For now: Atlas → no SSPL exposure.
 Before 2026-05-07 the data plane was self-hosted **Couchbase Community 8.0
 + Redis 8.4** behind the same `store.Store` seam. The migration to Atlas
 exercised the seam exactly once. See
-`plans/260507-1648-mongodb-atlas-only-migration/plan.md` for the consolidation
-decision and `plans/260505-1604-firebase-couchbase-redis-pivot/` for the
+`plans/archive/260507-1648-mongodb-atlas-only-migration/plan.md` for the
+consolidation decision and
+`plans/archive/260505-1604-firebase-couchbase-redis-pivot/` for the
 predecessor stack's full design + license review.

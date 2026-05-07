@@ -2,7 +2,7 @@
 
 A directory-by-directory tour of the dleague repo, current as of the
 MongoDB Atlas consolidation
-(`plans/260507-1648-mongodb-atlas-only-migration/`).
+(`plans/archive/260507-1648-mongodb-atlas-only-migration/`).
 
 ## Top-level layout
 
@@ -107,13 +107,15 @@ CI runs `buf lint` + `buf breaking` to keep schema changes safe.
 
 ```
 plans/
-├── 260505-0947-dleague-pvp-game/                   # Original master plan (parent, partially superseded)
-├── 260505-1604-firebase-couchbase-redis-pivot/     # Predecessor stack (Couchbase + Redis); superseded
-├── 260507-1648-mongodb-atlas-only-migration/       # Active plan (Atlas consolidation)
-├── archive/                                         # Superseded plans
-├── reports/                                         # Research + brainstorm + code-review reports
-└── journals/                                        # Technical journal entries
+├── archive/      # All shipped + superseded plans (latest: Atlas consolidation)
+├── reports/      # Research + brainstorm + code-review reports
+└── journals/     # Technical journal entries
 ```
+
+No "active" plan dir at present — every implementation plan ships or gets
+superseded into `archive/`. The most recent shipped plan is
+`archive/260507-1648-mongodb-atlas-only-migration/` (Atlas consolidation,
+2026-05-07).
 
 ## `docs/`
 

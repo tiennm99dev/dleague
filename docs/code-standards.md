@@ -136,11 +136,14 @@ interface GameVariant {
 
 ### CI Pipeline (GitHub Actions)
 
-- Re-enabled in Phase 12 for Go 1.25.5 + Svelte/Phaser client.
+`.github/workflows/ci.yml.disabled` is the parked workflow from the WASM/MySQL
+era. Re-enable for Go 1.25.5 + Svelte/Phaser + Atlas, running:
+
 - `buf lint` + `buf breaking`.
 - `golangci-lint run ./...`.
-- `go test ./...`.
-- `npm run build-nolog` + `npm test`.
+- `go test ./...` (server + shared modules).
+- `make grep-isolation` (mongo-driver boundary check).
+- `npm run build-nolog` + `npm test` (client).
 
 ## Naming Conventions
 

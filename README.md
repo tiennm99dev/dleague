@@ -13,7 +13,7 @@ Most -dle games are solo: solve the daily puzzle, share your score on Twitter, d
 
 ## Status
 
-**Beta** — data may reset. Active plan: `plans/260507-1648-mongodb-atlas-only-migration/`. Data plane consolidated to MongoDB Atlas (M0 free tier). See [`docs/project-roadmap.md`](docs/project-roadmap.md).
+**Beta** — data may reset. Data plane runs on MongoDB Atlas (M0 free tier). All planned migration phases have shipped; remaining work is external (Coolify deploy, CI re-enable). See [`docs/project-roadmap.md`](docs/project-roadmap.md).
 
 ## Quickstart
 
@@ -71,9 +71,9 @@ dleague/
 └── docker-compose.yml
 ```
 
-## Plan
+## Plans
 
-Active plan: [`plans/260507-1648-mongodb-atlas-only-migration/plan.md`](plans/260507-1648-mongodb-atlas-only-migration/plan.md). See [`docs/project-roadmap.md`](docs/project-roadmap.md) for current phase status.
+All implementation plans are archived under [`plans/archive/`](plans/archive/) once shipped or superseded. See [`docs/project-roadmap.md`](docs/project-roadmap.md) for what's live and what's next.
 
 ## Credits & References
 

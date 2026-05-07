@@ -54,6 +54,6 @@ Atlas is the chosen managed backend, but the seam stays intact in case we ever w
 - **Proprietary** — All Rights Reserved (see `LICENSE`).
 - **MongoDB Atlas** is governed by the Atlas commercial terms; our use is as a customer of a managed service. The MongoDB CE SSPL has no bearing on dleague's deployment. See `docs/migration-readiness.md` § License watchout.
 
-## Active plan
+## Latest shipped initiative
 
-[`plans/260507-1648-mongodb-atlas-only-migration/plan.md`](../plans/260507-1648-mongodb-atlas-only-migration/plan.md)
+[`plans/archive/260507-1648-mongodb-atlas-only-migration/plan.md`](../plans/archive/260507-1648-mongodb-atlas-only-migration/plan.md) — Atlas consolidation (Couchbase + Redis dropped; single managed backend). All implementation plans live under `plans/archive/` once they ship or get superseded.
