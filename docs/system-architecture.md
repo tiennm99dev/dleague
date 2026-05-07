@@ -36,24 +36,28 @@
 │   │  └─────────────────┬───────────────┘   │                │
 │   │                    │                   │                │
 │   │  ┌─────────────────▼──────────────┐    │                │
-│   │  │ store.Store (composed)         │    │                │
-│   │  └────────┬───────────────────┬───┘    │                │
-│   └───────────┼───────────────────┼────────┘                │
-│               │                   │                          │
-│       ┌───────▼─────┐      ┌──────▼──────┐                  │
-│       │ Couchbase   │      │ Redis 8.4   │                  │
-│       │ Community   │      │ AOF, ZSETs  │                  │
-│       │ 8.0         │      │             │                  │
-│       └─────────────┘      └─────────────┘                  │
-│       (internal:8091)      (internal:6379)                   │
-└─────────────────────────────────────────────────────────────┘
-              │                                ▲
-              │                                │
-              ▼                                │
-        ┌──────────────────────────────────────┴────────┐
-        │ Firebase Auth (Spark plan)                    │
-        │ Email/Password, Google, Anonymous             │
-        └───────────────────────────────────────────────┘
+│   │  │ store.Store (mongodb impl)     │    │                │
+│   │  └────────────────┬───────────────┘    │                │
+│   └───────────────────┼────────────────────┘                │
+└───────────────────────┼─────────────────────────────────────┘
+                        │ TLS (SCRAM-SHA-256)
+                        ▼
+              ┌──────────────────────┐
+              │ MongoDB Atlas (M0)   │
+              │ ap-southeast-1       │
+              │ collections:         │
+              │   users / puzzles /  │
+              │   attempts / matches │
+              │   leaderboards /     │
+              │   presence / cache   │
+              └──────────────────────┘
+
+              ┌──────────────────────┐
+              │ Firebase Auth        │
+              │ Spark plan           │
+              │ Email / Google /     │
+              │ Anonymous            │
+              └──────────────────────┘
 ```
 
 ## Key flows
@@ -68,11 +72,13 @@
 5. Server: auth.Gate verifies via Firebase Admin SDK
 6. On first verify per UID: UpsertUserOnFirstAuth stamps
    isBetaTester=true + betaSignupAt; subsequent calls no-op those
+   ($setOnInsert in MongoDB)
 7. Server replies AUTH_RESPONSE{ok, uid}
-8. Client transitions to "connected"; presence MarkOnline (Redis)
+8. Client transitions to "connected"; presence MarkOnline writes
+   {_id: uid, expireAt: now+ttl} to Mongo (TTL index purges).
 ```
 
-### Async daily puzzle (Phase 9)
+### Async daily puzzle
 
 ```
 Lobby → "Play today's puzzle" → GameRunner.svelte
@@ -83,13 +89,13 @@ Lobby → "Play today's puzzle" → GameRunner.svelte
   → On win/lose: EventBus emits attempt-complete
   → POST /api/v1/attempts {date, guesses}
   → Server re-scores via api.Score; UpsertAttempt + SubmitScore
-  → Leaderboards update in Redis ZSETs
+  → Leaderboards update via $max-on-doc in Mongo
 ```
 
-### Sync PvP (Phase 10)
+### Sync PvP
 
-WS-mediated; both players' guesses stream to a hub goroutine that interleaves
-state updates and broadcasts results. Auth gates the WS upgrade.
+WS-mediated; both players' guesses stream to a hub goroutine that
+interleaves state updates and broadcasts results. Auth gates the WS upgrade.
 
 ## Migration seam
 
@@ -98,22 +104,29 @@ HTTP handlers ─┐
 WS hub        ─┤
 Sync PvP      ─┴──► store.Store interface (server/internal/store/store.go)
                       │
-                      ├── memstore         (tests; in-memory)
-                      └── composed         (production)
-                            ├── couchbase  (gocb v2)
-                            └── redis      (go-redis v9)
+                      ├── memstore  (tests; in-memory)
+                      └── mongodb   (production; Atlas)
 ```
 
-`gocb` and `go-redis` are confined to their own packages so a future swap to
-Capella / Atlas / managed Redis costs one wiring line in `cmd/api/main.go`.
+Imports of `go.mongodb.org/mongo-driver/v2` are confined to
+`internal/store/mongodb/`. `make grep-isolation` enforces that boundary in
+CI. A future swap (e.g. away from Atlas) ships as a third sibling impl.
+
+## Atomicity contracts (MongoDB-backed)
+
+- **`SubmitScore`** — `updateOne({board, uid}, {$max: {score}}, upsert:true)`. `$max` is atomic at the single-doc level; concurrent submits serialize on the doc and the highest score wins.
+- **TTL purge** — Mongo's TTL background scan runs ~every 60s, so a doc with `expireAt = now+30s` may live up to ~90s. Every read on `presence`/`cache` therefore includes `expireAt: {$gt: now()}` to mask the lag and return an accurate liveness answer regardless of physical purge.
+- **`CacheSet(ttl=0)`** — parity with Redis SET (no EX) and `memstore`: stores the value and `$unset` any prior `expireAt`. Doc persists indefinitely. `CacheGet` accepts both expireAt-bearing and expireAt-absent docs.
 
 ## Security model
 
 - **Auth boundary:** every protected HTTP route uses `auth.Middleware`; every WS connection completes the AUTH handshake before any frame is processed.
 - **Solution leak:** public `/puzzles/{date}` returns hint/length/difficulty only. Authenticated `/puzzles/me/{date}` returns the full puzzle for client-side per-guess feedback. Server re-scores in `/attempts.submit` so a tampered client cannot inflate its score.
-- **Internal services:** Couchbase + Redis bound to docker-compose internal network; only `:8080` exposed to the host.
+- **Atlas access:** SCRAM-SHA-256 over public TLS. IP allowlist set per `docs/atlas-setup.md` (`0.0.0.0/0` during beta — auth still required; tighten before non-beta launch).
 - **Service-account JSON:** injected as env var (`FIREBASE_CREDENTIALS_JSON`); never committed.
 
 ## Observability (post-beta)
 
-Currently minimal — `/health` returns "ok". Future additions: request log middleware, Prometheus metrics, structured logger via `slog`.
+Currently minimal — `/health` returns "ok" if Mongo `Ping` succeeds. Future
+additions: request log middleware, Prometheus metrics, structured logger via
+`slog`, Atlas alerting on connection-count + slow-query breaches.

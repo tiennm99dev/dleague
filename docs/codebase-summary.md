@@ -1,7 +1,8 @@
 # Codebase Summary
 
 A directory-by-directory tour of the dleague repo, current as of the
-self-hosted Couchbase + Redis pivot (`plans/260505-1604-…`).
+MongoDB Atlas consolidation
+(`plans/260507-1648-mongodb-atlas-only-migration/`).
 
 ## Top-level layout
 
@@ -37,7 +38,7 @@ src/
 │   ├── EventBus.ts           # Shared Phaser.Events.EventEmitter
 │   ├── main.ts               # Legacy Phaser bootstrap (template scenes)
 │   └── scenes/               # Boot, Preloader, MainMenu, Game, GameOver
-├── games/                    # Phase 8: pluggable -dle variants
+├── games/                    # Pluggable -dle variants
 │   ├── types.ts              # GameVariant interface
 │   ├── registry.ts           # Lazy variant loader
 │   ├── runner/
@@ -62,26 +63,24 @@ Single Go module. Two binaries.
 ```
 server/
 ├── cmd/
-│   ├── api/main.go               # Main HTTP/WS server
-│   └── dleague-export/main.go    # Migration export CLI
+│   ├── api/main.go            # Main HTTP/WS server
+│   └── atlas-smoke/main.go    # MongoDB Atlas connectivity smoke test
 └── internal/
-    ├── api/                      # /api/v1/* (puzzles, attempts, leaderboards, scoring)
-    ├── auth/                     # Firebase Admin verifier + middleware + WS gate
-    ├── config/                   # Env var schema + parsing
-    ├── http/                     # Top-level chi router + /health
-    ├── store/                    # Migration seam
-    │   ├── store.go              # Store interface + entity types
-    │   ├── errors.go             # Sentinel errors
-    │   ├── couchbase/            # gocb v2 impl (NOT used outside this dir)
-    │   ├── redis/                # go-redis v9 impl (NOT used outside this dir)
-    │   ├── composed/             # Wires couchbase + redis behind Store
-    │   └── memstore/             # In-memory impl for tests + dev
-    └── ws/                       # WebSocket hub + connection state
+    ├── api/                   # /api/v1/* (puzzles, attempts, leaderboards, scoring)
+    ├── auth/                  # Firebase Admin verifier + middleware + WS gate
+    ├── config/                # Env var schema + parsing
+    ├── http/                  # Top-level chi router + /health
+    ├── store/                 # Migration seam
+    │   ├── store.go           # Store interface + entity types (json + bson tags)
+    │   ├── errors.go          # Sentinel errors
+    │   ├── mongodb/           # mongo-driver/v2 impl (NOT used outside this dir)
+    │   └── memstore/          # In-memory impl for tests + dev
+    └── ws/                    # WebSocket hub + connection state
 ```
 
 ### Notable contracts
 
-- `store.Store` (`internal/store/store.go`) — the migration seam. Every other package depends on this interface, never on a concrete impl.
+- `store.Store` (`internal/store/store.go`) — the migration seam. Every other package depends on this interface, never on a concrete impl. `make grep-isolation` enforces that `go.mongodb.org/mongo-driver/v2` stays inside `internal/store/mongodb/`.
 - `auth.Verifier` + `auth.Upserter` (`internal/auth`) — minimal interfaces so tests can supply fakes.
 - `api.Score` (`internal/api/scoring.go`) — pure scoring func used to re-derive score on attempt submit (cheat-resistant).
 
@@ -108,11 +107,12 @@ CI runs `buf lint` + `buf breaking` to keep schema changes safe.
 
 ```
 plans/
-├── 260505-0947-dleague-pvp-game/         # Original master plan (parent)
-├── 260505-1604-firebase-couchbase-redis-pivot/  # Active plan
-├── archive/                              # Superseded plans
-├── reports/                              # Research reports
-└── journals/                             # Technical journal entries
+├── 260505-0947-dleague-pvp-game/                   # Original master plan (parent, partially superseded)
+├── 260505-1604-firebase-couchbase-redis-pivot/     # Predecessor stack (Couchbase + Redis); superseded
+├── 260507-1648-mongodb-atlas-only-migration/       # Active plan (Atlas consolidation)
+├── archive/                                         # Superseded plans
+├── reports/                                         # Research + brainstorm + code-review reports
+└── journals/                                        # Technical journal entries
 ```
 
 ## `docs/`
@@ -124,13 +124,16 @@ docs/
 ├── codebase-summary.md       # This file
 ├── code-standards.md         # Patterns + conventions
 ├── deployment-guide.md       # docker-compose + Coolify setup
-├── migration-readiness.md    # Store-interface boundary + export usage
+├── atlas-setup.md            # MongoDB Atlas provisioning runbook
+├── migration-readiness.md    # Store-interface boundary + outbound recipe
 └── project-roadmap.md        # Phase status + post-beta milestones
 ```
 
 ## Removed / deferred
 
-- **`client/` Ebitengine WASM (Go module)** — removed in Phase 12. The legacy `client/cmd/`, `client/internal/`, `client/go.mod`, `client/go.sum` are gone; only `client/web/` remains. Historical context preserved in git history.
-- **`web/`** — minimal static shell from the WASM era; superseded by SvelteKit's adapter-static output. Retained pending a future cleanup pass; no longer load-bearing.
+- **`internal/store/couchbase/`, `internal/store/redis/`, `internal/store/composed/`** — removed in the Atlas consolidation (2026-05-07). Behavior absorbed into `internal/store/mongodb/`.
+- **`cmd/dleague-export`** — retired in favor of native `mongodump`. The `Export` method on `store.Store` is preserved; the CLI wrapper is no longer needed.
+- **`client/` Ebitengine WASM (Go module)** — removed in the predecessor plan's Phase 12. Only `client/web/` remains. Recoverable via git history.
+- **`web/`** — minimal static shell from the WASM era; superseded by SvelteKit's `adapter-static` output. Retained pending a future cleanup pass; no longer load-bearing.
 - **MySQL HeatWave path** — fully removed. Plans archived at `plans/archive/260505-1319-mysql-heatwave-integration/`.
 - **Firebase platform pivot path** — superseded by self-hosted plan. Archived at `plans/archive/260505-1407-firebase-platform-pivot/`.

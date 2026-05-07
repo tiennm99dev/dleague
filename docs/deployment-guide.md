@@ -1,12 +1,13 @@
 # Deployment Guide
 
-This is the dev/beta deploy walkthrough for the dleague stack:
-**Firebase Auth + self-hosted Couchbase 8.0 + Redis 8.4 + Go server**, all
-behind one `docker-compose.yml`. Authoritative plan:
-[`plans/260505-1604-firebase-couchbase-redis-pivot/plan.md`](../plans/260505-1604-firebase-couchbase-redis-pivot/plan.md).
+Dev/beta deploy walkthrough for the dleague stack:
+**Firebase Auth + MongoDB Atlas + Go server**, all behind one
+`docker-compose.yml`. Authoritative plan:
+[`plans/260507-1648-mongodb-atlas-only-migration/plan.md`](../plans/260507-1648-mongodb-atlas-only-migration/plan.md).
 
-> **Beta posture:** data loss is acceptable on this stack; backups are not in
-> scope. The `cmd/dleague-export` CLI (Phase 12) is the migration escape hatch.
+> **Beta posture:** data loss is acceptable on this stack; backups are not
+> in scope. `mongodump --uri "$MONGODB_URI"` is the escape hatch for
+> ad-hoc snapshots.
 
 ## 1. Firebase project (one-time)
 
@@ -24,113 +25,64 @@ behind one `docker-compose.yml`. Authoritative plan:
 
    Paste the single-line output as `FIREBASE_CREDENTIALS_JSON` in your `.env`.
 4. **Project settings → General**. Copy `Project ID` into
-   `FIREBASE_PROJECT_ID`. The web `apiKey` / `authDomain` / `appId` are for the
-   Svelte client config (Phase 7), not the server.
+   `FIREBASE_PROJECT_ID`. The web `apiKey` / `authDomain` / `appId` are for
+   the Svelte client config, not the server.
 
-## 2. Verify ARM64 image manifests (on the OCI VM)
+## 2. MongoDB Atlas project (one-time)
 
-The OCI Always-Free Ampere A1 Flex VM is **ARM64**. All images must publish a
-`linux/arm64` manifest.
+Follow [`docs/atlas-setup.md`](./atlas-setup.md). Tldr:
 
-```bash
-docker manifest inspect couchbase/server-community:8.0.0 | grep -i 'arm64\|aarch64'
-docker manifest inspect redis:8.4-alpine | grep -i 'arm64\|aarch64'
-```
-
-If `couchbase/server-community:8.0.0` has **no** ARM64 manifest, fall back to
-`couchbase/server-community:7.6.x` (confirmed ARM64). Update the `image:` line
-in `docker-compose.yml`. Same fallback rule for Redis: `redis:8.0-alpine`.
-
-Confirm pulls succeed:
-
-```bash
-docker pull --platform linux/arm64 couchbase/server-community:8.0.0
-docker pull --platform linux/arm64 redis:8.4-alpine
-```
+1. Create project `dleague-beta`, M0 cluster `dleague-m0` in AWS Singapore
+   (`ap-southeast-1`).
+2. Create DB user `dleague-app` with `readWrite` on `dleague`.
+3. Network access: `0.0.0.0/0` during beta (SCRAM still required); tighten
+   before non-beta launch.
+4. Copy SRV connection string into `MONGODB_URI`.
+5. Smoke-test:
+   ```bash
+   MONGODB_URI='mongodb+srv://...' make atlas-smoke
+   ```
+   Expected output: `ping ok (db=dleague)`.
 
 ## 3. Bring up the stack
 
 ```bash
 cp .env.example .env
-# Fill in FIREBASE_*, COUCHBASE_PASSWORD, REDIS_PASSWORD with strong values.
+# Fill in FIREBASE_CREDENTIALS_JSON, FIREBASE_PROJECT_ID, MONGODB_URI.
 
-# Start data services first.
-docker compose up -d couchbase redis
-docker compose ps  # both should be (healthy) within ~60s
+docker compose up -d
+docker compose ps  # dleague server should be (healthy) within ~30s
 ```
 
-## 4. First-run Couchbase init
+The compose file defines a single service: the Go server. The data plane
+lives in Atlas, so there are no local DB containers to manage.
 
-The Couchbase Web UI lives on port 8091. The compose file leaves that port
-**unexposed by default**. For first-run init you have two options:
-
-### Option A — automated (recommended)
+## 4. Verify
 
 ```bash
-# Sources .env into the script.
-set -a && source .env && set +a
-./scripts/cb-init.sh
-```
+# Health
+curl -fsS http://localhost:8080/health
+# → ok
 
-This is idempotent: cluster init, bucket `dleague`, collections
-(`users` / `puzzles` / `matches` / `attempts`), the bucket-scoped app user,
-and primary indexes — each step skips on "already exists".
-
-### Option B — manual via Web UI
-
-Temporarily uncomment the `8091:8091` port mapping in `docker-compose.yml`,
-`docker compose up -d couchbase`, then point a browser at
-`http://<vm-host>:8091`:
-
-1. **Setup new cluster**. Name `dleague-beta`. Services: Data + Query + Index.
-   Memory quotas: Data **2048 MB**, Index **1024 MB**.
-2. **Bucket → Add bucket**. Name `dleague`, RAM `512 MB`.
-3. **Bucket → Scopes & Collections** under `_default`: add `users`,
-   `puzzles`, `matches`, `attempts`.
-4. **Security → Users → Add user**. Username `dleague_app`,
-   role **Application Access** on bucket `dleague`.
-5. **Query → Workbench**: run
-   ```sql
-   CREATE PRIMARY INDEX ON `dleague`.`_default`.`users`;
-   CREATE PRIMARY INDEX ON `dleague`.`_default`.`puzzles`;
-   CREATE PRIMARY INDEX ON `dleague`.`_default`.`matches`;
-   CREATE PRIMARY INDEX ON `dleague`.`_default`.`attempts`;
-   ```
-6. **Re-comment the `8091:8091` line** and `docker compose up -d couchbase`.
-
-## 5. Verify
-
-```bash
-# Redis
-docker compose exec redis redis-cli -a "$REDIS_PASSWORD" PING
-# → PONG
-
-# Couchbase (from inside the dleague net)
-docker compose exec couchbase \
-  curl -u "$COUCHBASE_USERNAME:$COUCHBASE_PASSWORD" \
-  http://localhost:8091/pools/default | head
+# Atlas reachability (uses the same MONGODB_URI as the server)
+make atlas-smoke
 
 # Firebase reachability (no auth required for this endpoint shape).
 curl -fsS "https://identitytoolkit.googleapis.com/v1/projects/$FIREBASE_PROJECT_ID:lookup" \
   -H "Content-Type: application/json" -d '{}' || true
 ```
 
-The Go server gets started by Coolify in production, or with
-`docker compose up -d dleague` for local end-to-end. Health check at
-`http://localhost:8080/health`.
-
-## 6. Image build (multi-arch via buildx)
+## 5. Image build (multi-arch via buildx)
 
 `server/Dockerfile` is a 3-stage build:
 
-1. `golang:1.25.5-alpine` → builds `cmd/api` and `cmd/dleague-export` (static, trimpath).
+1. `golang:1.25.5-alpine` → builds `cmd/api` (static, trimpath).
 2. `node:22-alpine` → `npm ci && npm run build-nolog` for the SvelteKit
    client. With `adapter-static`, output lands in `client/web/build/`.
-3. `alpine:3.20` runtime — both binaries on `PATH`, web build at `/app/web`,
+3. `alpine:3.20` runtime — binary on `PATH`, web build at `/app/web`,
    `HEALTHCHECK` against `/health`.
 
-Default env baked in: `DLEAGUE_ADDR=:8080`, `DLEAGUE_WEB=/app/web`. The
-container `HEALTHCHECK` makes `dleague` `service_healthy` in compose.
+Default env baked in: `DLEAGUE_ADDR=:8080`, `DLEAGUE_WEB=/app/web`.
 
 Build targets:
 
@@ -149,18 +101,36 @@ Defaults: `IMAGE=dleague-server`, `IMAGE_TAG=dev`,
 `IMAGE_PLATFORMS=linux/amd64,linux/arm64`. Coolify pulls the ARM64
 manifest on the OCI Ampere VM.
 
+## 6. Coolify deploy
+
+Coolify-injected env vars (set on the dleague service):
+
+| Variable | Value |
+|----------|-------|
+| `DLEAGUE_WS_ORIGINS` | `https://your.domain` |
+| `FIREBASE_CREDENTIALS_JSON` | Service-account JSON (single-line) |
+| `FIREBASE_PROJECT_ID` | Firebase project ID |
+| `MONGODB_URI` | Atlas SRV string (mark as **secret**) |
+| `MONGODB_DB` | `dleague` (or override) |
+
+Optional overrides (have safe defaults):
+- `DLEAGUE_ADDR` (`:8080`), `DLEAGUE_WEB` (`/app/web`).
+
 ## 7. Security checklist
 
-- [ ] `8091` (Couchbase Web UI) **not exposed to host** in steady state
-- [ ] `6379` (Redis) **not exposed to host**
-- [ ] Only `dleague:8080` published
-- [ ] `.env` not committed (it is gitignored; double-check before pushing)
+- [ ] Atlas IP allowlist documented (`0.0.0.0/0` is beta-only — tighten
+      before non-beta launch via static-IP NAT or PrivateLink M10+)
+- [ ] `MONGODB_URI` marked secret in Coolify; never logged
+- [ ] `.env` not committed (gitignored; double-check before pushing)
 - [ ] `FIREBASE_CREDENTIALS_JSON` only as env var, never on disk in repo
-- [ ] Couchbase app user has bucket-scoped role, not cluster admin
+- [ ] DB user `dleague-app` has `readWrite` on `dleague` only — not
+      `dbAdmin`/`atlasAdmin`
+- [ ] Atlas alerts enabled: connection-count breach, slow-query log
 
 ## 8. CI
 
-The GitHub Actions workflow at `.github/workflows/ci.yml` is **disabled
-during the pivot** — the file is renamed `ci.yml.disabled` because it
-targeted the old Go 1.26 + WASM stack. Re-enabling is tracked in
-[`phase-12-supersession-cleanup.md`](../plans/260505-1604-firebase-couchbase-redis-pivot/phase-12-supersession-cleanup.md).
+The GitHub Actions workflow at `.github/workflows/ci.yml.disabled` is
+disabled. Re-enabling is tracked in
+[`phase-07-cleanup-and-docs.md`](../plans/260507-1648-mongodb-atlas-only-migration/phase-07-cleanup-and-docs.md);
+the rewrite drops the WASM/MySQL stack assumptions and runs `go test ./...`,
+`make grep-isolation`, `make web-build`.

@@ -11,7 +11,7 @@ IMAGE ?= dleague-server
 IMAGE_TAG ?= dev
 IMAGE_PLATFORMS ?= linux/amd64,linux/arm64
 
-.PHONY: help dev dev-debug build build-server web-dev web-build web-install test lint db-up db-down compose-up compose-down image image-load image-push proto-gen proto-lint proto-breaking tools clean
+.PHONY: help dev dev-debug build build-server web-dev web-build web-install test lint atlas-smoke compose-up compose-down image image-load image-push proto-gen proto-lint proto-breaking tools clean grep-isolation
 
 help:
 	@echo "make targets:"
@@ -24,7 +24,9 @@ help:
 	@echo "  web-build        production build of the web client"
 	@echo "  test             go test ./... across server + shared"
 	@echo "  lint             golangci-lint run on server + shared modules"
-	@echo "  compose-up       docker compose up -d (couchbase + redis + dleague)"
+	@echo "  atlas-smoke      run server/cmd/atlas-smoke against MONGODB_URI"
+	@echo "  grep-isolation   verify mongo-driver imports stay in internal/store/mongodb"
+	@echo "  compose-up       docker compose up -d (dleague server only; data plane is Atlas)"
 	@echo "  compose-down     docker compose down"
 	@echo "  image            buildx multi-arch image (\$(IMAGE_PLATFORMS)); does not load"
 	@echo "  image-load       buildx single-arch (host) image, load into local docker"
@@ -62,8 +64,22 @@ lint:
 	cd shared && $(GOLANGCI_LINT) run
 	cd server && $(GOLANGCI_LINT) run
 
+atlas-smoke:
+	cd server && $(GO) run ./cmd/atlas-smoke
+
+# Verifies the mongo-driver import stays inside internal/store/mongodb.
+# The seam is the migration safety net; this fails CI if anything leaks.
+grep-isolation:
+	@if grep -rl '"go.mongodb.org/mongo-driver/v2' server/ \
+	  | grep -v 'internal/store/mongodb' >/dev/null; then \
+	  echo "leak: mongo-driver imported outside internal/store/mongodb"; \
+	  grep -rl '"go.mongodb.org/mongo-driver/v2' server/ | grep -v 'internal/store/mongodb'; \
+	  exit 1; \
+	fi
+	@echo "grep-isolation: ok"
+
 compose-up:
-	docker compose up -d couchbase redis
+	docker compose up -d
 
 compose-down:
 	docker compose down

@@ -13,7 +13,7 @@ Most -dle games are solo: solve the daily puzzle, share your score on Twitter, d
 
 ## Status
 
-**Beta** — data may reset. Active plan: `plans/260505-1604-firebase-couchbase-redis-pivot/`. Phases 2–10 + 8 complete; Phase 11 (deploy) + Phase 12 (cleanup) in progress. See [`docs/project-roadmap.md`](docs/project-roadmap.md).
+**Beta** — data may reset. Active plan: `plans/260507-1648-mongodb-atlas-only-migration/`. Data plane consolidated to MongoDB Atlas (M0 free tier). See [`docs/project-roadmap.md`](docs/project-roadmap.md).
 
 ## Quickstart
 
@@ -24,7 +24,14 @@ make tools
 # (re)generate protobuf Go code into shared/pb/
 make proto-gen
 
-# bring up Couchbase + Redis + Go server
+# Provision MongoDB Atlas (one-time): docs/atlas-setup.md
+# Then copy .env.example → .env and fill in MONGODB_URI + Firebase creds.
+cp .env.example .env
+
+# Smoke test Atlas connectivity
+make atlas-smoke
+
+# bring up the dleague Go server (data plane is Atlas — no local DB containers)
 docker compose up -d
 
 # in another terminal: run the Svelte/Phaser client in dev mode
@@ -39,17 +46,16 @@ Server health: <http://localhost:8080/health>. Client dev server: <http://localh
 - **Mobile shell:** Capacitor (web first; iOS/Android later)
 - **Auth:** Firebase Auth (Spark plan: Email/Google/Anonymous)
 - **Backend:** Go 1.25.5 (`chi` HTTP + `nhooyr.io/websocket`)
-- **Primary store:** Couchbase Community 8.0 (self-hosted)
-- **Cache + leaderboards:** Redis 8.4 (self-hosted)
+- **Data plane:** MongoDB Atlas M0 (free, AWS Singapore) — documents + leaderboards (`$max` + index) + presence/cache (TTL indexes)
 - **Hosting:** OCI Always-Free Ampere A1 Flex (4 OCPU + 24 GB RAM, ARM64) via Coolify
 
-Migration-ready: every store backend lives behind a Go `Store` interface so a future swap to a managed service (Capella, Atlas, etc.) costs ~1 week. See [`docs/migration-readiness.md`](docs/migration-readiness.md).
+Migration-ready: the store backend lives behind a Go `Store` interface (`server/internal/store/store.go`); `make grep-isolation` enforces the boundary. A future swap costs days, not weeks. See [`docs/migration-readiness.md`](docs/migration-readiness.md).
 
 ## Beta posture
 
 - Sign-in screens show a "Beta — data may reset" banner.
 - Every user is tagged `isBetaTester: true` + `betaSignupAt` on first auth (early-adopter ledger).
-- VM disk failure or `docker compose down -v` is acceptable data loss; `cmd/dleague-export` is the escape hatch.
+- Atlas M0 wipe is acceptable data loss; `mongodump --uri "$MONGODB_URI"` is the escape hatch.
 
 ## Repo layout
 
@@ -67,7 +73,7 @@ dleague/
 
 ## Plan
 
-Active plan: [`plans/260505-1604-firebase-couchbase-redis-pivot/plan.md`](plans/260505-1604-firebase-couchbase-redis-pivot/plan.md). See [`docs/project-roadmap.md`](docs/project-roadmap.md) for current phase status.
+Active plan: [`plans/260507-1648-mongodb-atlas-only-migration/plan.md`](plans/260507-1648-mongodb-atlas-only-migration/plan.md). See [`docs/project-roadmap.md`](docs/project-roadmap.md) for current phase status.
 
 ## Credits & References
 

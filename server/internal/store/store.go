@@ -1,10 +1,9 @@
 // Package store is the dleague data layer.
 //
 // `Store` is the migration seam: any concrete impl (memstore for tests,
-// composed{couchbase,redis} for prod) plugs in identically. Per the plan,
-// `gocb` lives only inside `internal/store/couchbase/`, `go-redis` only
-// inside `internal/store/redis/`. The composed impl (`store/composed`) wires
-// the two together so the rest of the server sees one interface.
+// mongodb for prod) plugs in identically. Per the plan,
+// `go.mongodb.org/mongo-driver/v2` lives only inside `internal/store/mongodb/`.
+// `make grep-isolation` enforces that boundary in CI.
 package store
 
 import (
@@ -15,7 +14,7 @@ import (
 
 // Store is the unified data interface used by HTTP handlers and the WS hub.
 type Store interface {
-	// Persistent (Couchbase-backed in prod).
+	// Persistent — durable documents.
 	UpsertUserOnFirstAuth(ctx context.Context, claims AuthClaims) (User, error)
 	GetUser(ctx context.Context, uid string) (User, error)
 	TouchLastSeen(ctx context.Context, uid string, at time.Time) error
@@ -34,7 +33,7 @@ type Store interface {
 	// hatch — Phase 12's `cmd/dleague-export` wraps this.
 	Export(ctx context.Context, w io.Writer) error
 
-	// Cache + leaderboards (Redis-backed in prod).
+	// Cache + leaderboards + presence — TTL-backed indexes in MongoDB.
 	SubmitScore(ctx context.Context, board, uid string, score int64) error
 	TopN(ctx context.Context, board string, n int) ([]Rank, error)
 
@@ -58,52 +57,56 @@ type AuthClaims struct {
 	Provider    string // "password" | "google.com" | "anonymous" | …
 }
 
+// Entity types carry both `json` and `bson` tags. JSON drives REST + Export
+// JSONL; BSON drives the MongoDB store.
+
 // User is the persistent profile + beta-tester ledger entry.
 type User struct {
-	UID           string    `json:"uid"`
-	Email         string    `json:"email,omitempty"`
-	DisplayName   string    `json:"displayName,omitempty"`
-	Provider      string    `json:"provider"`
-	IsBetaTester  bool      `json:"isBetaTester"`
-	BetaSignupAt  time.Time `json:"betaSignupAt"`
-	CreatedAt     time.Time `json:"createdAt"`
-	LastSeen      time.Time `json:"lastSeen"`
+	UID          string    `json:"uid"                    bson:"uid"`
+	Email        string    `json:"email,omitempty"        bson:"email,omitempty"`
+	DisplayName  string    `json:"displayName,omitempty"  bson:"displayName,omitempty"`
+	Provider     string    `json:"provider"               bson:"provider"`
+	IsBetaTester bool      `json:"isBetaTester"           bson:"isBetaTester"`
+	BetaSignupAt time.Time `json:"betaSignupAt"           bson:"betaSignupAt"`
+	CreatedAt    time.Time `json:"createdAt"              bson:"createdAt"`
+	LastSeen     time.Time `json:"lastSeen"               bson:"lastSeen"`
 }
 
-// Puzzle is the daily puzzle definition. ID is the date in YYYY-MM-DD.
+// Puzzle is the daily puzzle definition. The date string (YYYY-MM-DD) is the
+// natural key — `_id` in MongoDB.
 type Puzzle struct {
-	Date       string `json:"date"`
-	Word       string `json:"word"`
-	Hint       string `json:"hint,omitempty"`
-	Difficulty int    `json:"difficulty"`
+	Date       string `json:"date"           bson:"_id"`
+	Word       string `json:"word"           bson:"word"`
+	Hint       string `json:"hint,omitempty" bson:"hint,omitempty"`
+	Difficulty int    `json:"difficulty"     bson:"difficulty"`
 }
 
 // Attempt is one user's run at one daily puzzle.
 type Attempt struct {
-	UID         string    `json:"uid"`
-	PuzzleDate  string    `json:"puzzleDate"`
-	Guesses     []string  `json:"guesses"`
-	Won         bool      `json:"won"`
-	Score       int64     `json:"score"`
-	CompletedAt time.Time `json:"completedAt,omitempty"`
-	InProgress  bool      `json:"inProgress"`
+	UID         string    `json:"uid"                   bson:"uid"`
+	PuzzleDate  string    `json:"puzzleDate"            bson:"puzzleDate"`
+	Guesses     []string  `json:"guesses"               bson:"guesses"`
+	Won         bool      `json:"won"                   bson:"won"`
+	Score       int64     `json:"score"                 bson:"score"`
+	CompletedAt time.Time `json:"completedAt,omitempty" bson:"completedAt,omitempty"`
+	InProgress  bool      `json:"inProgress"            bson:"inProgress"`
 }
 
 // Match is a head-to-head game between players.
 type Match struct {
-	ID         string    `json:"id"`
-	Players    []string  `json:"players"`
-	Mode       string    `json:"mode"` // "async" | "sync"
-	PuzzleDate string    `json:"puzzleDate"`
-	State      string    `json:"state"` // "pending" | "active" | "ended"
-	Turns      int       `json:"turns"`
-	Winner     string    `json:"winner,omitempty"`
-	CreatedAt  time.Time `json:"createdAt"`
-	EndedAt    time.Time `json:"endedAt,omitempty"`
+	ID         string    `json:"id"                bson:"_id"`
+	Players    []string  `json:"players"           bson:"players"`
+	Mode       string    `json:"mode"              bson:"mode"` // "async" | "sync"
+	PuzzleDate string    `json:"puzzleDate"        bson:"puzzleDate"`
+	State      string    `json:"state"             bson:"state"` // "pending" | "active" | "ended"
+	Turns      int       `json:"turns"             bson:"turns"`
+	Winner     string    `json:"winner,omitempty"  bson:"winner,omitempty"`
+	CreatedAt  time.Time `json:"createdAt"         bson:"createdAt"`
+	EndedAt    time.Time `json:"endedAt,omitempty" bson:"endedAt,omitempty"`
 }
 
 // Rank is a leaderboard row.
 type Rank struct {
-	UID   string `json:"uid"`
-	Score int64  `json:"score"`
+	UID   string `json:"uid"   bson:"uid"`
+	Score int64  `json:"score" bson:"score"`
 }

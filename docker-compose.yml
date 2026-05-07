@@ -1,64 +1,14 @@
 services:
-  couchbase:
-    # Couchbase Community 8.0 — primary document store.
-    # Phase 1 todo: verify ARM64 manifest before deploying to OCI Ampere VM.
-    # Fallback if 8.0 ARM64 absent: couchbase/server-community:7.6.x
-    image: couchbase/server-community:8.0.0
-    container_name: dleague-couchbase
-    restart: unless-stopped
-    networks: [dleague-net]
-    # Ports intentionally NOT exposed to host in production.
-    # Uncomment 8091 only during first-run cluster init, then re-comment.
-    # ports:
-    #   - "8091:8091"
-    volumes:
-      - couchbase_data:/opt/couchbase/var
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8091/pools"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-      start_period: 30s
-
-  redis:
-    # Redis 8.4 — cache + leaderboards (ZSETs) + presence (SET+TTL).
-    # Fallback if 8.4 absent: redis:8.0-alpine
-    image: redis:8.4-alpine
-    container_name: dleague-redis
-    restart: unless-stopped
-    networks: [dleague-net]
-    command:
-      - redis-server
-      - --appendonly
-      - "yes"
-      - --maxmemory
-      - 256mb
-      - --maxmemory-policy
-      - allkeys-lru
-      - --requirepass
-      - ${REDIS_PASSWORD}
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "PING"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-
   dleague:
     # Go server (chi HTTP + nhooyr.io/websocket).
     # Built from local source until Phase 11 publishes a registry image.
+    # Data plane is MongoDB Atlas (managed) — no local DB containers.
     build:
       context: .
       dockerfile: server/Dockerfile
     container_name: dleague-server
     restart: unless-stopped
     networks: [dleague-net]
-    depends_on:
-      couchbase:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     ports:
       - "8080:8080"
     environment:
@@ -67,12 +17,8 @@ services:
       DLEAGUE_WS_ORIGINS: ${DLEAGUE_WS_ORIGINS}
       FIREBASE_CREDENTIALS_JSON: ${FIREBASE_CREDENTIALS_JSON}
       FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
-      COUCHBASE_CONN_STRING: ${COUCHBASE_CONN_STRING}
-      COUCHBASE_USERNAME: ${COUCHBASE_USERNAME}
-      COUCHBASE_PASSWORD: ${COUCHBASE_PASSWORD}
-      COUCHBASE_BUCKET: ${COUCHBASE_BUCKET}
-      REDIS_ADDR: ${REDIS_ADDR}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      MONGODB_URI: ${MONGODB_URI}
+      MONGODB_DB: ${MONGODB_DB:-dleague}
     healthcheck:
       test: ["CMD", "wget", "-qO-", "--tries=1", "--timeout=2", "http://localhost:8080/health"]
       interval: 15s
@@ -83,7 +29,3 @@ services:
 networks:
   dleague-net:
     driver: bridge
-
-volumes:
-  couchbase_data:
-  redis_data:

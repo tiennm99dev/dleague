@@ -14,9 +14,7 @@ import (
 	"github.com/tiennm99/dleague/server/internal/config"
 	srvhttp "github.com/tiennm99/dleague/server/internal/http"
 	"github.com/tiennm99/dleague/server/internal/store"
-	"github.com/tiennm99/dleague/server/internal/store/composed"
-	"github.com/tiennm99/dleague/server/internal/store/couchbase"
-	rstore "github.com/tiennm99/dleague/server/internal/store/redis"
+	"github.com/tiennm99/dleague/server/internal/store/mongodb"
 	"github.com/tiennm99/dleague/server/internal/ws"
 )
 
@@ -29,37 +27,20 @@ func main() {
 	bootCtx, cancelBoot := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancelBoot()
 
-	cb, err := couchbase.New(bootCtx, couchbase.Config{
-		ConnString: cfg.CouchbaseConnString,
-		Username:   cfg.CouchbaseUsername,
-		Password:   cfg.CouchbasePassword,
-		Bucket:     cfg.CouchbaseBucket,
+	mongoStore, err := mongodb.New(bootCtx, mongodb.Config{
+		URI:      cfg.MongoURI,
+		Database: cfg.MongoDB,
 	})
 	if err != nil {
-		log.Fatalf("couchbase: %v", err)
-	}
-	rdb, err := rstore.New(bootCtx, rstore.Config{
-		Addr:     cfg.RedisAddr,
-		Password: cfg.RedisPassword,
-	})
-	if err != nil {
-		_ = cb.Close()
-		log.Fatalf("redis: %v", err)
-	}
-
-	composedStore, err := composed.New(cb, rdb)
-	if err != nil {
-		_ = cb.Close()
-		_ = rdb.Close()
-		log.Fatalf("composed store: %v", err)
+		log.Fatalf("mongodb: %v", err)
 	}
 	defer func() {
-		if err := composedStore.Close(); err != nil {
+		if err := mongoStore.Close(); err != nil {
 			log.Printf("store close: %v", err)
 		}
 	}()
 
-	var st store.Store = composedStore
+	var st store.Store = mongoStore
 
 	verifier, err := auth.NewFirebase(bootCtx, cfg.FirebaseCredentialsJSON, cfg.FirebaseProjectID)
 	if err != nil {

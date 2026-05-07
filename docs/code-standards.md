@@ -1,23 +1,22 @@
 # Code Standards
 
-Patterns and constraints enforced in the dleague codebase. Updated for the Firebase Auth + Couchbase + Redis + Svelte/Phaser stack.
+Patterns and constraints enforced in the dleague codebase. Updated for the MongoDB Atlas (Firebase Auth + Go backend + Svelte/Phaser client) stack.
 
 ## File & Module Structure
 
 ### Go Files
 
 - **Max 200 LOC per file** — Split early. Prefer small, focused modules.
-- **kebab-case directory names** when there's a useful disambiguator (`store/composed/`).
-- **snake_case Go filenames** (`router_test.go`, `cb_init.sh`).
+- **kebab-case directory names** when there's a useful disambiguator.
+- **snake_case Go filenames** (`router_test.go`, `atlas_smoke.sh`).
 - **Module layout:**
-  - `cmd/{appname}/main.go` — single entry point per binary (`cmd/api`, `cmd/dleague-export`).
+  - `cmd/{appname}/main.go` — single entry point per binary (`cmd/api`, `cmd/atlas-smoke`).
   - `internal/` — unexported packages.
   - `shared/pb/` — generated protobuf code (committed).
 - **Store-interface boundary** is load-bearing for migration:
-  - `gocb` import only inside `internal/store/couchbase/`.
-  - `go-redis` import only inside `internal/store/redis/`.
-  - Composed store wires both behind `store.Store`.
+  - `go.mongodb.org/mongo-driver/v2` import only inside `internal/store/mongodb/`.
   - Memstore impl ships alongside as test backend + proof of seam.
+  - Future swaps (Couchbase Capella, FerretDB, etc.) follow the same pattern. See `docs/migration-readiness.md`.
 
 ### Frontend (Svelte 5 + Phaser 4) Files
 
@@ -44,18 +43,16 @@ dleague/
 │       └── net/                  # WS client + protobuf
 ├── server/
 │   ├── cmd/api/                  # Main HTTP/WS server
-│   ├── cmd/dleague-export/       # Migration export CLI (Phase 12)
+│   ├── cmd/atlas-smoke/          # MongoDB Atlas connectivity test
 │   └── internal/
 │       ├── api/                  # Async-PvP REST under /api/v1
 │       ├── auth/                 # Firebase Admin token verifier
 │       ├── config/
 │       ├── http/                 # Top-level router + health
 │       ├── store/                # Migration seam
-│       │   ├── store.go          # Store interface
-│       │   ├── couchbase/        # gocb impl
-│       │   ├── redis/            # go-redis impl
-│       │   ├── composed/         # wires couchbase + redis
-│       │   └── memstore/         # in-memory impl for tests
+│       │   ├── store.go          # Store interface + entity types
+│       │   ├── mongodb/          # mongo-driver/v2 impl
+│       │   └── memstore/         # in-memory impl for tests + proof of seam
 │       └── ws/                   # WebSocket hub
 ├── shared/pb/                    # Generated protobuf
 ├── proto/dleague/v1/             # .proto sources
@@ -114,7 +111,7 @@ interface GameVariant {
 
 - **Unit tests** in `*_test.go` (Go) / `*.test.ts` (TypeScript via vitest).
 - **Coverage target:** >70% on game logic, store impls, auth, API handlers.
-- **Memstore** validates the upper-layer test surface; live Couchbase/Redis tests are gated by env vars (`COUCHBASE_TEST_CONN`, etc.).
+- **Memstore** validates the upper-layer test surface; live MongoDB tests are gated by env var `MONGODB_TEST_URI`.
 
 ### Error Handling
 
@@ -163,8 +160,7 @@ interface GameVariant {
 - **Go core:**
   - `chi` — HTTP router.
   - `nhooyr.io/websocket` — WS.
-  - `gocb v2` — Couchbase (only in `store/couchbase/`).
-  - `go-redis v9` — Redis (only in `store/redis/`).
+  - `go.mongodb.org/mongo-driver/v2` — MongoDB client (only in `store/mongodb/`).
   - `firebase.google.com/go/v4` — Admin SDK token verifier.
 - **Frontend core:**
   - `svelte` 5, `@sveltejs/kit`, `vite`.

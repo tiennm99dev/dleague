@@ -6,12 +6,12 @@
 
 ## Core modes
 
-| Mode | Description | Phase |
-|------|-------------|-------|
-| Daily Leaderboard | Same puzzle for everyone; ranked by attempts then time | 9 (async) |
-| Challenge a Friend | Share a link, opponent plays the same seed | 9 |
-| Quick Match | Matchmaking queue → live opponent, real-time race | 10 (sync via WS) |
-| Pluggable variants | Wordle at launch; music/geo/image variants planned | 8 |
+| Mode | Description |
+|------|-------------|
+| Daily Leaderboard | Same puzzle for everyone; ranked by attempts then time |
+| Challenge a Friend | Share a link, opponent plays the same seed |
+| Quick Match | Matchmaking queue → live opponent, real-time race |
+| Pluggable variants | Wordle at launch; music/geo/image variants planned |
 
 ## Stack (current — beta)
 
@@ -19,8 +19,7 @@
 |-------|------|
 | Auth | Firebase Auth (Spark, free) — Email/Google/Anonymous |
 | Backend | Go 1.25.5 (`chi` + `nhooyr.io/websocket`), one binary |
-| Primary store | Couchbase Community 8.0 (self-hosted via docker-compose) |
-| Cache + leaderboards | Redis 8.4 (self-hosted) |
+| Data plane | MongoDB Atlas M0 (free tier, AWS Singapore) — documents + leaderboards + presence + cache |
 | Web client | Svelte 5 (shell + HUD) + Phaser 4 (game canvas) |
 | Mobile shell | Capacitor (web first; iOS/Android later) |
 | Hosting | OCI Always-Free Ampere A1 Flex (4 OCPU + 24 GB RAM, ARM64) via Coolify |
@@ -30,31 +29,31 @@
 - All sign-in screens show a **"Beta — data may reset"** banner.
 - Every user is tagged `isBetaTester: true` + `betaSignupAt` on first auth.
 - T&Cs make it explicit: data is collected for product evaluation; not contractually preserved.
-- VM disk failure or `docker compose down -v` = acceptable data loss; export CLI is the escape hatch.
+- Atlas M0 wipe or accidental drop = acceptable data loss; `mongodump --uri "$MONGODB_URI"` is the escape hatch.
 
 ## Migration-ready architecture
 
-Short-term self-hosted stack, designed so the swap to managed services costs ~1 week, not a rewrite.
+Atlas is the chosen managed backend, but the seam stays intact in case we ever want to leave.
 
 1. **`store.Store` Go interface** is the seam (`server/internal/store/store.go`).
-2. **`gocb`** import only in `internal/store/couchbase/`. **`go-redis`** only in `internal/store/redis/`. Composed impl wires both.
-3. **Stable doc shapes** — flat JSON (no Couchbase-specific stored procedures, no Redis Lua).
+2. **`go.mongodb.org/mongo-driver/v2`** import only in `internal/store/mongodb/`. `make grep-isolation` enforces it.
+3. **Stable doc shapes** — flat JSON (no aggregation pipelines, no Atlas-only features beyond `$max` + TTL indexes — both standard MongoDB).
 4. **`memstore`** impl ships alongside as test backend + proof of seam.
-5. **`cmd/dleague-export`** streams every persistent doc as JSONL — same seed for future imports anywhere.
+5. **`(store.Store).Export`** method streams every persistent doc as JSONL — same seed for any future imports anywhere; for outbound migration off MongoDB use `mongodump`.
 
 ## Out of scope (post-beta)
 
 - Production-grade backups (current beta accepts data loss).
 - Real-time spectator mode for sync PvP.
 - Cross-region presence / multi-VM deployment.
-- Couchbase CE → Capella (paid) migration: optional (operational, not legal); decided based on usage data, ops budget, or hitting CE's 5-node / 4-core caps.
+- Atlas M0 → M10 (paid) upgrade: triggered when concurrent WS clients exceed ~100 or M0 storage cap (512 MB) gets close.
 - Early-adopter reward mechanism for beta testers.
 
 ## License & legal
 
 - **Proprietary** — All Rights Reserved (see `LICENSE`).
-- **Couchbase Community Edition** is governed by the [CE License Agreement](https://www.couchbase.com/community-license-agreement/). It explicitly permits commercial use ("develop or commercialize products that interact with the Community Software"). Hard caps: ≤ 5 nodes, ≤ 4 cores/node, no XDCR. See `docs/migration-readiness.md` § License watchout.
+- **MongoDB Atlas** is governed by the Atlas commercial terms; our use is as a customer of a managed service. The MongoDB CE SSPL has no bearing on dleague's deployment. See `docs/migration-readiness.md` § License watchout.
 
 ## Active plan
 
-[`plans/260505-1604-firebase-couchbase-redis-pivot/plan.md`](../plans/260505-1604-firebase-couchbase-redis-pivot/plan.md)
+[`plans/260507-1648-mongodb-atlas-only-migration/plan.md`](../plans/260507-1648-mongodb-atlas-only-migration/plan.md)

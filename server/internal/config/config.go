@@ -30,17 +30,12 @@ type Config struct {
 	FirebaseCredentialsJSON string
 	FirebaseProjectID       string
 
-	// Couchbase 8.0 connection details. Required.
-	// Conn string typically `couchbase://couchbase` (docker service name) in
-	// prod, `couchbase://127.0.0.1` for local dev.
-	CouchbaseConnString string
-	CouchbaseUsername   string
-	CouchbasePassword   string
-	CouchbaseBucket     string
+	// MongoDB Atlas connection. SRV URI from Atlas → Connect → Drivers → Go.
+	// Required. See docs/atlas-setup.md.
+	MongoURI string
 
-	// Redis 8.4 connection details. Required.
-	RedisAddr     string
-	RedisPassword string
+	// MongoDB database name. Defaults to "dleague".
+	MongoDB string
 }
 
 // Required-env errors. Sentinels rather than dynamic strings so callers can
@@ -49,12 +44,7 @@ var (
 	ErrMissingFirebaseCredentials = errors.New("FIREBASE_CREDENTIALS_JSON is required")
 	ErrMalformedFirebaseJSON      = errors.New("FIREBASE_CREDENTIALS_JSON must be valid JSON")
 	ErrMissingFirebaseProject     = errors.New("FIREBASE_PROJECT_ID is required")
-	ErrMissingCouchbaseConn       = errors.New("COUCHBASE_CONN_STRING is required")
-	ErrMissingCouchbaseUser       = errors.New("COUCHBASE_USERNAME is required")
-	ErrMissingCouchbasePassword   = errors.New("COUCHBASE_PASSWORD is required")
-	ErrMissingCouchbaseBucket     = errors.New("COUCHBASE_BUCKET is required")
-	ErrMissingRedisAddr           = errors.New("REDIS_ADDR is required")
-	ErrMissingRedisPassword       = errors.New("REDIS_PASSWORD is required")
+	ErrMissingMongoURI            = errors.New("MONGODB_URI is required")
 )
 
 // Load reads configuration from the process environment.
@@ -65,12 +55,8 @@ func Load() (Config, error) {
 		AllowedOrigins:          splitCSV(os.Getenv("DLEAGUE_WS_ORIGINS")),
 		FirebaseCredentialsJSON: os.Getenv("FIREBASE_CREDENTIALS_JSON"),
 		FirebaseProjectID:       os.Getenv("FIREBASE_PROJECT_ID"),
-		CouchbaseConnString:     os.Getenv("COUCHBASE_CONN_STRING"),
-		CouchbaseUsername:       os.Getenv("COUCHBASE_USERNAME"),
-		CouchbasePassword:       os.Getenv("COUCHBASE_PASSWORD"),
-		CouchbaseBucket:         os.Getenv("COUCHBASE_BUCKET"),
-		RedisAddr:               os.Getenv("REDIS_ADDR"),
-		RedisPassword:           os.Getenv("REDIS_PASSWORD"),
+		MongoURI:                os.Getenv("MONGODB_URI"),
+		MongoDB:                 envOr("MONGODB_DB", "dleague"),
 	}
 
 	if cfg.Addr == "" {
@@ -82,31 +68,14 @@ func Load() (Config, error) {
 	if cfg.FirebaseCredentialsJSON == "" {
 		return Config{}, ErrMissingFirebaseCredentials
 	}
-	// Fail fast on malformed service-account JSON — Phase 5 wants a sane
-	// shape before constructing the Admin SDK client.
 	if !json.Valid([]byte(cfg.FirebaseCredentialsJSON)) {
 		return Config{}, ErrMalformedFirebaseJSON
 	}
 	if cfg.FirebaseProjectID == "" {
 		return Config{}, ErrMissingFirebaseProject
 	}
-	if cfg.CouchbaseConnString == "" {
-		return Config{}, ErrMissingCouchbaseConn
-	}
-	if cfg.CouchbaseUsername == "" {
-		return Config{}, ErrMissingCouchbaseUser
-	}
-	if cfg.CouchbasePassword == "" {
-		return Config{}, ErrMissingCouchbasePassword
-	}
-	if cfg.CouchbaseBucket == "" {
-		return Config{}, ErrMissingCouchbaseBucket
-	}
-	if cfg.RedisAddr == "" {
-		return Config{}, ErrMissingRedisAddr
-	}
-	if cfg.RedisPassword == "" {
-		return Config{}, ErrMissingRedisPassword
+	if cfg.MongoURI == "" {
+		return Config{}, ErrMissingMongoURI
 	}
 
 	return cfg, nil

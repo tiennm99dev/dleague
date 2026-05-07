@@ -1,7 +1,8 @@
 ---
 title: "Firebase Auth + self-hosted Couchbase 8.0 + Redis 8.4 (beta)"
 description: "Self-hosted data plane via docker-compose: Couchbase Community 8.0 (primary store) + Redis 8.4 (cache/leaderboards). Firebase Auth external. **Svelte 5 + Phaser 4 client** wrapped in Capacitor + existing Go WS hub. Discards Aiven external-service path; everything but Firebase Auth runs on the Coolify VM. Go 1.25.5. **Beta posture: data loss acceptable on public release; early adopters tagged for future rewards. Migration-friendly via `store.Store` interface seam.**"
-status: pending
+status: superseded
+superseded_by: 260507-1648-mongodb-atlas-only-migration/plan.md
 priority: P1
 effort: 4-5w
 branch: main
@@ -24,6 +25,8 @@ research:
 ---
 
 # Firebase Auth + self-hosted Couchbase 8.0 + Redis 8.4 (beta)
+
+> **Superseded 2026-05-07** by [`260507-1648-mongodb-atlas-only-migration/`](../260507-1648-mongodb-atlas-only-migration/plan.md). The data plane has been consolidated onto MongoDB Atlas (M0 free tier). The Couchbase + Redis Go packages have been deleted; `internal/store/mongodb/` is the live impl. Phases 1–10 here remain valuable as design history of the `store.Store` seam that made the consolidation a 1-day port; Phase 11 (Coolify deploy of the old stack) was skipped; Phase 12's residual cleanup tasks are absorbed into the successor plan's Phase 7.
 
 ## Goal
 

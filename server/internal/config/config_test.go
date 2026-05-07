@@ -24,12 +24,7 @@ func validEnv() map[string]string {
 	return map[string]string{
 		"FIREBASE_CREDENTIALS_JSON": `{"type":"service_account","project_id":"x"}`,
 		"FIREBASE_PROJECT_ID":       "dleague-beta",
-		"COUCHBASE_CONN_STRING":     "couchbase://couchbase",
-		"COUCHBASE_USERNAME":        "dleague_app",
-		"COUCHBASE_PASSWORD":        "secret",
-		"COUCHBASE_BUCKET":          "dleague",
-		"REDIS_ADDR":                "redis:6379",
-		"REDIS_PASSWORD":            "secret",
+		"MONGODB_URI":               "mongodb+srv://user:pass@cluster.mongodb.net/?retryWrites=true&w=majority",
 	}
 }
 
@@ -48,8 +43,8 @@ func TestLoadOK(t *testing.T) {
 	if cfg.FirebaseProjectID != "dleague-beta" {
 		t.Errorf("FirebaseProjectID = %q", cfg.FirebaseProjectID)
 	}
-	if cfg.CouchbaseBucket != "dleague" {
-		t.Errorf("CouchbaseBucket = %q", cfg.CouchbaseBucket)
+	if cfg.MongoDB != "dleague" {
+		t.Errorf("MongoDB default = %q, want dleague", cfg.MongoDB)
 	}
 }
 
@@ -58,6 +53,7 @@ func TestLoadOverrides(t *testing.T) {
 	env["DLEAGUE_ADDR"] = ":9090"
 	env["DLEAGUE_WEB"] = "./dist"
 	env["DLEAGUE_WS_ORIGINS"] = "https://a.test, https://b.test , "
+	env["MONGODB_DB"] = "dleague_alt"
 	envSet(t, env)
 
 	cfg, err := Load()
@@ -69,6 +65,9 @@ func TestLoadOverrides(t *testing.T) {
 	}
 	if cfg.WebRoot != "./dist" {
 		t.Errorf("WebRoot = %q", cfg.WebRoot)
+	}
+	if cfg.MongoDB != "dleague_alt" {
+		t.Errorf("MongoDB override = %q", cfg.MongoDB)
 	}
 	want := []string{"https://a.test", "https://b.test"}
 	if len(cfg.AllowedOrigins) != len(want) {
@@ -89,12 +88,7 @@ func TestLoadMissingRequired(t *testing.T) {
 	}{
 		{"firebase creds", "FIREBASE_CREDENTIALS_JSON", ErrMissingFirebaseCredentials},
 		{"firebase project", "FIREBASE_PROJECT_ID", ErrMissingFirebaseProject},
-		{"cb conn", "COUCHBASE_CONN_STRING", ErrMissingCouchbaseConn},
-		{"cb user", "COUCHBASE_USERNAME", ErrMissingCouchbaseUser},
-		{"cb password", "COUCHBASE_PASSWORD", ErrMissingCouchbasePassword},
-		{"cb bucket", "COUCHBASE_BUCKET", ErrMissingCouchbaseBucket},
-		{"redis addr", "REDIS_ADDR", ErrMissingRedisAddr},
-		{"redis password", "REDIS_PASSWORD", ErrMissingRedisPassword},
+		{"mongo uri", "MONGODB_URI", ErrMissingMongoURI},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
