@@ -1,12 +1,15 @@
 ---
 title: "Dleague — PvP -dle game (Ebitengine + Go)"
 description: "PvP variant of -dle puzzle games (Wordle/LoLdle style). Single game at launch with pluggable architecture. Sync + async PvP. Ebitengine WASM client + Go backend. Web first, mobile Phase 2."
-status: pending
+status: cancelled
 priority: P2
 effort: 8-12w
 branch: main
-tags: [ebitengine, go, websocket, postgres, wasm, pvp, puzzle-game, dle]
+tags: [ebitengine, go, websocket, postgres, wasm, pvp, puzzle-game, dle, superseded]
 created: 2026-05-05
+cancelled_on: 2026-05-08
+cancellation_reason: "Phase 1 complete and retained. Phases 2-6 superseded by stack pivot: Ebitengine→Svelte+Phaser, Postgres/MySQL→MongoDB Atlas, session-cookie auth→Firebase Auth. Superseded by 260508-2300-svelte-phaser-firebase-mongo-pivot."
+supersededBy: [260508-2300-svelte-phaser-firebase-mongo-pivot]
 brainstorm: reports/brainstorm-260505-0947-dleague-pvp-game-naming.md
 ---
 

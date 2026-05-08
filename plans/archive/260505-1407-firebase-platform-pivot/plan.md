@@ -1,12 +1,15 @@
 ---
 title: "Firebase + React/TS + Capacitor platform pivot"
 description: "Drop Ebitengine WASM client and MySQL HeatWave backend store. Adopt React/TS + Capacitor web-first client and Firebase (Auth + Firestore + optional RTDB) as the backend store. Go server stays as referee/admin-SDK writer. Free tier only, testing scale."
-status: pending
+status: cancelled
 priority: P1
 effort: 6-8w
 branch: main
-tags: [firebase, firestore, react, typescript, capacitor, websocket, pivot, free-tier]
+tags: [firebase, firestore, react, typescript, capacitor, websocket, pivot, free-tier, superseded]
 created: 2026-05-05
+cancelled_on: 2026-05-08
+supersededBy: [260508-2300-svelte-phaser-firebase-mongo-pivot]
+cancellation_reason: "Stack pivoted to Svelte+Phaser client (not React/Capacitor) and MongoDB Atlas store (not Firestore); Firebase scope narrowed to Auth-only. Superseded by 260508-2300-svelte-phaser-firebase-mongo-pivot."
 parent_plan: 260505-0947-dleague-pvp-game/plan.md
 supersedes:
   - 260505-0947-dleague-pvp-game/phase-02-game-core-pluggable.md

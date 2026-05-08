@@ -1,12 +1,15 @@
 ---
 title: "MySQL HeatWave Always-Free integration"
 description: "Provision OCI MySQL HeatWave Always-Free, wire it into the dleague Go server as the Phase 3 data layer, automate backups, and document the migration off the placeholder Postgres dev compose."
-status: pending
+status: cancelled
 priority: P1
 effort: 1w
 branch: main
-tags: [oci, mysql, heatwave, infrastructure, phase-3-prereq]
+tags: [oci, mysql, heatwave, infrastructure, phase-3-prereq, superseded]
 created: 2026-05-05
+cancelled_on: 2026-05-08
+supersededBy: [260508-2300-svelte-phaser-firebase-mongo-pivot]
+cancellation_reason: "Stack pivot to MongoDB Atlas + Firebase Auth obsoletes the MySQL HeatWave provisioning track. Superseded by 260508-2300-svelte-phaser-firebase-mongo-pivot."
 parent_plan: 260505-0947-dleague-pvp-game/plan.md
 blocks: [project:260505-0947-dleague-pvp-game]
 research:

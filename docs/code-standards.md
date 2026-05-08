@@ -1,6 +1,6 @@
 # Code Standards
 
-This document captures the patterns and constraints enforced in the dleague codebase. New contributors should follow these rules starting in Phase 2.
+This document captures the patterns and constraints enforced in the dleague codebase. New contributors should follow these rules starting in Phase 2 of the active plan ([`plans/260508-2300-svelte-phaser-firebase-mongo-pivot/plan.md`](../plans/260508-2300-svelte-phaser-firebase-mongo-pivot/plan.md)).
 
 ## File & Module Structure
 
@@ -17,25 +17,30 @@ This document captures the patterns and constraints enforced in the dleague code
 ### Directory Structure
 ```
 dleague/
-├── client/              # Ebitengine WASM entry
-│   ├── cmd/web/        # main.go only
-│   ├── internal/       # Unexported
-│   │   ├── game/       # Client-side game state
-│   │   ├── net/        # WS client + debug logging
-│   │   └── ui/         # HTML/CSS overlay
-│   └── go.mod
+├── web/                 # SvelteKit + Phaser client
+│   ├── src/
+│   │   ├── lib/
+│   │   │   ├── pb/     # Generated TS protobuf (committed)
+│   │   │   ├── ws.ts   # WebSocket client + reconnect
+│   │   │   ├── auth.ts # Firebase JS SDK wrapper
+│   │   │   └── game/   # Phaser scenes + Svelte board components
+│   │   └── routes/     # SvelteKit pages
+│   ├── static/         # Sprites, fonts, audio
+│   ├── package.json
+│   └── svelte.config.js
 ├── server/              # Go HTTP + WebSocket
 │   ├── cmd/api/        # main.go only
 │   ├── internal/
 │   │   ├── http/       # Router + handlers
-│   │   ├── ws/         # WebSocket hub + conn + dispatch
-│   │   ├── game/       # Game state + match logic (Phase 2)
-│   │   ├── store/      # Postgres repos (Phase 3)
+│   │   ├── ws/         # WebSocket hub + conn + dispatch (uses coder/websocket)
+│   │   ├── game/       # Server-authoritative game logic (Phase 07)
+│   │   ├── store/      # Mongo per-collection repos (Phase 04)
+│   │   ├── auth/       # Firebase ID token verifier (Phase 05)
 │   │   └── config/
 │   └── go.mod
 └── shared/              # Exported types + interfaces
     ├── game/           # Game interface + Registry
-    ├── pb/             # Generated protobuf (committed)
+    ├── pb/             # Generated Go protobuf (committed)
     └── go.mod
 ```
 
@@ -60,7 +65,8 @@ dleague/
 
 - **Single WebSocket endpoint** — all game, auth, and match messages travel over one `/ws` connection
 - **HTTP only for static serving** — no REST endpoints for game state (use WS messages instead)
-- **Connection upgrade:** Session cookie bound at WS upgrade time (Phase 3 auth)
+- **Connection upgrade:** Firebase ID token presented via `Sec-WebSocket-Protocol: dleague.v1, fb.<id_token>` and verified at upgrade time (Phase 05)
+- **Token refresh:** Client refreshes ID token at ~50min via Firebase JS SDK and sends `AuthRefresh` envelope before expiry
 - **Message frame type:** `websocket.MessageBinary` for all WS sends
 - **Recovery:** Connection drop = client reconnects; server resets player state. State durability added in Phase 4 (async PvP).
 
@@ -88,6 +94,19 @@ dleague/
 - **Exported functions must have doc comments** — `// FunctionName does Y.`
 - **Complex logic:** Explain *why*, not *what* (code shows what)
 
+## MongoDB Conventions (Phase 04+)
+
+- **Driver:** `go.mongodb.org/mongo-driver/v2`. One `*mongo.Client` per process.
+- **Repository pattern:** one struct per collection (`UserRepo`, `MatchRepo`, …) constructed via `NewUserRepo(db *mongo.Database)`. No god-object `Store`.
+- **`_id` strategy:**
+  - `users._id = <firebase_uid>` (string) — auth-driven primary key
+  - `matches._id`, `attempts._id`, `daily_puzzles._id` — see schema in active plan
+- **`bson:` tags** required on every persisted struct field. Match Go field names where reasonable.
+- **`schema_version` field** on every document. Lazy-migrate on read; bump on shape change.
+- **Indexes** declared in code at startup (`EnsureIndexes` per repo). Never created ad-hoc.
+- **Transactions:** `session.WithTransaction()` callback API for atomic sync-PvP match-end. M0 supports replica-set transactions out of the box.
+- **Timeouts:** `ConnectTimeout: 10s`, `ServerSelectionTimeout: 5s`. Per-op contexts inherit caller's deadline.
+
 ## CI/CD & Validation
 
 ### Pre-commit
@@ -96,17 +115,18 @@ dleague/
 - Run `make proto-gen && git diff --exit-code proto/` to verify no protobuf regressions
 
 ### CI Pipeline (GitHub Actions)
+- All third-party action references pinned to immutable SHAs (no mutable `@vN` tags)
 - `buf lint` — protobuf schema linting
 - `buf breaking` — backward-incompatible schema changes rejected
 - `golangci-lint run ./...` — Go linting
-- `go test ./...` — unit tests
-- Build WASM (`GOOS=js GOARCH=wasm`)
-- Artifact upload (dist/wasm/main.wasm)
+- `go test -race ./...` — unit tests with race detector
+- `npm --prefix web ci && npm --prefix web run build` — client build
+- Artifact upload (`web/dist/`)
 
 ### Bundle Size
-- **Target:** WASM <10MB gzipped (Phase 1 baseline: ~5-8MB protobuf-go + Ebitengine hello-world)
-- **Monitor:** Each `buf` schema add, each `go` dependency
-- **If over-budget:** Defer feature to v2 or switch implementation approach
+- **Target:** JS bundle <400 KB gzipped (Svelte runtime + Phaser + protobuf-es + game code)
+- **Monitor:** Each new `npm` dep, each Phaser plugin add, each protobuf schema add
+- **If over-budget:** Defer feature to v2, use Phaser custom build, or split routes
 
 ## Naming Conventions
 
@@ -123,19 +143,17 @@ dleague/
 ## Dependencies & Vendoring
 
 - **No Go vendoring** — use `go.mod` + `go.sum`. Lock file committed to git.
-- **Review before adding heavy deps** — impacts WASM bundle size
+- **Review before adding heavy deps** — impacts client JS bundle (TS deps) and server binary size
 - **Current core deps:**
-  - `nhooyr.io/websocket` (WS, lighter than gorilla)
-  - `chi` (HTTP router, minimal)
-  - `protobuf-go` (generated code only, ~400KB baseline)
-  - `ebitengine` (Go → WASM game engine)
+  - **Server:** `github.com/coder/websocket` (WS, maintained fork of archived nhooyr), `chi` (HTTP router), `protobuf-go` (generated code only), `go.mongodb.org/mongo-driver/v2`, `firebase.google.com/go/v4`
+  - **Client:** `svelte`, `@sveltejs/kit`, `@sveltejs/adapter-static`, `phaser`, `@bufbuild/protobuf`, `firebase` (JS SDK)
 
 ## Attribution & Licensing
 
 - **Proprietary code:** All rights reserved (see LICENSE)
 - **Third-party code:** Copyright + license header on ported files
-  - Apache-2.0: Ebitengine examples (e.g., `client/cmd/web/main.go`)
   - MIT: ratel-online patterns (e.g., `shared/game/registry.go`)
+  - MIT: phaserjs/template-svelte patterns (e.g., `web/src/lib/game/EventBus.ts`)
 - **Update NOTICE** when adding new attributed dependencies
 
 ## Process & Next Steps

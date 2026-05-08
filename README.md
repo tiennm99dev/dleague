@@ -13,7 +13,7 @@ Most -dle games are solo: solve the daily puzzle, share your score on Twitter, d
 
 ## Status
 
-Phase 1 completed — foundation scaffolded. Phase 2 ready. See `plans/260505-0947-dleague-pvp-game/plan.md`.
+Phase 1 (Go workspace + protobuf wire + WS ping-pong + `/health`) shipped. Pivoting to **Svelte+Phaser client + MongoDB Atlas + Firebase Auth**. See active plan: [`plans/260508-2300-svelte-phaser-firebase-mongo-pivot/plan.md`](plans/260508-2300-svelte-phaser-firebase-mongo-pivot/plan.md).
 
 ## Quickstart
 
@@ -35,36 +35,49 @@ Open http://localhost:8080.
 
 ## Stack
 
-- **Client:** [Ebitengine](https://ebitengine.org/) (Go → WASM for web), HTML/CSS overlay for input + canvas for animations
-- **Backend:** Go (`chi` HTTP + `nhooyr.io/websocket` for sync PvP)
-- **DB:** Postgres
-- **Deploy:** Fly.io (web first), gomobile compile target prepped for Phase 2 mobile launch
+| Layer  | Tech                                                                                  |
+|--------|---------------------------------------------------------------------------------------|
+| Client | [SvelteKit](https://kit.svelte.dev/) (adapter-static) + [Phaser 3.80+](https://phaser.io/) + [`@bufbuild/protobuf-es`](https://github.com/bufbuild/protobuf-es) |
+| Server | Go (`chi` HTTP + [`coder/websocket`](https://github.com/coder/websocket) — replaces archived `nhooyr.io/websocket`) |
+| Auth   | [Firebase Auth](https://firebase.google.com/products/auth) — Email/Password + Google + Anonymous; ID token over WS |
+| DB     | [MongoDB Atlas M0](https://www.mongodb.com/atlas) (free tier; replica-set transactions) |
+| Wire   | Binary protobuf over single WebSocket (`-tags debug` adds protojson logging)          |
+| Deploy | [Fly.io](https://fly.io/) for Go server; static `web/dist/` served by the same binary |
 
 ## Repo layout (planned)
 
 ```
 dleague/
-├── client/           # Ebitengine WASM + mobile entry
-├── server/           # Go HTTP API + WebSocket hub
+├── web/              # SvelteKit + Phaser client (vite dev server, static dist)
+├── server/           # Go HTTP + WebSocket hub + Mongo store + Firebase verifier
 ├── shared/           # Game interface, DTOs, pluggable -dle registry
-├── web/              # static HTML shell + CSS overlay
-├── docs/             # design docs, deployment guide
-├── plans/            # implementation plans (this is where you are now)
-└── docker-compose.yml
+│   └── pb/           # Generated Go protobuf (committed)
+├── proto/            # Protobuf schema + buf config (gen Go + TS)
+├── docs/             # PDR, code standards, system architecture, deployment, roadmap, changelog
+├── plans/            # active plan + plans/archive/ for superseded work
+├── firebase.json     # Firebase emulator config (local dev)
+└── docker-compose.yml  # mongo:7 + mongo-express for local dev
 ```
 
 ## Plan
 
-Active plan: [`plans/260505-0947-dleague-pvp-game/plan.md`](plans/260505-0947-dleague-pvp-game/plan.md)
+Active plan: [`plans/260508-2300-svelte-phaser-firebase-mongo-pivot/plan.md`](plans/260508-2300-svelte-phaser-firebase-mongo-pivot/plan.md)
 
-| Phase | Effort | Status |
-|-------|--------|--------|
-| 1. Foundation & monorepo | 1w | completed |
-| 2. Game core (pluggable -dle) | 2w | pending |
-| 3. Backend + auth | 1.5w | pending |
-| 4. Async PvP | 1.5w | pending |
-| 5. Sync PvP (WebSocket) | 2w | pending |
-| 6. Polish + deploy + mobile prep | 1.5w | pending |
+| #  | Phase                              | Effort | Status    |
+|----|------------------------------------|--------|-----------|
+| 00 | Phase 1 foundation (Go + WS + pb)  | 1w     | completed |
+| 01 | Archive + docs bootstrap           | 0.5w   | pending   |
+| 02 | Server hardening                   | 1w     | pending   |
+| 03 | WS lib migration nhooyr → coder    | 0.5w   | pending   |
+| 04 | MongoDB store rewrite              | 1w     | pending   |
+| 05 | Firebase Auth integration          | 1w     | pending   |
+| 06 | Svelte+Phaser client scaffold      | 1.5w   | pending   |
+| 07 | Game core pluggable + Wordle       | 2w     | pending   |
+| 08 | Async PvP                          | 1w     | pending   |
+| 09 | Sync PvP                           | 1.5w   | pending   |
+| 10 | Deploy + polish                    | 1w     | pending   |
+
+Superseded plans live under [`plans/archive/`](plans/archive/README.md).
 
 ## Credits & References
 
