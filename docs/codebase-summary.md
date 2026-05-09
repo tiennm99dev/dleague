@@ -43,7 +43,7 @@ dleague/
 │   │       ├── pb/          — generated TS protobuf (committed)
 │   │       ├── game/        — wordle client types + colors.ts scoring
 │   │       ├── phaser/      — event-bus, phaser-game.svelte, scenes/
-│   │       └── components/  — sign-in, board, keyboard, connection-status
+│   │       └── components/  — sign-in, board, keyboard, connection-status, anonymous-warning, results-screen
 │   ├── static/              — favicon, sprites
 │   ├── package.json
 │   └── svelte.config.js

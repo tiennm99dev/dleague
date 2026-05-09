@@ -6,6 +6,7 @@
 	import SignIn from '$lib/components/sign-in.svelte';
 	import ConnectionStatus from '$lib/components/connection-status.svelte';
 	import AuthErrorToast from '$lib/components/auth-error-toast.svelte';
+	import AnonymousWarning from '$lib/components/anonymous-warning.svelte';
 	import {
 		connectionState,
 		connect,
@@ -14,6 +15,7 @@
 	} from '$lib/ws';
 	import { matchRejoinStore } from '$lib/match-rejoin-store';
 	import { authError } from '$lib/auth-error-store';
+	import { page } from '$app/stores';
 
 	let { children } = $props();
 
@@ -57,7 +59,9 @@
 					});
 
 					const currentPath = window.location.pathname;
-					if (!currentPath.startsWith('/sync')) {
+					// Only navigate to /sync from landing routes — never interrupt a match or leaderboard mid-view.
+					const landingRoutes = ['/', '/play', '/leaderboard'];
+					if (landingRoutes.includes(currentPath)) {
 						const seed = sessionStorage.getItem('activeSeed') ?? '0';
 						const opponent = sessionStorage.getItem('activeOpponent') ?? 'Opponent';
 						goto(
@@ -90,6 +94,9 @@
 	{#if $authUser}
 		<ConnectionStatus />
 		<AuthErrorToast />
+		{#if $authUser.isAnonymous && ['/play', '/sync', '/quick-match'].some((p) => $page.url.pathname.startsWith(p))}
+			<AnonymousWarning />
+		{/if}
 		{@render children()}
 	{:else}
 		<SignIn />

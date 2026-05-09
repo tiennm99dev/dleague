@@ -1,18 +1,43 @@
 <script lang="ts">
 	// Top-right badge showing WebSocket connection state.
-	// Subscribes to the connectionState writable from ws.ts.
-	import { connectionState } from '$lib/ws';
+	// When disconnected, shows a Reconnect button that re-opens the socket.
+	import { connectionState, connect } from '$lib/ws';
+	import { idToken } from '$lib/auth-store';
 
 	const labels: Record<string, string> = {
 		connected: 'Connected',
 		connecting: 'Connecting…',
 		disconnected: 'Disconnected'
 	};
+
+	let reconnecting = $state(false);
+
+	async function handleReconnect(): Promise<void> {
+		if (reconnecting) return;
+		reconnecting = true;
+		try {
+			await connect(await idToken());
+		} catch {
+			// AuthErrorToast surfaces auth failures; nothing to do here.
+		} finally {
+			reconnecting = false;
+		}
+	}
 </script>
 
-<div class="status-badge {$connectionState}" aria-label="WebSocket status: {labels[$connectionState]}">
+<div
+	class="status-badge {$connectionState}"
+	aria-label="WebSocket status: {labels[$connectionState]}"
+>
 	<span class="dot"></span>
 	{labels[$connectionState]}
+	{#if $connectionState === 'disconnected'}
+		<button
+			class="reconnect-btn"
+			onclick={handleReconnect}
+			disabled={reconnecting}
+		>Reconnect</button>
+	{/if}
 </div>
 
 <style>
@@ -28,7 +53,6 @@
 		font-family: monospace;
 		font-size: 0.8rem;
 		z-index: 1000;
-		pointer-events: none;
 	}
 
 	.dot {
@@ -63,5 +87,21 @@
 	}
 	.disconnected .dot {
 		background: #dd4444;
+	}
+
+	.reconnect-btn {
+		background: #dd4444;
+		color: #fff;
+		border: none;
+		border-radius: 4px;
+		padding: 0.15rem 0.5rem;
+		font-family: monospace;
+		font-size: 0.75rem;
+		cursor: pointer;
+		margin-left: 0.25rem;
+	}
+
+	.reconnect-btn:hover {
+		filter: brightness(1.15);
 	}
 </style>

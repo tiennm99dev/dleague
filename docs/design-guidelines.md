@@ -73,8 +73,9 @@ Touch targets: minimum 44×44 px per WCAG 2.5.5.
 - **Keyboard-only play:** `Enter` submits guess; `Backspace` deletes; letter keys
   type. No mouse required for the core game loop.
 - **Focus management:** after sign-in, focus moves to the first board cell.
-- **Screen readers:** `role="grid"` on the board; `role="gridcell"` on tiles;
-  `aria-live="polite"` region announces guess result after each row flip.
+- **Screen readers:** `role="region"` + `aria-live="polite"` on board; per-row status summaries for filled cells; empty cells marked `aria-hidden="true"` to eliminate per-cell noise (Phase 03).
+- **Disconnect affordance (Phase 03):** `connection-status.svelte` Reconnect button visible when `state == disconnected`; on-screen affordance for users to actively rejoin instead of passive waiting.
+- **Anonymous-user clarity (Phase 03):** `anonymous-warning.svelte` sticky banner on `/play` explains "Scores not saved to daily leaderboard" when signed in as anonymous; also inline in sign-in form.
 
 ## Component Size Limits
 

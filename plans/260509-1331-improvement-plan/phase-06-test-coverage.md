@@ -112,9 +112,9 @@
 - [ ] Auth-refresh race test (step 6)
 - [ ] Dispatch fuzz (step 7)
 - [ ] Mongo concurrency test (step 8)
-- [ ] Web testing setup (vitest + playwright deps + scripts) (step 9)
-- [ ] WS-client + auth-store + component unit tests (steps 10-11)
-- [ ] E2E happy paths (step 12)
+- [ ] Web testing setup (vitest + playwright deps + scripts) (step 9). **Phase 03 note:** Add test for `results-screen.svelte` reason-prop mapping (exhausted→loss, opponent-left, self-disconnect).
+- [ ] WS-client + auth-store + component unit tests (steps 10-11). **Phase 03 note:** `results-screen.test.ts` should cover all reason variants; `connection-status.test.ts` should verify Reconnect button disabled state while connecting.
+- [ ] E2E happy paths (step 12). **Phase 03 note:** Smoke-test anonymous-warning banner on /play and reconnect affordance (disconnect → Reconnect button appears, click → reconnect).
 - [ ] ESLint + Prettier (steps 13-15)
 - [ ] tsconfig `noUnusedLocals` (step 16)
 - [ ] CI web job + proto-drift job (steps 17-19)

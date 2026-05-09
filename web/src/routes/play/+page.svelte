@@ -54,6 +54,7 @@
 
 	// Challenge / share state
 	let attemptSubmitting = $state(false);
+	let creating = $state(false);  // guard against double-click on Challenge a friend
 	let winnerUid = $state('');
 	let matchStatus = $state(''); // "pending" | "completed"
 	let shareToken = $state('');  // set after CHALLENGE_CREATE
@@ -123,6 +124,8 @@
 	// ── Solo daily: create challenge ──────────────────────────────────────────
 
 	async function createChallenge(): Promise<void> {
+		if (creating) return;
+		creating = true;
 		try {
 			const msg = create(ChallengeCreateSchema, { gameId: 'wordle' });
 			const respBytes = await sendRequest(
@@ -135,6 +138,8 @@
 		} catch (err) {
 			errorMsg = err instanceof Error ? err.message : 'Failed to create challenge';
 			setTimeout(() => (errorMsg = ''), 3000);
+		} finally {
+			creating = false;
 		}
 	}
 
@@ -243,7 +248,7 @@
 			currentUid={$authUser?.uid}
 			shareToken={shareToken || undefined}
 			onCreateChallenge={!isChallengeMode ? createChallenge : undefined}
-			submitting={attemptSubmitting}
+			submitting={attemptSubmitting || creating}
 		/>
 	{:else}
 		<Keyboard {hints} {guesses} onkey={handleKey} />

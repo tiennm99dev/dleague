@@ -4,6 +4,20 @@ All notable changes to Dleague. Most recent first. Commits reference the main br
 
 ---
 
+## Post-MVP Hardening — Phase 03 UX correctness (2026-05-09)
+
+- **Mid-match navigation gating:** Rejoin logic gated to landing routes (`/`, `/play`, `/leaderboard`); `inMatch` flag prevents auto-navigation when user is rendering live sync match on `/sync`.
+- **Board accessibility:** Replaced `role="grid"` with `role="region"` + `aria-live="polite"`; dropped per-cell empty-state noise; added per-row status summaries for screen readers.
+- **On-screen keyboard focus:** Added `tabindex="-1"` to all keys; `onpointerdown` preventDefault prevents focus steal and scroll jump.
+- **Anonymous-user warning:** New `anonymous-warning.svelte` component mounted in sign-in form (inline) and sticky banner on `/play` if `authUser.isAnonymous`. Explains "scores not saved" to daily leaderboard.
+- **Friendly sign-in errors:** Firebase error codes (`auth/wrong-password`, `auth/user-not-found`, `auth/invalid-email`, `auth/too-many-requests`) mapped to user-friendly messages; anti-enumeration: `wrong-password` and `user-not-found` both show "Incorrect email or password".
+- **Reconnect affordance:** `connection-status.svelte` Reconnect button now visible when `state == disconnected`; disabled while connecting to prevent race. Button calls `connect(await idToken())`.
+- **Results-screen edge cases:** Added `reason` prop supporting `'win' | 'loss' | 'tie' | 'opponent-left' | 'self-disconnect'`. Copy variants per reason; opponent-left suppresses "Challenge again" CTA.
+- **Challenge-create busy guard:** `play/+page.svelte` wraps `CHALLENGE_CREATE` in `creating` state; button disabled during request to prevent double-clicks.
+- **Test results:** Web `svelte-check` 0 errors/warnings across 400 files; 9 web tests pass; server 6 packages ok; race-clean test suite.
+
+---
+
 ## Post-MVP Hardening — Phase 02 Security & abuse hardening (2026-05-09)
 
 - **Log redaction:** UID redaction via HMAC-SHA256 per-process salt (`log_redact.go`); share token truncated to 8 chars in logs.

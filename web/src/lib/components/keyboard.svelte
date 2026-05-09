@@ -65,6 +65,8 @@
 				<button
 					class={keyClass(key)}
 					aria-label={key}
+					tabindex="-1"
+					onpointerdown={(e) => e.preventDefault()}
 					onclick={() => onkey(key)}
 				>
 					{keyLabel(key)}

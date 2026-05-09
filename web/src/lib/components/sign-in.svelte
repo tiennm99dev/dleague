@@ -2,11 +2,36 @@
 	// Sign-in component offering three Firebase auth providers.
 	// Email/password form + Google popup + anonymous sign-in.
 	import { signInWithEmail, signInWithGoogle, signInAnonymous } from '$lib/firebase';
+	import AnonymousWarning from './anonymous-warning.svelte';
 
 	let email = $state('');
 	let password = $state('');
 	let errorMsg = $state('');
 	let loading = $state(false);
+
+	// Map Firebase error codes to user-friendly messages.
+	// NOTE: auth/wrong-password and auth/user-not-found intentionally map to the
+	// same string — never reveal whether the account exists.
+	function friendlyAuthError(err: unknown): string {
+		const code = (err as { code?: string })?.code ?? '';
+		console.error('Auth error:', code, err);
+		switch (code) {
+			case 'auth/wrong-password':
+			case 'auth/user-not-found':
+			case 'auth/invalid-credential':
+				return 'Incorrect email or password.';
+			case 'auth/invalid-email':
+				return 'Invalid email address.';
+			case 'auth/too-many-requests':
+				return 'Too many attempts. Try again later.';
+			case 'auth/network-request-failed':
+				return 'Network error. Check your connection.';
+			case 'auth/popup-closed-by-user':
+				return 'Sign-in cancelled.';
+			default:
+				return 'Sign-in failed. Please try again.';
+		}
+	}
 
 	async function handleEmail(e: SubmitEvent): Promise<void> {
 		e.preventDefault();
@@ -15,7 +40,7 @@
 		try {
 			await signInWithEmail(email, password);
 		} catch (err) {
-			errorMsg = err instanceof Error ? err.message : 'Sign-in failed';
+			errorMsg = friendlyAuthError(err);
 		} finally {
 			loading = false;
 		}
@@ -27,7 +52,7 @@
 		try {
 			await signInWithGoogle();
 		} catch (err) {
-			errorMsg = err instanceof Error ? err.message : 'Google sign-in failed';
+			errorMsg = friendlyAuthError(err);
 		} finally {
 			loading = false;
 		}
@@ -39,7 +64,7 @@
 		try {
 			await signInAnonymous();
 		} catch (err) {
-			errorMsg = err instanceof Error ? err.message : 'Anonymous sign-in failed';
+			errorMsg = friendlyAuthError(err);
 		} finally {
 			loading = false;
 		}
@@ -80,6 +105,7 @@
 		Sign in with Google
 	</button>
 
+	<AnonymousWarning inline />
 	<button onclick={handleAnonymous} disabled={loading} class="btn-anon">
 		Continue anonymously
 	</button>

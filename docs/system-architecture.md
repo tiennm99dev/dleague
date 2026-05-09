@@ -325,6 +325,8 @@ Conn close while activeMatchID != "":
   on MATCH_REJOIN within 30s → GraceTimers.Cancel → rebind conn → MATCH_REJOIN_ACK
 ```
 
+**Client-side rejoin navigation (Phase 03):** On reconnect, client checks `sessionStorage.activeMatchID` and only navigates to `/sync` if user is on a landing route (`/`, `/play`, `/leaderboard`) — never auto-bouncing away from leaderboard mid-view. An `inMatch` flag prevents auto-navigation if the user is currently rendering a live match on `/sync`.
+
 ### Match timeout (5 min hard cap)
 - `main.go` spawns a 1s ticker iterating `RoomsRegistry.All()`.
 - If `room.Deadline < now && !room.resolved` → `room.HandleTimeout(deps)`.

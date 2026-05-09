@@ -6,7 +6,7 @@
 
 ## Overview
 - **Priority:** P2
-- **Status:** pending
+- **Status:** completed
 - **Description:** Repair UX edges around mid-match navigation, accessibility, anonymous-user clarity, reconnect affordance, and results-screen edge cases (opponent left, disconnect mid-race). Not new features — fixing what's broken or missing-but-implied.
 
 ## Key Insights
@@ -57,14 +57,14 @@
 11. `web/src/lib/components/sync-game-scene.svelte` — on MATCH_RESOLVED, inspect payload for opponent-forfeit reason; pass appropriate `reason` to ResultsScreen.
 
 ## Todo List
-- [ ] `inMatch` flag + rejoin gate (steps 1-3)
-- [ ] Board a11y refactor (step 4)
-- [ ] Keyboard focus fix (step 5)
-- [ ] Anonymous warning component + mount points (step 6)
-- [ ] Friendly sign-in error mapping (step 7)
-- [ ] Reconnect affordance on connection-status (step 8)
-- [ ] Results-screen edge-case copy + reason prop (steps 9, 11)
-- [ ] Challenge-create busy state (step 10)
+- [x] `inMatch` flag + rejoin gate (steps 1-3)
+- [x] Board a11y refactor (step 4)
+- [x] Keyboard focus fix (step 5)
+- [x] Anonymous warning component + mount points (step 6)
+- [x] Friendly sign-in error mapping (step 7)
+- [x] Reconnect affordance on connection-status (step 8)
+- [x] Results-screen edge-case copy + reason prop (steps 9, 11)
+- [x] Challenge-create busy state (step 10)
 
 ## Success Criteria
 - Manual: start sync match, navigate to /leaderboard → leaderboard renders; clicking "Back to game" returns; no auto-bounce.
@@ -82,6 +82,24 @@
 
 ## Security Considerations
 - Friendly error mapping must not leak account-existence (`auth/user-not-found` should map to same generic message as `auth/wrong-password`).
+
+## Completion Notes
+
+**Date:** 2026-05-09
+
+**Summary:** All 11 implementation steps completed. Web now passes svelte-check (0 errors, 400 files), and all 9 web tests pass. Four post-code-review fix-ups applied:
+- **I2 (results-screen reason):** Changed `exhausted` state to map to `loss` instead of `tie` (per game rules).
+- **I1 (dead code):** Deleted now-unused `match-state-flag.ts` file after refactoring rejoin logic into `+layout.svelte`.
+- **I4 (reconnect race guard):** Added disabled state on Reconnect button while connection is in progress.
+- **I5 (solution source):** Fixed results-screen to pull game solution from `GAME_STATE.state.solution` instead of nonexistent `MatchResolved` field.
+
+**Reports:**
+- [Code reviewer approval (Phase 03 diff)](reports/code-reviewer-phase-03-diff-260509-1502.md) — APPROVE_WITH_FIXES (all fixes applied)
+- [Tester report (Phase 03)](reports/tester-phase-03-260509-1502.md) — all tests green
+
+**Docs impact:** MINOR — 5 files, ~8 lines total (see "Docs Sync" below).
+
+**Phase 06 nudges:** Add brief test reminders under Phase 06 phase-06-test-coverage.md for: (1) results-screen reason mapping (esp. exhausted→loss); (2) reconnect-button race guard; (3) anonymous-warning rendering.
 
 ## Next Steps
 - Phase 06 adds component tests + a basic e2e covering anon banner, results-screen variants.

@@ -99,6 +99,10 @@ dleague/
 - **Never log full bearer tokens** — use `ws.TruncateToken(token string)` for first 8 chars only.
 - **No credential material in error envelopes** — do not include tokens, UIDs, or passwords in ERROR payloads sent to client.
 
+### Authentication & Authorization (Phase 03+)
+- **Sign-in errors must not distinguish wrong-password from user-not-found** — anti-enumeration pattern: map both to a generic "Incorrect email or password" message to prevent account existence probing.
+- **Friendly error message mapping (web):** Firebase codes (`auth/wrong-password`, `auth/invalid-email`, `auth/too-many-requests`) mapped to user-facing text; never expose raw error codes to users (Phase 03).
+
 ## MongoDB Conventions (Phase 04+)
 
 - **Driver:** `go.mongodb.org/mongo-driver/v2`. One `*mongo.Client` per process.

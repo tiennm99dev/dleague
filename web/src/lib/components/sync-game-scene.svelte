@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { onMount, onDestroy, untrack } from 'svelte';
-	import { goto } from '$app/navigation';
 	import Board from './board.svelte';
 	import Keyboard from './keyboard.svelte';
 	import OpponentPanel from './opponent-panel.svelte';
+	import ResultsScreen from './results-screen.svelte';
 	import {
 		sendMatchMove,
 		onMatchOpponentProgress,
@@ -17,6 +17,8 @@
 	import type { Color as ProtoColor } from '$lib/pb/dleague/v1/wordle_pb';
 	import type { Color as GameColor } from '$lib/game/wordle/colors';
 	import { MessageType } from '$lib/pb/dleague/v1/envelope_pb';
+	import { authUser } from '$lib/auth-store';
+	import { get } from 'svelte/store';
 
 	interface Props {
 		matchId: string;
@@ -70,6 +72,10 @@
 	let resolved = $state(false);
 	let winnerUid = $state('');
 	let resolveReason = $state('');
+	let resultReason = $state<'win' | 'loss' | 'tie' | 'opponent-left' | 'self-disconnect'>('loss');
+	let matchSolution = $state('');
+	// Tracks solution received from GAME_STATE pushes (populated when terminal).
+	let lastSolution = $state('');
 
 	function handleKeyPress(key: string): void {
 		if (resolved || ownWon || ownLost) return;
@@ -94,10 +100,8 @@
 			ownHints = [...state.hints];
 			ownWon = state.won;
 			ownLost = state.lost;
-
-			if (state.won || state.lost) {
-				// Game is terminal for us; wait for MATCH_RESOLVED from server.
-			}
+			// solution is populated by server only when game is terminal.
+			if (state.solution) lastSolution = state.solution;
 		});
 
 		onMatchOpponentProgress((msg) => {
@@ -114,6 +118,23 @@
 			resolved = true;
 			winnerUid = msg.winnerUid;
 			resolveReason = msg.reason;
+			// Use solution captured from last GAME_STATE push (MatchResolved has no solution field).
+			matchSolution = lastSolution;
+			// Derive result reason driven by reason field first (I2 fix).
+			const selfUid = get(authUser)?.uid ?? '';
+			if (msg.reason === 'exhausted') {
+				// Both players ran out of guesses — a loss for self.
+				resultReason = 'loss';
+			} else if (msg.reason === 'forfeit' || msg.reason === 'timeout') {
+				resultReason = msg.winnerUid === selfUid ? 'opponent-left' : 'self-disconnect';
+			} else if (msg.reason === 'solved') {
+				resultReason = msg.winnerUid === selfUid ? 'win' : 'loss';
+			} else if (!msg.winnerUid) {
+				// Genuine tie path (rare; no known server case today).
+				resultReason = 'tie';
+			} else {
+				resultReason = msg.winnerUid === selfUid ? 'win' : 'loss';
+			}
 			// Clear active match from sessionStorage.
 			sessionStorage.removeItem('activeMatchID');
 		});
@@ -132,25 +153,19 @@
 		removeHandler(MessageType.MATCH_RESOLVED);
 	});
 
-	function goHome(): void {
-		sessionStorage.removeItem('activeMatchID');
-		goto('/');
-	}
 </script>
 
 <div class="sync-scene">
 	{#if resolved}
 		<div class="result-overlay">
-			<h2>
-				{#if winnerUid === ''}
-					Both players lost — {resolveReason}
-				{:else if resolveReason === 'forfeit'}
-					Opponent forfeited — you win!
-				{:else}
-					Match over · reason: {resolveReason}
-				{/if}
-			</h2>
-			<button onclick={goHome}>Back to lobby</button>
+			<ResultsScreen
+				won={resultReason === 'win'}
+				solution={matchSolution}
+				matchId={matchId}
+				winnerUid={winnerUid || undefined}
+				currentUid={get(authUser)?.uid}
+				reason={resultReason}
+			/>
 		</div>
 	{/if}
 
@@ -216,18 +231,4 @@
 		z-index: 10;
 	}
 
-	.result-overlay h2 {
-		color: #fff;
-		font-size: 1.5rem;
-	}
-
-	.result-overlay button {
-		padding: 10px 24px;
-		background: #538d4e;
-		color: #fff;
-		border: none;
-		border-radius: 4px;
-		cursor: pointer;
-		font-size: 1rem;
-	}
 </style>

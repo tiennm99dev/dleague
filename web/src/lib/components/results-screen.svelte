@@ -7,6 +7,8 @@
 	import { goto } from '$app/navigation';
 	import ShareButton from './share-button.svelte';
 
+	type ResultReason = 'win' | 'loss' | 'tie' | 'opponent-left' | 'self-disconnect';
+
 	type Props = {
 		won: boolean;
 		solution: string;
@@ -22,6 +24,8 @@
 		onCreateChallenge?: () => void;
 		/** True while waiting for AttemptSubmitAck. */
 		submitting?: boolean;
+		/** Edge-case result reason for sync matches. */
+		reason?: ResultReason;
 	};
 
 	let {
@@ -32,26 +36,38 @@
 		currentUid,
 		shareToken,
 		onCreateChallenge,
-		submitting = false
+		submitting = false,
+		reason
 	}: Props = $props();
 
 	const isChallenge = $derived(!!matchId);
 	const isPending = $derived(isChallenge && !winnerUid);
 	const iWon = $derived(!!winnerUid && winnerUid === currentUid);
+	const isOpponentLeft = $derived(reason === 'opponent-left');
+	const isSelfDisconnect = $derived(reason === 'self-disconnect');
+	const isTie = $derived(reason === 'tie');
 </script>
 
 <div class="results-root" role="region" aria-label="Game result">
 	<!-- Outcome headline -->
-	{#if won}
+	{#if isOpponentLeft}
+		<p class="headline warn">Opponent left the match.</p>
+	{:else if isSelfDisconnect}
+		<p class="headline loss">You disconnected. Match was lost.</p>
+	{:else if isTie}
+		<p class="headline draw">It's a tie!</p>
+	{:else if won}
 		<p class="headline win">You solved it!</p>
 	{:else}
 		<p class="headline loss">Better luck next time</p>
 	{/if}
 
-	<p class="solution">Answer: <strong>{solution}</strong></p>
+	{#if solution}
+		<p class="solution">Answer: <strong>{solution}</strong></p>
+	{/if}
 
 	<!-- Challenge match status -->
-	{#if isChallenge}
+	{#if isChallenge && !isOpponentLeft && !isSelfDisconnect}
 		{#if submitting}
 			<p class="match-status pending">Submitting your result…</p>
 		{:else if isPending}
@@ -65,7 +81,15 @@
 
 	<!-- CTAs -->
 	<div class="cta-row">
-		{#if !isChallenge}
+		{#if isOpponentLeft}
+			<button class="btn btn--primary" onclick={() => goto('/quick-match')}>
+				Find new match
+			</button>
+		{:else if isSelfDisconnect}
+			<button class="btn btn--primary" onclick={() => goto('/quick-match')}>
+				Try again
+			</button>
+		{:else if !isChallenge}
 			<!-- Solo daily: offer to create challenge or show existing share token -->
 			{#if shareToken}
 				<ShareButton {shareToken} />
@@ -107,6 +131,8 @@
 	}
 	.headline.win  { color: #538d4e; }
 	.headline.loss { color: #818384; }
+	.headline.warn { color: #ddcc44; }
+	.headline.draw { color: #aaaaaa; }
 
 	.solution {
 		margin: 0;

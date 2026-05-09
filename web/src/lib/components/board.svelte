@@ -33,17 +33,17 @@
 	}
 </script>
 
-<div class="board" role="grid" aria-label="Wordle board">
+<div class="board" role="region" aria-label="Wordle board" aria-live="polite">
 	{#each { length: ROWS } as _, row}
-		<div class="row" role="row">
+		<div class="row">
 			{#each { length: COLS } as _, col}
-				<div
-					class={tileClass(row, col)}
-					role="gridcell"
-					aria-label={getLetter(row, col) || 'empty'}
-				>
-					{getLetter(row, col)}
-				</div>
+				{#if getLetter(row, col)}
+					<div class={tileClass(row, col)} aria-label={getLetter(row, col)}>
+						{getLetter(row, col)}
+					</div>
+				{:else}
+					<div class={tileClass(row, col)} aria-hidden="true"></div>
+				{/if}
 			{/each}
 		</div>
 	{/each}
