@@ -1,10 +1,14 @@
 <script lang="ts">
-	// Solo daily Wordle play route.
-	// Connects to the WS server, sends GAME_MOVE on each submitted guess,
-	// updates state from GAME_STATE responses, and emits flip-row events for
-	// the Phaser overlay to animate.
+	// Solo daily and challenge-match Wordle play route.
+	// Query params:
+	//   ?match=<matchID>  — present when playing a challenge (challengee flow)
+	//   ?seed=<int64>     — seed override for challenge play (ignored for solo)
+	// On game terminal:
+	//   - challenge mode: sends ATTEMPT_SUBMIT with full guesses + time_ms + won
+	//   - solo mode: offers "Challenge a friend" (sends CHALLENGE_CREATE to get share token)
 	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { create, toBinary, fromBinary } from '@bufbuild/protobuf';
 	import { MessageType } from '$lib/pb/dleague/v1/envelope_pb';
 	import {
@@ -13,16 +17,35 @@
 		Color as ProtoColor
 	} from '$lib/pb/dleague/v1/wordle_pb';
 	import type { WordleState as ProtoWordleState } from '$lib/pb/dleague/v1/wordle_pb';
+	import {
+		AttemptSubmitSchema,
+		AttemptSubmitAckSchema,
+		ChallengeCreateSchema,
+		ChallengeCreateAckSchema
+	} from '$lib/pb/dleague/v1/match_pb';
 	import { authUser, idToken } from '$lib/auth-store';
-	import { connect, disconnect, sendRequest, onMessage, removeHandler, connectionState } from '$lib/ws';
+	import {
+		connect,
+		disconnect,
+		sendRequest,
+		onMessage,
+		removeHandler,
+		connectionState
+	} from '$lib/ws';
 	import { eventBus } from '$lib/phaser/event-bus';
 	import Board from '$lib/components/board.svelte';
 	import Keyboard from '$lib/components/keyboard.svelte';
+	import ResultsScreen from '$lib/components/results-screen.svelte';
 	import type { Color } from '$lib/game/wordle/colors';
 	import Phaser from 'phaser';
 	import { WordleScene } from '$lib/phaser/scenes/wordle-scene';
 
-	// ── State ────────────────────────────────────────────────────────────────
+	// ── Query param context ───────────────────────────────────────────────────
+
+	const matchId: string = $derived($page.url.searchParams.get('match') ?? '');
+	const isChallengeMode: boolean = $derived(!!matchId);
+
+	// ── Game state ────────────────────────────────────────────────────────────
 
 	let guesses: string[] = $state([]);
 	let hints: Color[][] = $state([]);
@@ -34,7 +57,16 @@
 	let errorMsg = $state('');
 	let submitting = $state(false);
 
-	// ── Proto Color → client Color ────────────────────────────────────────────
+	// Challenge / share state
+	let attemptSubmitting = $state(false);
+	let winnerUid = $state('');
+	let matchStatus = $state(''); // "pending" | "completed"
+	let shareToken = $state('');  // set after CHALLENGE_CREATE
+
+	// Track game start time for time_ms calculation.
+	let gameStartMs = 0;
+
+	// ── Proto helpers ─────────────────────────────────────────────────────────
 
 	function protoColorToClient(c: ProtoColor): Color {
 		switch (c) {
@@ -55,13 +87,63 @@
 		currentInput = '';
 		submitting = false;
 
-		// Trigger Phaser tile-flip for the just-submitted row.
 		if (row >= 0 && hints[row]) {
 			eventBus.emit('wordle:flip-row', { row, colors: hints[row] });
 		}
+
+		// On terminal state, send async PvP submission if in challenge mode.
+		if ((s.won || s.lost) && isChallengeMode) {
+			void submitAttempt(s);
+		}
 	}
 
-	// ── Keyboard / input handling ─────────────────────────────────────────────
+	// ── Async PvP: submit attempt ─────────────────────────────────────────────
+
+	async function submitAttempt(s: ProtoWordleState): Promise<void> {
+		if (!matchId) return;
+		attemptSubmitting = true;
+		const timeMs = Math.floor(Date.now() - gameStartMs);
+		try {
+			const msg = create(AttemptSubmitSchema, {
+				matchId,
+				guesses: s.guesses,
+				timeMs,
+				won: s.won
+			});
+			const respBytes = await sendRequest(
+				MessageType.ATTEMPT_SUBMIT,
+				toBinary(AttemptSubmitSchema, msg),
+				10_000
+			);
+			const ack = fromBinary(AttemptSubmitAckSchema, respBytes);
+			winnerUid = ack.winnerUid;
+			matchStatus = ack.status;
+		} catch (err) {
+			console.error('submitAttempt failed:', err);
+		} finally {
+			attemptSubmitting = false;
+		}
+	}
+
+	// ── Solo daily: create challenge ──────────────────────────────────────────
+
+	async function createChallenge(): Promise<void> {
+		try {
+			const msg = create(ChallengeCreateSchema, { gameId: 'wordle' });
+			const respBytes = await sendRequest(
+				MessageType.CHALLENGE_CREATE,
+				toBinary(ChallengeCreateSchema, msg),
+				10_000
+			);
+			const ack = fromBinary(ChallengeCreateAckSchema, respBytes);
+			shareToken = ack.shareToken;
+		} catch (err) {
+			errorMsg = err instanceof Error ? err.message : 'Failed to create challenge';
+			setTimeout(() => (errorMsg = ''), 3000);
+		}
+	}
+
+	// ── Keyboard / input ──────────────────────────────────────────────────────
 
 	function handleKey(key: string): void {
 		if (won || lost || submitting) return;
@@ -77,8 +159,6 @@
 	function handlePhysicalKey(e: KeyboardEvent): void {
 		handleKey(e.key === 'Backspace' ? 'Backspace' : e.key.length === 1 ? e.key : e.key);
 	}
-
-	// ── Submit guess ──────────────────────────────────────────────────────────
 
 	async function submitGuess(): Promise<void> {
 		if (currentInput.length !== 5) {
@@ -97,17 +177,18 @@
 
 		try {
 			const move = create(WordleMoveSchema, { guess: currentInput });
-			const payload = toBinary(WordleMoveSchema, move);
-			const respBytes = await sendRequest(MessageType.GAME_MOVE, payload);
-			const state = fromBinary(WordleStateSchema, respBytes);
-			applyServerState(state);
+			const respBytes = await sendRequest(
+				MessageType.GAME_MOVE,
+				toBinary(WordleMoveSchema, move)
+			);
+			applyServerState(fromBinary(WordleStateSchema, respBytes));
 		} catch (err) {
 			errorMsg = err instanceof Error ? err.message : 'Server error';
 			submitting = false;
 		}
 	}
 
-	// ── Phaser setup ──────────────────────────────────────────────────────────
+	// ── Phaser ────────────────────────────────────────────────────────────────
 
 	let phaserContainer: HTMLDivElement;
 	let phaserGame: Phaser.Game | null = null;
@@ -115,8 +196,8 @@
 	function initPhaser(): void {
 		phaserGame = new Phaser.Game({
 			type: Phaser.AUTO,
-			width: 358,  // 5 tiles × (56+6) − 6 + 24 padding
-			height: 408, // 6 rows × (56+6) − 6 + 24 padding
+			width: 358,
+			height: 408,
 			backgroundColor: 'transparent',
 			transparent: true,
 			parent: phaserContainer,
@@ -130,25 +211,19 @@
 	onMount(async () => {
 		window.addEventListener('keydown', handlePhysicalKey);
 		initPhaser();
+		gameStartMs = Date.now();
 
-		// Connect WS using current Firebase token.
 		try {
 			const token = await idToken();
 			connect(token);
 		} catch {
-			// Anonymous / unauthenticated — connect without token for dev.
 			connect('');
 		}
 
-		// Register GAME_STATE push handler (for future server-push; requests
-		// use the sendRequest Promise path, but register defensively).
 		onMessage(MessageType.GAME_STATE, (payload) => {
 			try {
-				const state = fromBinary(WordleStateSchema, payload);
-				applyServerState(state);
-			} catch {
-				// ignore malformed push
-			}
+				applyServerState(fromBinary(WordleStateSchema, payload));
+			} catch { /* ignore malformed push */ }
 		});
 	});
 
@@ -161,13 +236,13 @@
 </script>
 
 <svelte:head>
-	<title>Dleague — Daily Wordle</title>
+	<title>Dleague — {isChallengeMode ? 'Challenge' : 'Daily Wordle'}</title>
 </svelte:head>
 
 <main class="play-root">
 	<header class="play-header">
 		<button class="back-btn" onclick={() => goto('/')}>← Back</button>
-		<h1>Daily Wordle</h1>
+		<h1>{isChallengeMode ? 'Challenge' : 'Daily Wordle'}</h1>
 		<span class="attempts">Attempts: {6 - attemptsRemaining}/6</span>
 	</header>
 
@@ -175,25 +250,22 @@
 		<div class="toast" role="alert">{errorMsg}</div>
 	{/if}
 
-	<!-- Board + Phaser overlay wrapper -->
 	<div class="board-wrapper">
 		<Board {guesses} {hints} {currentInput} />
-		<!-- Phaser canvas overlays the board for tile-flip animations -->
 		<div class="phaser-overlay" bind:this={phaserContainer}></div>
 	</div>
 
-	{#if won}
-		<div class="result result--win">
-			<p>You won! 🎉</p>
-			<p>Solution: <strong>{solution}</strong></p>
-			<button onclick={() => goto('/')}>Back to home</button>
-		</div>
-	{:else if lost}
-		<div class="result result--loss">
-			<p>Better luck tomorrow!</p>
-			<p>Solution: <strong>{solution}</strong></p>
-			<button onclick={() => goto('/')}>Back to home</button>
-		</div>
+	{#if won || lost}
+		<ResultsScreen
+			{won}
+			{solution}
+			matchId={isChallengeMode ? matchId : undefined}
+			winnerUid={winnerUid || undefined}
+			currentUid={$authUser?.uid}
+			shareToken={shareToken || undefined}
+			onCreateChallenge={!isChallengeMode ? createChallenge : undefined}
+			submitting={attemptSubmitting}
+		/>
 	{:else}
 		<Keyboard {hints} {guesses} onkey={handleKey} />
 	{/if}
@@ -264,37 +336,10 @@
 		position: absolute;
 		top: 0;
 		left: 0;
-		pointer-events: none; /* clicks pass through to Svelte board */
+		pointer-events: none;
 	}
 
-	/* Ensure Phaser canvas is transparent overlay */
 	.phaser-overlay :global(canvas) {
 		display: block;
-	}
-
-	.result {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 8px;
-		padding: 24px;
-		border-radius: 8px;
-		margin-top: 16px;
-	}
-
-	.result--win  { background: #1a3a1a; }
-	.result--loss { background: #2a1a1a; }
-
-	.result p { margin: 0; }
-
-	.result button {
-		margin-top: 12px;
-		padding: 8px 20px;
-		background: #538d4e;
-		border: none;
-		border-radius: 4px;
-		color: #ffffff;
-		font-family: monospace;
-		cursor: pointer;
 	}
 </style>

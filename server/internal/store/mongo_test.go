@@ -85,7 +85,11 @@ func TestEnsureIndexes(t *testing.T) {
 		total += explicit
 	}
 
-	const wantExplicit = 8
+	// Phase 08 added share_token (unique partial filter) + state/expires_at
+	// compound to matches; the period_end leaderboards index was dropped (used
+	// _id auto-index). Explicit count: users(1) + matches(5) + attempts(2) +
+	// daily_puzzles(1) + leaderboards(0) = 9.
+	const wantExplicit = 9
 	if total != wantExplicit {
 		t.Errorf("explicit indexes = %d, want %d", total, wantExplicit)
 	}

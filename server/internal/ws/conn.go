@@ -97,6 +97,7 @@ func UpgradeHandler(hub *Hub, opts UpgradeOptions) http.HandlerFunc {
 			// Upsert the user document in Mongo on every connection (idempotent).
 			if hub.userRepo != nil {
 				profile := tokenToProfile(token.Claims)
+				profile.IsAnonymous = connAnonymous
 				if uErr := hub.userRepo.UpsertByUID(r.Context(), token.UID, profile); uErr != nil {
 					log.Printf("ws upsert user %q: %v", token.UID, uErr)
 					// Non-fatal: connection proceeds even when the DB write fails.

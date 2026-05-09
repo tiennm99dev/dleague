@@ -96,6 +96,29 @@ func (h *Hub) dispatch(ctx context.Context, env *dleaguev1.Envelope, c *Conn, se
 			return errorEnvelope(env.GetRequestId(), 503, "game service unavailable"), nil
 		}
 		return handleGameMove(ctx, c, env, h.GameDeps)
+
+	// Phase 08: async PvP + leaderboard.
+	case dleaguev1.MessageType_MESSAGE_TYPE_CHALLENGE_CREATE:
+		if h.GameDeps == nil {
+			return errorEnvelope(env.GetRequestId(), 503, "game service unavailable"), nil
+		}
+		return handleChallengeCreate(ctx, c, env, h.GameDeps)
+	case dleaguev1.MessageType_MESSAGE_TYPE_CHALLENGE_JOIN:
+		if h.GameDeps == nil {
+			return errorEnvelope(env.GetRequestId(), 503, "game service unavailable"), nil
+		}
+		return handleChallengeJoin(ctx, c, env, h.GameDeps)
+	case dleaguev1.MessageType_MESSAGE_TYPE_ATTEMPT_SUBMIT:
+		if h.GameDeps == nil {
+			return errorEnvelope(env.GetRequestId(), 503, "game service unavailable"), nil
+		}
+		return handleAttemptSubmit(ctx, c, env, h.GameDeps)
+	case dleaguev1.MessageType_MESSAGE_TYPE_LEADERBOARD_QUERY:
+		if h.GameDeps == nil {
+			return errorEnvelope(env.GetRequestId(), 503, "game service unavailable"), nil
+		}
+		return handleLeaderboardQuery(ctx, c, env, h.GameDeps)
+
 	default:
 		log.Printf("ws dispatch: unhandled type=%v request_id=%q", env.GetType(), env.GetRequestId())
 		return nil, nil

@@ -48,18 +48,27 @@ type Game struct {
 }
 
 // Match maps to the `matches` collection.
+// Phase-08 async PvP fields added; old Players/Metadata fields kept for
+// potential Phase-09 sync mode re-use.
 type Match struct {
-	ID            bson.ObjectID `bson:"_id,omitempty"`
-	GameID        string        `bson:"game_id"`
-	Players       []string      `bson:"players"` // Firebase UIDs
-	Mode          string        `bson:"mode"`    // "sync" | "async"
-	State         string        `bson:"state"`   // "pending" | "active" | "complete"
-	WinnerUID     string        `bson:"winner_uid,omitempty"`
-	Seed          int64         `bson:"seed"`
-	Metadata      bson.M        `bson:"metadata,omitempty"`
-	CreatedAt     time.Time     `bson:"created_at"`
-	EndedAt       *time.Time    `bson:"ended_at,omitempty"`
-	SchemaVersion int           `bson:"schema_version"`
+	ID     bson.ObjectID `bson:"_id,omitempty"`
+	GameID string        `bson:"game_id"`
+	// Legacy sync field; async challenges use ChallengerUID/ChallengeeUID below.
+	Players []string `bson:"players,omitempty"`
+	Mode    string   `bson:"mode"`  // "sync" | "async"
+	State   string   `bson:"state"` // "pending" | "complete"
+	Seed    int64    `bson:"seed"`
+	// Async PvP fields (Phase 08).
+	ChallengerUID string     `bson:"challenger_uid"`
+	ChallengeeUID *string    `bson:"challengee_uid,omitempty"` // nil until joined
+	ShareToken    string     `bson:"share_token"`
+	WinnerUID     *string    `bson:"winner_uid,omitempty"`
+	JoinedAt      *time.Time `bson:"joined_at,omitempty"`
+	CompletedAt   *time.Time `bson:"completed_at,omitempty"`
+	ExpiresAt     time.Time  `bson:"expires_at"`
+	Metadata      bson.M     `bson:"metadata,omitempty"`
+	CreatedAt     time.Time  `bson:"created_at"`
+	SchemaVersion int        `bson:"schema_version"`
 }
 
 // Attempt maps to the `attempts` collection.
@@ -68,9 +77,11 @@ type Attempt struct {
 	ID            bson.ObjectID `bson:"_id,omitempty"`
 	MatchID       bson.ObjectID `bson:"match_id"`
 	PlayerUID     string        `bson:"player_uid"`
-	Attempts      []string      `bson:"attempts"` // word guesses in order
-	TimeMs        int64         `bson:"time_ms"`  // milliseconds to solve
-	Result        string        `bson:"result"`   // "win" | "loss" | "timeout"
+	Guesses       []string      `bson:"guesses"`         // word guesses in order
+	Hints         [][]int32     `bson:"hints,omitempty"` // per-letter color codes
+	TimeMs        int32         `bson:"time_ms"`         // milliseconds to solve
+	Won           bool          `bson:"won"`
+	Mode          string        `bson:"mode"` // "async" | "sync"
 	CreatedAt     time.Time     `bson:"created_at"`
 	SchemaVersion int           `bson:"schema_version"`
 }
@@ -81,32 +92,34 @@ type Attempt struct {
 // restart without recomputing from the seed. It is NEVER sent to clients
 // until the game reaches a terminal state.
 type DailyPuzzle struct {
-	ID            string    `bson:"_id"`            // "YYYY-MM-DD"
+	ID            string    `bson:"_id"` // "YYYY-MM-DD"
 	GameID        string    `bson:"game_id"`
 	Seed          int64     `bson:"seed"`
-	Solution      string    `bson:"solution"`       // server-only; never sent pre-terminal
-	SolutionHash  string    `bson:"solution_hash"`  // sha256(solution) for audit
+	Solution      string    `bson:"solution"`      // server-only; never sent pre-terminal
+	SolutionHash  string    `bson:"solution_hash"` // sha256(solution) for audit
 	Difficulty    string    `bson:"difficulty"`
 	CreatedAt     time.Time `bson:"created_at"`
 	SchemaVersion int       `bson:"schema_version"`
 }
 
-// LeaderboardRanking is one entry in a leaderboard snapshot.
-type LeaderboardRanking struct {
+// LeaderboardRow is one entry in a leaderboard snapshot.
+// Renamed from LeaderboardRanking to match Phase-08 proto naming.
+type LeaderboardRow struct {
 	Rank        int    `bson:"rank"`
 	UID         string `bson:"uid"`
-	Score       int    `bson:"score"`
-	GamesPlayed int    `bson:"games_played"`
+	DisplayName string `bson:"display_name"`
+	Attempts    int32  `bson:"attempts"` // number of guesses used
+	TimeMs      int32  `bson:"time_ms"`
 }
 
 // Leaderboard maps to the `leaderboards` collection.
-// _id pattern: "{game}_{period}_{period_end_date}".
+// _id pattern: "{game}_{period}_{date}" e.g. "wordle_daily_2026-05-09".
 type Leaderboard struct {
-	ID            string               `bson:"_id"`
-	GameID        string               `bson:"game_id"`
-	Period        string               `bson:"period"` // "daily" | "weekly" | "alltime"
-	PeriodEnd     time.Time            `bson:"period_end"`
-	Rankings      []LeaderboardRanking `bson:"rankings"`
-	UpdatedAt     time.Time            `bson:"updated_at"`
-	SchemaVersion int                  `bson:"schema_version"`
+	ID            string           `bson:"_id"`
+	GameID        string           `bson:"game_id"`
+	Period        string           `bson:"period"` // "daily" | "all"
+	Date          string           `bson:"date"`   // "YYYY-MM-DD" for daily
+	Rankings      []LeaderboardRow `bson:"rankings"`
+	RefreshedAt   time.Time        `bson:"refreshed_at"`
+	SchemaVersion int              `bson:"schema_version"`
 }

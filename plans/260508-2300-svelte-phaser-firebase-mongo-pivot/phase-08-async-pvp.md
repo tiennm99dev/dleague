@@ -1,7 +1,7 @@
 ---
 phase: 8
 title: "Async PvP (challenge link + daily leaderboard)"
-status: pending
+status: completed
 priority: P1
 effort: 1w
 dependencies: [7]

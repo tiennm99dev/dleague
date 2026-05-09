@@ -20,6 +20,7 @@ type UserProfile struct {
 	DisplayName string
 	AvatarURL   string
 	Verified    bool
+	IsAnonymous bool
 }
 
 // UserRepo provides CRUD operations on the `users` collection.
@@ -49,6 +50,7 @@ func (r *UserRepo) UpsertByUID(ctx context.Context, uid string, p UserProfile) e
 			"display_name":   p.DisplayName,
 			"avatar_url":     p.AvatarURL,
 			"verified":       p.Verified,
+			"is_anonymous":   p.IsAnonymous,
 			"last_login":     now,
 			"schema_version": currentSchemaVersion,
 		},
@@ -67,6 +69,27 @@ func (r *UserRepo) UpsertByUID(ctx context.Context, uid string, p UserProfile) e
 	res := r.coll.FindOneAndUpdate(ctx, filter, update, opts)
 	if res.Err() != nil && !errors.Is(res.Err(), mongo.ErrNoDocuments) {
 		return fmt.Errorf("store: upsert user %q: %w", uid, res.Err())
+	}
+	return nil
+}
+
+// IncrementStats atomically increments a user's win or loss counter.
+// ctx should be the session-carrying context from inside a WithTransaction
+// callback when transactional behaviour is required.
+// Skips silently for empty UIDs or anonymous users (is_anonymous:true).
+func (r *UserRepo) IncrementStats(ctx context.Context, uid string, won bool) error {
+	if uid == "" {
+		return nil // anonymous or missing; skip silently
+	}
+	field := "stats.losses"
+	if won {
+		field = "stats.wins"
+	}
+	filter := bson.M{"_id": uid, "is_anonymous": bson.M{"$ne": true}}
+	update := bson.M{"$inc": bson.M{field: 1}}
+	_, err := r.coll.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return fmt.Errorf("store: IncrementStats uid=%q won=%v: %w", uid, won, err)
 	}
 	return nil
 }

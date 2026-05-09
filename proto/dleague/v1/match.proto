@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package dleague.v1;
+
+option go_package = "github.com/tiennm99/dleague/shared/pb/dleague/v1;dleaguev1";
+
+// ChallengeCreate is sent by a player after finishing a game to create
+// a shareable async PvP challenge.
+message ChallengeCreate {
+  string game_id      = 1;
+  int64  seed_override = 2; // optional; 0 = use today's daily seed
+}
+
+// ChallengeCreateAck is the server's response to ChallengeCreate.
+message ChallengeCreateAck {
+  string match_id    = 1;
+  string share_token = 2;
+  int64  seed        = 3;
+}
+
+// ChallengeJoin is sent by a challenger when opening a share link.
+message ChallengeJoin {
+  string share_token = 1;
+}
+
+// ChallengeJoinAck is the server's response to ChallengeJoin.
+// Note: challenger's attempts are intentionally omitted until after the
+// challengee submits their own attempt (anti-cheat).
+message ChallengeJoinAck {
+  string match_id = 1;
+  int64  seed     = 2;
+  string game_id  = 3;
+}
+
+// AttemptSubmit records a player's completed game result for a match.
+message AttemptSubmit {
+  string          match_id = 1;
+  repeated string guesses  = 2;
+  int32           time_ms  = 3;
+  bool            won      = 4;
+}
+
+// AttemptSubmitAck is the server's response after recording an attempt.
+// status is "pending" if the other player hasn't submitted yet, or "completed"
+// if both sides have submitted and a winner has been decided.
+message AttemptSubmitAck {
+  string winner_uid = 1; // empty when status is "pending"
+  string status     = 2; // "pending" | "completed"
+}
+
+// LeaderboardQuery requests the current leaderboard snapshot.
+message LeaderboardQuery {
+  string game_id = 1;
+  string period  = 2; // "daily" | "all"
+}
+
+// LeaderboardEntry is one row in a leaderboard snapshot.
+message LeaderboardEntry {
+  string uid          = 1;
+  string display_name = 2;
+  int32  attempts     = 3;
+  int32  time_ms      = 4;
+  int32  rank         = 5;
+}
+
+// LeaderboardSnapshot is the server's response to LeaderboardQuery.
+message LeaderboardSnapshot {
+  repeated LeaderboardEntry rankings = 1;
+}

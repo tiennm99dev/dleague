@@ -33,29 +33,54 @@ const (
 	MessageType_MESSAGE_TYPE_AUTH_REFRESH_ACK MessageType = 5
 	MessageType_MESSAGE_TYPE_GAME_MOVE        MessageType = 6
 	MessageType_MESSAGE_TYPE_GAME_STATE       MessageType = 7
+	// Phase 08: async PvP + leaderboard (8–15; 0–7 already used above).
+	MessageType_MESSAGE_TYPE_CHALLENGE_CREATE     MessageType = 8
+	MessageType_MESSAGE_TYPE_CHALLENGE_CREATE_ACK MessageType = 9
+	MessageType_MESSAGE_TYPE_CHALLENGE_JOIN       MessageType = 10
+	MessageType_MESSAGE_TYPE_CHALLENGE_JOIN_ACK   MessageType = 11
+	MessageType_MESSAGE_TYPE_ATTEMPT_SUBMIT       MessageType = 12
+	MessageType_MESSAGE_TYPE_ATTEMPT_SUBMIT_ACK   MessageType = 13
+	MessageType_MESSAGE_TYPE_LEADERBOARD_QUERY    MessageType = 14
+	MessageType_MESSAGE_TYPE_LEADERBOARD_SNAPSHOT MessageType = 15
 )
 
 // Enum value maps for MessageType.
 var (
 	MessageType_name = map[int32]string{
-		0: "MESSAGE_TYPE_UNSPECIFIED",
-		1: "MESSAGE_TYPE_PING",
-		2: "MESSAGE_TYPE_PONG",
-		3: "MESSAGE_TYPE_ERROR",
-		4: "MESSAGE_TYPE_AUTH_REFRESH",
-		5: "MESSAGE_TYPE_AUTH_REFRESH_ACK",
-		6: "MESSAGE_TYPE_GAME_MOVE",
-		7: "MESSAGE_TYPE_GAME_STATE",
+		0:  "MESSAGE_TYPE_UNSPECIFIED",
+		1:  "MESSAGE_TYPE_PING",
+		2:  "MESSAGE_TYPE_PONG",
+		3:  "MESSAGE_TYPE_ERROR",
+		4:  "MESSAGE_TYPE_AUTH_REFRESH",
+		5:  "MESSAGE_TYPE_AUTH_REFRESH_ACK",
+		6:  "MESSAGE_TYPE_GAME_MOVE",
+		7:  "MESSAGE_TYPE_GAME_STATE",
+		8:  "MESSAGE_TYPE_CHALLENGE_CREATE",
+		9:  "MESSAGE_TYPE_CHALLENGE_CREATE_ACK",
+		10: "MESSAGE_TYPE_CHALLENGE_JOIN",
+		11: "MESSAGE_TYPE_CHALLENGE_JOIN_ACK",
+		12: "MESSAGE_TYPE_ATTEMPT_SUBMIT",
+		13: "MESSAGE_TYPE_ATTEMPT_SUBMIT_ACK",
+		14: "MESSAGE_TYPE_LEADERBOARD_QUERY",
+		15: "MESSAGE_TYPE_LEADERBOARD_SNAPSHOT",
 	}
 	MessageType_value = map[string]int32{
-		"MESSAGE_TYPE_UNSPECIFIED":      0,
-		"MESSAGE_TYPE_PING":             1,
-		"MESSAGE_TYPE_PONG":             2,
-		"MESSAGE_TYPE_ERROR":            3,
-		"MESSAGE_TYPE_AUTH_REFRESH":     4,
-		"MESSAGE_TYPE_AUTH_REFRESH_ACK": 5,
-		"MESSAGE_TYPE_GAME_MOVE":        6,
-		"MESSAGE_TYPE_GAME_STATE":       7,
+		"MESSAGE_TYPE_UNSPECIFIED":          0,
+		"MESSAGE_TYPE_PING":                 1,
+		"MESSAGE_TYPE_PONG":                 2,
+		"MESSAGE_TYPE_ERROR":                3,
+		"MESSAGE_TYPE_AUTH_REFRESH":         4,
+		"MESSAGE_TYPE_AUTH_REFRESH_ACK":     5,
+		"MESSAGE_TYPE_GAME_MOVE":            6,
+		"MESSAGE_TYPE_GAME_STATE":           7,
+		"MESSAGE_TYPE_CHALLENGE_CREATE":     8,
+		"MESSAGE_TYPE_CHALLENGE_CREATE_ACK": 9,
+		"MESSAGE_TYPE_CHALLENGE_JOIN":       10,
+		"MESSAGE_TYPE_CHALLENGE_JOIN_ACK":   11,
+		"MESSAGE_TYPE_ATTEMPT_SUBMIT":       12,
+		"MESSAGE_TYPE_ATTEMPT_SUBMIT_ACK":   13,
+		"MESSAGE_TYPE_LEADERBOARD_QUERY":    14,
+		"MESSAGE_TYPE_LEADERBOARD_SNAPSHOT": 15,
 	}
 )
 
@@ -411,7 +436,7 @@ const file_dleague_v1_envelope_proto_rawDesc = "" +
 	"\vAuthRefresh\x12\x19\n" +
 	"\bid_token\x18\x01 \x01(\tR\aidToken\"8\n" +
 	"\x0eAuthRefreshAck\x12&\n" +
-	"\x0fexpires_at_unix\x18\x01 \x01(\x03R\rexpiresAtUnix*\xec\x01\n" +
+	"\x0fexpires_at_unix\x18\x01 \x01(\x03R\rexpiresAtUnix*\x8d\x04\n" +
 	"\vMessageType\x12\x1c\n" +
 	"\x18MESSAGE_TYPE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11MESSAGE_TYPE_PING\x10\x01\x12\x15\n" +
@@ -420,7 +445,16 @@ const file_dleague_v1_envelope_proto_rawDesc = "" +
 	"\x19MESSAGE_TYPE_AUTH_REFRESH\x10\x04\x12!\n" +
 	"\x1dMESSAGE_TYPE_AUTH_REFRESH_ACK\x10\x05\x12\x1a\n" +
 	"\x16MESSAGE_TYPE_GAME_MOVE\x10\x06\x12\x1b\n" +
-	"\x17MESSAGE_TYPE_GAME_STATE\x10\aB<Z:github.com/tiennm99/dleague/shared/pb/dleague/v1;dleaguev1b\x06proto3"
+	"\x17MESSAGE_TYPE_GAME_STATE\x10\a\x12!\n" +
+	"\x1dMESSAGE_TYPE_CHALLENGE_CREATE\x10\b\x12%\n" +
+	"!MESSAGE_TYPE_CHALLENGE_CREATE_ACK\x10\t\x12\x1f\n" +
+	"\x1bMESSAGE_TYPE_CHALLENGE_JOIN\x10\n" +
+	"\x12#\n" +
+	"\x1fMESSAGE_TYPE_CHALLENGE_JOIN_ACK\x10\v\x12\x1f\n" +
+	"\x1bMESSAGE_TYPE_ATTEMPT_SUBMIT\x10\f\x12#\n" +
+	"\x1fMESSAGE_TYPE_ATTEMPT_SUBMIT_ACK\x10\r\x12\"\n" +
+	"\x1eMESSAGE_TYPE_LEADERBOARD_QUERY\x10\x0e\x12%\n" +
+	"!MESSAGE_TYPE_LEADERBOARD_SNAPSHOT\x10\x0fB<Z:github.com/tiennm99/dleague/shared/pb/dleague/v1;dleaguev1b\x06proto3"
 
 var (
 	file_dleague_v1_envelope_proto_rawDescOnce sync.Once

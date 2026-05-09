@@ -48,6 +48,22 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 						{Key: "created_at", Value: -1},
 					},
 				},
+				// Phase 08: unique share_token for O(1) challenge join lookups.
+				// Partial filter so Phase 09 sync matches (no share_token / empty
+				// string) don't collide on the unique constraint.
+				{
+					Keys: bson.D{{Key: "share_token", Value: 1}},
+					Options: options.Index().
+						SetUnique(true).
+						SetPartialFilterExpression(bson.M{"share_token": bson.M{"$gt": ""}}),
+				},
+				// Phase 08: sweep expired pending matches efficiently.
+				{
+					Keys: bson.D{
+						{Key: "state", Value: 1},
+						{Key: "expires_at", Value: 1},
+					},
+				},
 			},
 		},
 		{
@@ -75,18 +91,8 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 				},
 			},
 		},
-		{
-			coll: "leaderboards",
-			indexes: []mongo.IndexModel{
-				// Fetch the latest leaderboard snapshot for a game+period.
-				{
-					Keys: bson.D{
-						{Key: "game_id", Value: 1},
-						{Key: "period_end", Value: -1},
-					},
-				},
-			},
-		},
+		// leaderboards: _id is the primary lookup key ("<game>_<period>_<date>"),
+		// auto-indexed by Mongo. No additional indexes needed at MVP.
 	}
 
 	total := 0
@@ -99,6 +105,6 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 		total += len(res)
 	}
 
-	log.Printf("store: ensured %d indexes across 5 collections", total)
+	log.Printf("store: ensured %d indexes", total)
 	return nil
 }

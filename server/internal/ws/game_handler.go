@@ -6,9 +6,11 @@ import (
 	"sync"
 	"time"
 
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/tiennm99/dleague/server/internal/game/wordle"
+	"github.com/tiennm99/dleague/server/internal/store"
 	dleaguev1 "github.com/tiennm99/dleague/shared/pb/dleague/v1"
 )
 
@@ -18,9 +20,20 @@ var nowUTC = func() time.Time { return time.Now().UTC() }
 // GameDeps holds the runtime dependencies needed by WS game handlers.
 // Constructed once in main and attached to the Hub before serving traffic.
 type GameDeps struct {
+	// Wordle game deps.
 	DailyRepo  wordle.DailyPuzzleStore // accepts *store.DailyPuzzleRepo or test mock
 	Dictionary []string                // valid-guess word list (superset of answers)
 	Answers    []string                // answer word list (used to seed daily puzzles)
+
+	// Phase 08: async PvP + leaderboard repos.
+	MatchRepo       *store.MatchRepo
+	AttemptRepo     *store.AttemptRepo
+	LeaderboardRepo *store.LeaderboardRepo
+	UserRepo        *store.UserRepo
+
+	// MongoClient is the raw client used to open transaction sessions.
+	// May be nil in unit tests that don't exercise transactional paths.
+	MongoClient *mongo.Client
 }
 
 // wordleSession holds one user's in-progress Wordle game.

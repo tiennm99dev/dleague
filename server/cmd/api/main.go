@@ -14,8 +14,9 @@ import (
 
 	"github.com/tiennm99/dleague/server/internal/auth"
 	"github.com/tiennm99/dleague/server/internal/config"
-	srvhttp "github.com/tiennm99/dleague/server/internal/http"
 	"github.com/tiennm99/dleague/server/internal/game/wordle"
+	srvhttp "github.com/tiennm99/dleague/server/internal/http"
+	"github.com/tiennm99/dleague/server/internal/scheduler"
 	"github.com/tiennm99/dleague/server/internal/store"
 	"github.com/tiennm99/dleague/server/internal/ws"
 )
@@ -54,11 +55,11 @@ func main() {
 
 	userRepo := store.NewUserRepo(db)
 	_ = store.NewGameRepo(db)
-	_ = store.NewMatchRepo(db)
-	_ = store.NewAttemptRepo(db)
+	matchRepo := store.NewMatchRepo(db)
+	attemptRepo := store.NewAttemptRepo(db)
 	dailyRepo := store.NewDailyPuzzleRepo(db)
 	wordlistRepo := store.NewWordlistRepo(db)
-	_ = store.NewLeaderboardRepo(db)
+	leaderboardRepo := store.NewLeaderboardRepo(db)
 
 	// Load word lists (Mongo first, embedded fallback if collection is empty).
 	answers, err := wordle.LoadAnswers(bootCtx, wordlistRepo)
@@ -95,9 +96,14 @@ func main() {
 	hub := ws.NewHub(verifier, userRepo)
 	hub.MaxConns = cfg.MaxConns
 	hub.GameDeps = &ws.GameDeps{
-		DailyRepo:  dailyRepo,
-		Dictionary: dictionary,
-		Answers:    answers,
+		DailyRepo:       dailyRepo,
+		Dictionary:      dictionary,
+		Answers:         answers,
+		MatchRepo:       matchRepo,
+		AttemptRepo:     attemptRepo,
+		LeaderboardRepo: leaderboardRepo,
+		UserRepo:        userRepo,
+		MongoClient:     client.Inner(),
 	}
 	wsOpts := ws.UpgradeOptions{AllowedOrigins: cfg.AllowedOrigins}
 
@@ -118,6 +124,13 @@ func main() {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	// Background scheduler: refresh leaderboards every 5 min, sweep expired
+	// matches every 15 min. Tied to signal context — shuts down on SIGTERM.
+	go scheduler.Run(ctx, scheduler.Config{}, scheduler.Repos{
+		Leaderboard: leaderboardRepo,
+		Match:       matchRepo,
+	})
 
 	go func() {
 		log.Printf("dleague server listening on %s (web=%s)", cfg.Addr, cfg.WebRoot)
