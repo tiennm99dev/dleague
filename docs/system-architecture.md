@@ -48,9 +48,17 @@ web/src/
     │   ├── phaser-game.svelte — Phaser.Game lifecycle (onMount create, onDestroy destroy)
     │   └── scenes/
     │       └── title-scene.ts  — "DLEAGUE" title + Start button → eventBus.emit('title:start')
+    ├── game/
+    │   ├── game.ts                 — pluggable Game<S,M> interface + State/Move/Result types
+    │   └── wordle/
+    │       ├── colors.ts           — two-pass color scoring (optimistic preview only)
+    │       ├── colors.test.ts      — Vitest: 9 canonical edge cases
+    │       └── wordle.ts           — WordleGame client preview (server is authoritative)
     └── components/
         ├── sign-in.svelte          — email/password form + Google popup + anonymous
-        └── connection-status.svelte — top-right badge (green/yellow/red) from connectionState store
+        ├── connection-status.svelte — top-right badge (green/yellow/red) from connectionState store
+        ├── board.svelte            — 5×6 Wordle grid (props: guesses, hints, currentInput)
+        └── keyboard.svelte         — on-screen QWERTY; tracks best color per letter
 ```
 
 **WS client (`web/src/lib/ws.ts`):**
@@ -92,8 +100,9 @@ Driver: `go.mongodb.org/mongo-driver/v2` (v2.6.0+). One `*store.Client` per proc
 | `games` | slug string ("wordle") | Game-type registry |
 | `matches` | ObjectID | One PvP or solo match instance |
 | `attempts` | ObjectID | Per-player guess log within a match |
-| `daily_puzzles` | "YYYY-MM-DD" string | Daily puzzle seed + solution hash |
+| `daily_puzzles` | "YYYY-MM-DD" string | Daily puzzle seed + solution (server-only) + solution_hash |
 | `leaderboards` | "{game}_{period}_{date}" string | Pre-computed ranking snapshots |
+| `wordlists` | "wordle_answers" / "wordle_dictionary" string | Word lists; fallback to embedded if empty |
 
 All documents carry `schema_version: 1` for lazy in-place migration (Option A).
 
@@ -179,11 +188,64 @@ Service-account JSON files are `.gitignore`d (`serviceAccount*.json`). Never com
 
 Revocation check (`VerifyIDTokenAndCheckRevoked`) deferred to Phase 10.
 
+## Game flow (Wordle — Phase 07)
+
+```
+Client (SvelteKit)                             Server (Go)
+──────────────────                             ───────────
+user types "CRANE" + Enter
+  ws.sendRequest(GAME_MOVE,
+    WordleMove{guess:"CRANE"})  ─────────────►
+                                               hub.dispatch → handleGameMove:
+                                               1. auth gate (userID required)
+                                               2. unmarshal WordleMove
+                                               3. load/create wordleSession (sync.Map)
+                                               4. lazy EnsureToday → solution (never sent pre-terminal)
+                                               5. wordle.Validate(guess, dictionary)
+                                                  → ERROR{400} on length/dict fail
+                                               6. wordle.Apply(guess)
+                                                  → two-pass color Score(guess,solution)
+                                               7. marshal WordleState{guesses,hints,attemptsRemaining,won,lost}
+                                                  solution field: EMPTY until IsTerminal()
+  ◄─────────────────────────────────────────  GAME_STATE{WordleState}
+applyServerState():
+  update guesses/hints/attemptsRemaining
+  eventBus.emit('wordle:flip-row', {row,colors})
+  WordleScene.flipRow() → Phaser Y-rotation tween
+  if won/lost → results screen
+```
+
+### Daily puzzle seeding
+
+```
+boot / make seed-wordlists
+  wordle.EnsureToday(ctx, dailyRepo, answers, time.Now()):
+    date = UTC "YYYY-MM-DD"
+    dailyRepo.GetByDate(date)
+    if exists → return solution
+    seed = int64(sha256(date+"wordle-v1")[:8]) & 0x7FFF...
+    solution = answers[seed % len(answers)]
+    dailyRepo.Upsert({id:date, seed, solution, solution_hash:sha256(solution)})
+    return solution
+```
+
+### Wordlist loading
+
+Server startup: `wordle.LoadAnswers(ctx, wordlistRepo)` → Mongo `wordlists` collection first; if empty falls back to embedded `data/answers.txt` (772 words placeholder; Phase 10 replaces with full 2315-word public-domain list).
+
+### Server-authoritative trust guarantee
+
+- `WordleState.solution` is an empty string in all pre-terminal responses.
+- Only when `won == true` or `lost == true` does the server set `solution`.
+- Tests: `TestToProto_SolutionHiddenPreTerminal`, `TestToProto_SolutionRevealedOnWin/Loss`.
+
 ## Wire format
 - **Envelope:** see `proto/dleague/v1/envelope.proto` (single oneof payload + request_id correlation).
 - **Auth:** ID token piped via `Sec-WebSocket-Protocol: dleague.v1, fb.<id_token>` at upgrade.
 - **Refresh:** client sends `AuthRefresh{id_token}` ~50 min into a connection.
 - **Errors:** server emits `MESSAGE_TYPE_ERROR` envelope on malformed input — does NOT close the connection.
+- **Game move:** `MESSAGE_TYPE_GAME_MOVE` (6) carries `WordleMove{guess}`.
+- **Game state:** `MESSAGE_TYPE_GAME_STATE` (7) carries `WordleState{guesses,hints,attemptsRemaining,won,lost,solution?}`.
 
 ## Concurrency model
 - One goroutine per WS connection for reads.

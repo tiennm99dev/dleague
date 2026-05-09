@@ -12,6 +12,8 @@ enum MessageType {
   MESSAGE_TYPE_ERROR = 3;
   MESSAGE_TYPE_AUTH_REFRESH = 4;
   MESSAGE_TYPE_AUTH_REFRESH_ACK = 5;
+  MESSAGE_TYPE_GAME_MOVE = 6;
+  MESSAGE_TYPE_GAME_STATE = 7;
 }
 
 // Envelope is the wire frame for every WebSocket message.

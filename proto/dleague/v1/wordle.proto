@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package dleague.v1;
+
+option go_package = "github.com/tiennm99/dleague/shared/pb/dleague/v1;dleaguev1";
+
+// Color represents the result of a single letter in a Wordle guess.
+enum Color {
+  COLOR_UNSPECIFIED = 0;
+  COLOR_GRAY = 1;   // letter not in solution
+  COLOR_YELLOW = 2; // letter in solution but wrong position
+  COLOR_GREEN = 3;  // letter in correct position
+}
+
+// WordleHint holds the per-letter color result for one guess.
+message WordleHint {
+  repeated Color colors = 1;
+}
+
+// WordleMove is sent client→server carrying the player's guess word.
+message WordleMove {
+  string guess = 1;
+}
+
+// WordleState is sent server→client after each move.
+// solution is only populated when the game is terminal (won or lost).
+message WordleState {
+  repeated string guesses = 1;
+  repeated WordleHint hints = 2;
+  int32 attempts_remaining = 3;
+  bool won = 4;
+  bool lost = 5;
+  // solution is intentionally omitted until terminal to prevent cheating.
+  string solution = 6;
+}
+
+// WordleResult summarises a completed game for leaderboard / history.
+message WordleResult {
+  string solution = 1;
+  bool won = 2;
+  int32 attempts_used = 3;
+}

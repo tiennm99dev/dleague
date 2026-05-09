@@ -1,7 +1,7 @@
 ---
 phase: 7
 title: "Game core pluggable + Wordle (server-authoritative)"
-status: pending
+status: completed
 priority: P1
 effort: 2w
 dependencies: [6]
@@ -153,22 +153,22 @@ Server-authoritative trust: solution is **never** marshaled into `WordleState`. 
 16. **Manual smoke:** sign in → /play → submit `CRANE` → see colors + animation. Submit through to win or 6 attempts → results screen.
 
 ## Todo List
-- [ ] Proto: wordle.proto + envelope enum entries
-- [ ] Generalize shared/game (drop bytes State)
-- [ ] Wordle Go: wordle.go + colors.go
-- [ ] Wordlist loader (Mongo + embed fallback)
-- [ ] Daily puzzle generator
-- [ ] WS handler `handleGameMove`
-- [ ] In-memory user session map
-- [ ] Wordlists seed script
-- [ ] TS Wordle client preview
-- [ ] Svelte Board + Keyboard
-- [ ] Phaser tile-flip scene
-- [ ] /play route
-- [ ] Go tests >80% wordle
-- [ ] TS tests for color algorithm
-- [ ] Manual smoke
-- [ ] Update docs/system-architecture.md (game flow)
+- [x] Proto: wordle.proto + envelope enum entries
+- [x] Generalize shared/game (drop bytes State)
+- [x] Wordle Go: wordle.go + colors.go
+- [x] Wordlist loader (Mongo + embed fallback)
+- [x] Daily puzzle generator
+- [x] WS handler `handleGameMove`
+- [x] In-memory user session map
+- [x] Wordlists seed script
+- [x] TS Wordle client preview
+- [x] Svelte Board + Keyboard
+- [x] Phaser tile-flip scene
+- [x] /play route
+- [x] Go tests >80% wordle (84.9%)
+- [x] TS tests for color algorithm (9 Vitest cases)
+- [ ] Manual smoke (requires running Mongo + Firebase emulator)
+- [x] Update docs/system-architecture.md (game flow)
 
 ## Success Criteria
 - [ ] User plays full daily Wordle in browser → wins or loses correctly

@@ -33,6 +33,10 @@ type Hub struct {
 
 	// userRepo persists user profiles on first auth. May be nil in tests.
 	userRepo *store.UserRepo
+
+	// GameDeps holds game handler dependencies (word lists, daily repo).
+	// May be nil when running without a database (dev / unit tests).
+	GameDeps *GameDeps
 }
 
 // NewHub creates a Hub with the given verifier and user repo.
@@ -87,6 +91,11 @@ func (h *Hub) dispatch(ctx context.Context, env *dleaguev1.Envelope, c *Conn, se
 		return handlePing(env, serverNowMS)
 	case dleaguev1.MessageType_MESSAGE_TYPE_AUTH_REFRESH:
 		return handleAuthRefresh(ctx, c, env)
+	case dleaguev1.MessageType_MESSAGE_TYPE_GAME_MOVE:
+		if h.GameDeps == nil {
+			return errorEnvelope(env.GetRequestId(), 503, "game service unavailable"), nil
+		}
+		return handleGameMove(ctx, c, env, h.GameDeps)
 	default:
 		log.Printf("ws dispatch: unhandled type=%v request_id=%q", env.GetType(), env.GetRequestId())
 		return nil, nil

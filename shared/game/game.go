@@ -8,20 +8,30 @@ package game
 
 // Result captures the terminal outcome of one game session.
 type Result struct {
+	// WinnerUID is the Firebase UID of the winner; empty for solo games.
+	WinnerUID string
 	// Won is true if the player solved the puzzle within the allowed attempts.
 	Won bool
-	// Attempts is the number of guesses used (1-based; 0 if Won is false and game timed out).
-	Attempts int
-	// DurationMS is the elapsed wall time from Init to terminal in milliseconds.
+	// AttemptsUsed is the number of guesses used (1-based; 0 if lost without guessing).
+	AttemptsUsed int
+	// DurationMS is the elapsed wall time from first guess to terminal in milliseconds.
 	DurationMS int64
 }
 
-// State is an opaque, JSON-serializable snapshot of one game's progress.
-// Concrete games define their own state shape; transports treat it as []byte.
-type State = []byte
+// State is the interface every concrete game state must implement.
+// Concrete games define their own state struct and embed game-specific fields.
+// Transports marshal/unmarshal via proto messages — State is never sent raw.
+type State interface {
+	// IsTerminal reports whether the game has ended (won or out of attempts).
+	IsTerminal() bool
+}
 
-// Key represents a single user input event. Use a small alphabet so different
-// -dle types can share the input pipeline (e.g. characters, arrow keys, enter).
+// Move represents a single player action. Concrete games define their own
+// Move struct carrying the game-specific input (e.g. a guess word).
+type Move interface{}
+
+// Key represents a single user input event. Kept for compatibility with
+// interactive key-driven games; WS-based games use typed Move instead.
 type Key string
 
 const (
@@ -31,21 +41,23 @@ const (
 
 // Game is the contract every -dle implementation fulfills.
 //
-// Lifecycle: Init -> [HandleKey | Tick]* -> IsTerminal == true -> Result.
+// Lifecycle: Init → [Validate + Apply]* → IsTerminal == true → Result.
+// Concrete games need NOT implement the old HandleKey/Tick interface; those
+// are removed to align with the server-authoritative WS architecture.
 type Game interface {
 	// Init resets the game using the given seed. Identical seeds must produce
-	// identical games (deterministic puzzles are required for fair PvP).
+	// identical games (deterministic puzzles required for fair PvP).
 	Init(seed int64) error
 
-	// HandleKey processes one input event. Returns true if the game state changed.
-	HandleKey(k Key) bool
+	// Validate checks whether a move is legal in the current state.
+	// Returns a non-nil error if the move is invalid (wrong length, not in
+	// dictionary, game already terminal, etc.).
+	Validate(move Move) error
 
-	// Tick advances time-based state by dtMS milliseconds. Most -dle games are
-	// turn-based and may ignore this; it exists for animations / timers.
-	Tick(dtMS int64)
-
-	// State returns a serialized snapshot suitable for transport or storage.
-	State() State
+	// Apply executes a validated move and returns the updated State.
+	// Callers should call Validate first; Apply behaviour on invalid moves is
+	// undefined.
+	Apply(move Move) (State, error)
 
 	// IsTerminal reports whether the game has ended (won or out of attempts).
 	IsTerminal() bool

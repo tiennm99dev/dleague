@@ -77,11 +77,15 @@ type Attempt struct {
 
 // DailyPuzzle maps to the `daily_puzzles` collection.
 // _id is a date string "YYYY-MM-DD".
+// Solution is stored in Mongo so the server can re-derive the answer after
+// restart without recomputing from the seed. It is NEVER sent to clients
+// until the game reaches a terminal state.
 type DailyPuzzle struct {
-	ID            string    `bson:"_id"` // "YYYY-MM-DD"
+	ID            string    `bson:"_id"`            // "YYYY-MM-DD"
 	GameID        string    `bson:"game_id"`
 	Seed          int64     `bson:"seed"`
-	SolutionHash  string    `bson:"solution_hash"` // sha256; never store plaintext
+	Solution      string    `bson:"solution"`       // server-only; never sent pre-terminal
+	SolutionHash  string    `bson:"solution_hash"`  // sha256(solution) for audit
 	Difficulty    string    `bson:"difficulty"`
 	CreatedAt     time.Time `bson:"created_at"`
 	SchemaVersion int       `bson:"schema_version"`

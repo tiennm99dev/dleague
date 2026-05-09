@@ -31,6 +31,8 @@ const (
 	MessageType_MESSAGE_TYPE_ERROR            MessageType = 3
 	MessageType_MESSAGE_TYPE_AUTH_REFRESH     MessageType = 4
 	MessageType_MESSAGE_TYPE_AUTH_REFRESH_ACK MessageType = 5
+	MessageType_MESSAGE_TYPE_GAME_MOVE        MessageType = 6
+	MessageType_MESSAGE_TYPE_GAME_STATE       MessageType = 7
 )
 
 // Enum value maps for MessageType.
@@ -42,6 +44,8 @@ var (
 		3: "MESSAGE_TYPE_ERROR",
 		4: "MESSAGE_TYPE_AUTH_REFRESH",
 		5: "MESSAGE_TYPE_AUTH_REFRESH_ACK",
+		6: "MESSAGE_TYPE_GAME_MOVE",
+		7: "MESSAGE_TYPE_GAME_STATE",
 	}
 	MessageType_value = map[string]int32{
 		"MESSAGE_TYPE_UNSPECIFIED":      0,
@@ -50,6 +54,8 @@ var (
 		"MESSAGE_TYPE_ERROR":            3,
 		"MESSAGE_TYPE_AUTH_REFRESH":     4,
 		"MESSAGE_TYPE_AUTH_REFRESH_ACK": 5,
+		"MESSAGE_TYPE_GAME_MOVE":        6,
+		"MESSAGE_TYPE_GAME_STATE":       7,
 	}
 )
 
@@ -405,14 +411,16 @@ const file_dleague_v1_envelope_proto_rawDesc = "" +
 	"\vAuthRefresh\x12\x19\n" +
 	"\bid_token\x18\x01 \x01(\tR\aidToken\"8\n" +
 	"\x0eAuthRefreshAck\x12&\n" +
-	"\x0fexpires_at_unix\x18\x01 \x01(\x03R\rexpiresAtUnix*\xb3\x01\n" +
+	"\x0fexpires_at_unix\x18\x01 \x01(\x03R\rexpiresAtUnix*\xec\x01\n" +
 	"\vMessageType\x12\x1c\n" +
 	"\x18MESSAGE_TYPE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11MESSAGE_TYPE_PING\x10\x01\x12\x15\n" +
 	"\x11MESSAGE_TYPE_PONG\x10\x02\x12\x16\n" +
 	"\x12MESSAGE_TYPE_ERROR\x10\x03\x12\x1d\n" +
 	"\x19MESSAGE_TYPE_AUTH_REFRESH\x10\x04\x12!\n" +
-	"\x1dMESSAGE_TYPE_AUTH_REFRESH_ACK\x10\x05B<Z:github.com/tiennm99/dleague/shared/pb/dleague/v1;dleaguev1b\x06proto3"
+	"\x1dMESSAGE_TYPE_AUTH_REFRESH_ACK\x10\x05\x12\x1a\n" +
+	"\x16MESSAGE_TYPE_GAME_MOVE\x10\x06\x12\x1b\n" +
+	"\x17MESSAGE_TYPE_GAME_STATE\x10\aB<Z:github.com/tiennm99/dleague/shared/pb/dleague/v1;dleaguev1b\x06proto3"
 
 var (
 	file_dleague_v1_envelope_proto_rawDescOnce sync.Once

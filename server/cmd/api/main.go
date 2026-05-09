@@ -15,6 +15,7 @@ import (
 	"github.com/tiennm99/dleague/server/internal/auth"
 	"github.com/tiennm99/dleague/server/internal/config"
 	srvhttp "github.com/tiennm99/dleague/server/internal/http"
+	"github.com/tiennm99/dleague/server/internal/game/wordle"
 	"github.com/tiennm99/dleague/server/internal/store"
 	"github.com/tiennm99/dleague/server/internal/ws"
 )
@@ -55,8 +56,26 @@ func main() {
 	_ = store.NewGameRepo(db)
 	_ = store.NewMatchRepo(db)
 	_ = store.NewAttemptRepo(db)
-	_ = store.NewDailyPuzzleRepo(db)
+	dailyRepo := store.NewDailyPuzzleRepo(db)
+	wordlistRepo := store.NewWordlistRepo(db)
 	_ = store.NewLeaderboardRepo(db)
+
+	// Load word lists (Mongo first, embedded fallback if collection is empty).
+	answers, err := wordle.LoadAnswers(bootCtx, wordlistRepo)
+	if err != nil {
+		log.Printf("wordle: load answers: %v (using embedded fallback)", err)
+		answers = wordle.EmbeddedAnswers()
+	}
+	dictionary, err := wordle.LoadDictionary(bootCtx, wordlistRepo)
+	if err != nil {
+		log.Printf("wordle: load dictionary: %v (using embedded fallback)", err)
+		dictionary = wordle.EmbeddedDictionary()
+	}
+
+	// Best-effort: seed today's daily puzzle at startup.
+	if _, err := wordle.EnsureToday(bootCtx, dailyRepo, answers, time.Now()); err != nil {
+		log.Printf("wordle: EnsureToday at boot: %v", err)
+	}
 
 	// Initialise Firebase Auth verifier. Boot fails fast on misconfiguration.
 	if cfg.FirebaseEmulatorHost != "" {
@@ -75,6 +94,11 @@ func main() {
 
 	hub := ws.NewHub(verifier, userRepo)
 	hub.MaxConns = cfg.MaxConns
+	hub.GameDeps = &ws.GameDeps{
+		DailyRepo:  dailyRepo,
+		Dictionary: dictionary,
+		Answers:    answers,
+	}
 	wsOpts := ws.UpgradeOptions{AllowedOrigins: cfg.AllowedOrigins}
 
 	rOpts := srvhttp.RouterOptions{TrustedProxies: cfg.TrustedProxies}

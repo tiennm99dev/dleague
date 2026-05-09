@@ -6,7 +6,7 @@ GOLANGCI_LINT ?= golangci-lint
 
 .PHONY: help dev dev-debug build build-server web-install web-build web-dev \
         test lint compose-up compose-down proto-gen proto-lint proto-breaking \
-        tools clean firebase-emulator
+        tools clean firebase-emulator seed-wordlists
 
 help:
 	@echo "make targets:"
@@ -76,6 +76,13 @@ tools:
 
 firebase-emulator:
 	bash scripts/start-firebase-emulator.sh
+
+# seed-wordlists uploads the embedded answers.txt and dictionary.txt into the
+# Mongo `wordlists` collection so the server uses Mongo rather than the
+# embedded fallback. Requires DLEAGUE_MONGO_URI to be set.
+# Usage: DLEAGUE_MONGO_URI=mongodb://localhost:27017 make seed-wordlists
+seed-wordlists:
+	cd server && $(GO) run ./cmd/seed-wordlists
 
 clean:
 	rm -rf bin/ web/dist/ web/.svelte-kit/
