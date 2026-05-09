@@ -1,8 +1,28 @@
 # Development Roadmap
 
-## Active Plan: Svelte + Phaser + Firebase + MongoDB Pivot
+## Active Plan: Post-MVP Hardening
 
-Plan directory: `plans/260508-2300-svelte-phaser-firebase-mongo-pivot/`
+Plan directory: `plans/260509-1331-improvement-plan/`
+
+Critical correctness, security, and UX bug fixes across 7 phases (Phase 01 completed).
+
+### Hardening Phases Status
+
+| # | Phase | Priority | Status |
+|---|-------|----------|--------|
+| 01 | Critical correctness — races, DoS, duplicate writes | P1 | completed (2026-05-09) |
+| 02 | Security & abuse hardening | P1 | pending |
+| 03 | UX correctness — navigation, a11y, reconnect | P2 | pending |
+| 04 | Pluggability decision | P2 | pending |
+| 05 | Persistence & data integrity | P1 | pending |
+| 06 | Test coverage + local CI | P2 | pending |
+| 07 | Code/doc hygiene | P3 | pending |
+
+---
+
+## Previous Plan: Svelte + Phaser + Firebase + MongoDB Pivot
+
+Plan directory: `plans/260508-2300-svelte-phaser-firebase-mongo-pivot/` (completed)
 
 ### Phase Status
 

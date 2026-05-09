@@ -68,6 +68,17 @@ func (r *AttemptRepo) Insert(ctx context.Context, a Attempt) error {
 	a.SchemaVersion = currentSchemaVersion
 	_, err := r.coll.InsertOne(ctx, a)
 	if err != nil {
+		// Unique-index violation (code 11000): treat as idempotent — the attempt
+		// was already inserted by a concurrent tx attempt. Surface ErrAttemptExists
+		// so the caller can skip re-processing rather than returning a 500.
+		var we mongo.WriteException
+		if errors.As(err, &we) {
+			for _, w := range we.WriteErrors {
+				if w.Code == 11000 {
+					return ErrAttemptExists
+				}
+			}
+		}
 		return fmt.Errorf("store: Insert attempt: %w", err)
 	}
 	return nil

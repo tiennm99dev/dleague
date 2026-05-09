@@ -47,8 +47,9 @@ func NewRoom(matchID, solution string, p1, p2 *Conn) *Room {
 // Returns -1 if c is not a player (e.g. after a reconnect swap).
 func (r *Room) playerIndex(c *Conn) int {
 	// Match by userID to survive reconnect pointer swap before rebind.
+	cUID := c.UserID()
 	for i, p := range r.Players {
-		if p != nil && p.userID == c.userID {
+		if p != nil && p.UserID() == cUID {
 			return i
 		}
 	}
@@ -74,7 +75,7 @@ func (r *Room) HandleMove(ctx context.Context, c *Conn, guess string, deps *Game
 
 	idx := r.playerIndex(c)
 	if idx < 0 {
-		return fmt.Errorf("match_room: conn %q not a player in match %q", c.userID, r.MatchID)
+		return fmt.Errorf("match_room: conn %q not a player in match %q", c.UserID(), r.MatchID)
 	}
 
 	w := r.Wordles[idx]
@@ -137,8 +138,8 @@ func (r *Room) HandleForfeit(ctx context.Context, loserUserID string, deps *Game
 	}
 	winnerUID := ""
 	for _, p := range r.Players {
-		if p != nil && p.userID != loserUserID {
-			winnerUID = p.userID
+		if p != nil && p.UserID() != loserUserID {
+			winnerUID = p.UserID()
 			break
 		}
 	}
@@ -183,20 +184,20 @@ func (r *Room) resolveUnlocked(ctx context.Context, deps *GameDeps) {
 
 	switch {
 	case r0.Won && !r1.Won:
-		winnerUID = r.Players[0].userID
+		winnerUID = r.Players[0].UserID()
 		reason = "solved"
 	case r1.Won && !r0.Won:
-		winnerUID = r.Players[1].userID
+		winnerUID = r.Players[1].UserID()
 		reason = "solved"
 	case r0.Won && r1.Won:
 		// Both solved: tie-break by attempts ASC then time ASC (time approximated
 		// by attempt count at this layer; sub-second tie-break deferred to Phase 10).
 		if r0.AttemptsUsed < r1.AttemptsUsed {
-			winnerUID = r.Players[0].userID
+			winnerUID = r.Players[0].UserID()
 		} else if r1.AttemptsUsed < r0.AttemptsUsed {
-			winnerUID = r.Players[1].userID
+			winnerUID = r.Players[1].UserID()
 		} else {
-			winnerUID = r.Players[0].userID // perfect tie → player 0
+			winnerUID = r.Players[0].UserID() // perfect tie → player 0
 		}
 		reason = "solved"
 	default:
@@ -220,9 +221,10 @@ func (r *Room) finishUnlocked(ctx context.Context, deps *GameDeps, winnerUID, re
 		if deps.UserRepo != nil {
 			for _, p := range r.Players {
 				if p != nil {
-					won := p.userID == winnerUID
-					if sErr := deps.UserRepo.IncrementStats(ctx, p.userID, won); sErr != nil {
-						log.Printf("match_room: IncrementStats uid=%q: %v", p.userID, sErr)
+					pUID := p.UserID()
+					won := pUID == winnerUID
+					if sErr := deps.UserRepo.IncrementStats(ctx, pUID, won); sErr != nil {
+						log.Printf("match_room: IncrementStats uid=%q: %v", pUID, sErr)
 					}
 				}
 			}
@@ -259,10 +261,10 @@ func (r *Room) finishUnlocked(ctx context.Context, deps *GameDeps, winnerUID, re
 func (r *Room) timeoutWinner() string {
 	w0, w1 := r.Wordles[0], r.Wordles[1]
 	if w0.IsTerminal() && w0.Result().Won {
-		return r.Players[0].userID
+		return r.Players[0].UserID()
 	}
 	if w1.IsTerminal() && w1.Result().Won {
-		return r.Players[1].userID
+		return r.Players[1].UserID()
 	}
 	return ""
 }

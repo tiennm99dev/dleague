@@ -14,7 +14,7 @@ import (
 // If no snapshot exists yet (scheduler not run), returns an empty rankings list
 // and logs a warning rather than failing.
 func handleLeaderboardQuery(ctx context.Context, c *Conn, env *dleaguev1.Envelope, deps *GameDeps) (*dleaguev1.Envelope, error) {
-	if c.userID == "" {
+	if c.UserID() == "" {
 		return errorEnvelope(env.GetRequestId(), 401, "unauthenticated"), nil
 	}
 

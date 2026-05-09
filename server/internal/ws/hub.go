@@ -100,7 +100,7 @@ func (h *Hub) Count() int {
 func (h *Hub) dispatch(ctx context.Context, env *dleaguev1.Envelope, c *Conn, serverNowMS int64) (*dleaguev1.Envelope, error) {
 	// Auth gate: reject messages that require authentication when the connection
 	// has no verified user identity.
-	if requiresAuth(env.GetType()) && c.userID == "" {
+	if requiresAuth(env.GetType()) && c.UserID() == "" {
 		return errorEnvelope(env.GetRequestId(), 401, "unauthenticated"), nil
 	}
 

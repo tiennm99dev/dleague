@@ -1,16 +1,14 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { sendQueueJoin, sendQueueLeave, onQueueMatched, removeHandler } from '$lib/ws';
+	import { sendQueueJoin, sendQueueLeave, onQueueMatched, removeHandler, connectionState } from '$lib/ws';
 	import { MessageType } from '$lib/pb/dleague/v1/envelope_pb';
 
 	let searching = $state(true);
 	let statusText = $state('Searching for an opponent…');
 
 	onMount(() => {
-		// Join the queue immediately on mount.
-		sendQueueJoin('wordle');
-
+		// Register the match handler before gating on connection to avoid a race.
 		onQueueMatched((msg) => {
 			searching = false;
 			statusText = `Matched against ${msg.opponentDisplayName}! Starting…`;
@@ -21,6 +19,20 @@
 			// Navigate to the sync game route.
 			goto(`/sync?matchId=${encodeURIComponent(msg.matchId)}&seed=${msg.seed.toString()}&opponent=${encodeURIComponent(msg.opponentDisplayName)}`);
 		});
+
+		// Guard: only join once; rapid disconnect+reconnect must not double-join.
+		let joined = false;
+		const unsubConn = connectionState.subscribe((state) => {
+			if (state === 'connected' && !joined) {
+				joined = true;
+				sendQueueJoin('wordle');
+				unsubConn();
+			}
+		});
+
+		return () => {
+			unsubConn();
+		};
 	});
 
 	onDestroy(() => {

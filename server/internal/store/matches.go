@@ -117,15 +117,19 @@ func (r *MatchRepo) JoinAsChallengee(ctx context.Context, token, uid string) (*M
 	return &m, nil
 }
 
-// Complete marks a match as completed.
+// Complete marks a pending match as completed.
+// The filter includes state:"pending" so a tx retry on an already-completed
+// document updates 0 rows (idempotent). Returns the number of documents modified
+// (0 or 1) so the caller can gate side-effects like IncrementStats.
 // ctx should be the session-carrying context from inside a WithTransaction
 // callback so the update participates in the caller's transaction.
-func (r *MatchRepo) Complete(ctx context.Context, matchID, winnerUID string) error {
+func (r *MatchRepo) Complete(ctx context.Context, matchID, winnerUID string) (int64, error) {
 	oid, err := bson.ObjectIDFromHex(matchID)
 	if err != nil {
-		return fmt.Errorf("store: Complete: invalid ObjectID %q: %w", matchID, err)
+		return 0, fmt.Errorf("store: Complete: invalid ObjectID %q: %w", matchID, err)
 	}
 	now := time.Now().UTC()
+	filter := bson.M{"_id": oid, "state": "pending"}
 	update := bson.M{
 		"$set": bson.M{
 			"state":        "complete",
@@ -133,11 +137,11 @@ func (r *MatchRepo) Complete(ctx context.Context, matchID, winnerUID string) err
 			"completed_at": now,
 		},
 	}
-	_, err = r.coll.UpdateOne(ctx, bson.M{"_id": oid}, update)
+	res, err := r.coll.UpdateOne(ctx, filter, update)
 	if err != nil {
-		return fmt.Errorf("store: Complete match %q: %w", matchID, err)
+		return 0, fmt.Errorf("store: Complete match %q: %w", matchID, err)
 	}
-	return nil
+	return res.ModifiedCount, nil
 }
 
 // CreateSync inserts a new synchronous match document and returns its hex ID.

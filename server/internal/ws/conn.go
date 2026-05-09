@@ -39,7 +39,11 @@ type Conn struct {
 	// Phase 09: sync PvP fields. activeMatchID is read from the disconnect
 	// defer (any goroutine) and written from sync_match_handler / match_room
 	// (room.mu held in the latter, no lock in the former). Use mu to gate it.
-	mu            sync.Mutex
+	//
+	// mu also covers userID, isAnonymous, isAdmin, tokenExpiresAt which are
+	// written by auth_refresh (any goroutine) and read by cross-goroutine callers
+	// in hub dispatch, match_room, disconnect, and queue handlers.
+	mu            sync.RWMutex
 	activeMatchID string       // non-empty while the conn is bound to a live sync match
 	rateLimiter   *RateLimiter // per-conn token bucket; never nil after UpgradeHandler
 }
@@ -54,9 +58,33 @@ func (c *Conn) setActiveMatchID(id string) {
 
 // getActiveMatchID returns the current active match ID under lock.
 func (c *Conn) getActiveMatchID() string {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	return c.activeMatchID
+}
+
+// UserID returns the authenticated Firebase UID for this connection.
+// Safe to call from any goroutine.
+func (c *Conn) UserID() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.userID
+}
+
+// IsAnonymous reports whether the connection is authenticated as an anonymous user.
+// Safe to call from any goroutine.
+func (c *Conn) IsAnonymous() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.isAnonymous
+}
+
+// IsAdmin reports whether the connection holds an admin claim.
+// Safe to call from any goroutine.
+func (c *Conn) IsAdmin() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.isAdmin
 }
 
 // UpgradeOptions controls WebSocket Accept behaviour. Zero value enforces the
@@ -159,6 +187,11 @@ func UpgradeHandler(hub *Hub, opts UpgradeOptions) http.HandlerFunc {
 			return
 		}
 		defer func() {
+			// Remove from matchmaking queue before any other cleanup so the queue
+			// never holds a stale *Conn after the tab closes.
+			if hub.GameDeps != nil && hub.GameDeps.Queue != nil {
+				hub.GameDeps.Queue.Remove(conn)
+			}
 			// Disconnect grace: if the conn was in an active match, schedule a
 			// 30-second forfeit timer so the opponent wins if the player doesn't
 			// reconnect in time. Read under lock to avoid the race with

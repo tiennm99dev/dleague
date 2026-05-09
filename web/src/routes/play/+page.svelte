@@ -23,14 +23,9 @@
 		ChallengeCreateSchema,
 		ChallengeCreateAckSchema
 	} from '$lib/pb/dleague/v1/match_pb';
-	import { authUser, idToken } from '$lib/auth-store';
+	import { authUser } from '$lib/auth-store';
 	import {
-		connect,
-		disconnect,
-		sendRequest,
-		onMessage,
-		removeHandler,
-		connectionState
+		sendRequest
 	} from '$lib/ws';
 	import { eventBus } from '$lib/phaser/event-bus';
 	import Board from '$lib/components/board.svelte';
@@ -157,7 +152,9 @@
 	}
 
 	function handlePhysicalKey(e: KeyboardEvent): void {
-		handleKey(e.key === 'Backspace' ? 'Backspace' : e.key.length === 1 ? e.key : e.key);
+		if (e.key === 'Enter' || e.key === 'Backspace' || (e.key.length === 1 && /[a-zA-Z]/.test(e.key))) {
+			handleKey(e.key);
+		}
 	}
 
 	async function submitGuess(): Promise<void> {
@@ -166,12 +163,9 @@
 			setTimeout(() => (errorMsg = ''), 1500);
 			return;
 		}
-		if ($connectionState !== 'connected') {
-			errorMsg = 'Not connected — please wait';
-			setTimeout(() => (errorMsg = ''), 2000);
-			return;
-		}
 
+		// Guard set synchronously before any await to prevent double-submit.
+		if (submitting) return;
 		submitting = true;
 		errorMsg = '';
 
@@ -208,30 +202,15 @@
 
 	// ── Lifecycle ─────────────────────────────────────────────────────────────
 
-	onMount(async () => {
+	onMount(() => {
 		window.addEventListener('keydown', handlePhysicalKey);
 		initPhaser();
 		gameStartMs = Date.now();
-
-		try {
-			const token = await idToken();
-			connect(token);
-		} catch {
-			connect('');
-		}
-
-		onMessage(MessageType.GAME_STATE, (payload) => {
-			try {
-				applyServerState(fromBinary(WordleStateSchema, payload));
-			} catch { /* ignore malformed push */ }
-		});
 	});
 
 	onDestroy(() => {
 		window.removeEventListener('keydown', handlePhysicalKey);
-		removeHandler(MessageType.GAME_STATE);
 		phaserGame?.destroy(true);
-		disconnect();
 	});
 </script>
 

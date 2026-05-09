@@ -61,7 +61,8 @@ var sessions sync.Map //nolint:gochecknoglobals
 func handleGameMove(ctx context.Context, c *Conn, env *dleaguev1.Envelope, deps *GameDeps) (*dleaguev1.Envelope, error) {
 	// Defensive auth re-check (upstream requiresAuth already gate-keeps,
 	// but belt-and-suspenders for direct unit-test callers).
-	if c.userID == "" {
+	uid := c.UserID()
+	if uid == "" {
 		return errorEnvelope(env.GetRequestId(), 401, "unauthenticated"), nil
 	}
 
@@ -74,7 +75,7 @@ func handleGameMove(ctx context.Context, c *Conn, env *dleaguev1.Envelope, deps 
 	guess := move.GetGuess()
 
 	// Load or create the session for this user.
-	sess := loadOrCreateSession(c.userID)
+	sess := loadOrCreateSession(uid)
 	sess.mu.Lock()
 	defer sess.mu.Unlock()
 
@@ -82,7 +83,7 @@ func handleGameMove(ctx context.Context, c *Conn, env *dleaguev1.Envelope, deps 
 	if !sess.loaded {
 		solution, err := wordle.EnsureToday(ctx, deps.DailyRepo, deps.Answers, nowUTC())
 		if err != nil {
-			log.Printf("ws game_handler: EnsureToday uid=%q: %v", c.userID, err)
+			log.Printf("ws game_handler: EnsureToday uid=%q: %v", uid, err)
 			return errorEnvelope(env.GetRequestId(), 500, "failed to load daily puzzle"), nil
 		}
 		sess.game = wordle.New(solution)
@@ -112,7 +113,7 @@ func handleGameMove(ctx context.Context, c *Conn, env *dleaguev1.Envelope, deps 
 	// Trade-off: in-progress state is lost on disconnect, but for solo daily play
 	// the puzzle regenerates from the same seed, so no user-visible data is lost.
 	if stateProto.GetWon() || stateProto.GetLost() {
-		sessions.Delete(c.userID)
+		sessions.Delete(uid)
 	}
 
 	return &dleaguev1.Envelope{

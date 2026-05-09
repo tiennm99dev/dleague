@@ -74,12 +74,12 @@
 	function handleKeyPress(key: string): void {
 		if (resolved || ownWon || ownLost) return;
 
-		if (key === 'ENTER') {
+		if (key === 'Enter') {
 			if (currentInput.length === 5) {
 				sendMatchMove(matchId, currentInput);
 				currentInput = '';
 			}
-		} else if (key === 'BACKSPACE') {
+		} else if (key === 'Backspace') {
 			currentInput = currentInput.slice(0, -1);
 		} else if (key.length === 1 && /[a-zA-Z]/.test(key) && currentInput.length < 5) {
 			currentInput += key.toUpperCase();
@@ -120,7 +120,7 @@
 
 		// Keyboard handler for physical keyboard.
 		function onKeyDown(e: KeyboardEvent): void {
-			handleKeyPress(e.key.toUpperCase() === 'BACKSPACE' ? 'BACKSPACE' : e.key.toUpperCase() === 'ENTER' ? 'ENTER' : e.key);
+			handleKeyPress(e.key);
 		}
 		window.addEventListener('keydown', onKeyDown);
 		return () => window.removeEventListener('keydown', onKeyDown);

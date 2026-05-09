@@ -10,8 +10,7 @@
 		LeaderboardSnapshotSchema
 	} from '$lib/pb/dleague/v1/match_pb';
 	import type { LeaderboardEntry } from '$lib/pb/dleague/v1/match_pb';
-	import { idToken } from '$lib/auth-store';
-	import { connect, disconnect, sendRequest, connectionState } from '$lib/ws';
+	import { connectionState, sendRequest } from '$lib/ws';
 
 	// ── State ─────────────────────────────────────────────────────────────────
 
@@ -51,15 +50,8 @@
 		void fetchLeaderboard();
 	}
 
-	onMount(async () => {
-		try {
-			const token = await idToken();
-			connect(token);
-		} catch {
-			connect('');
-		}
-
-		// Wait for connection then fetch.
+	onMount(() => {
+		// Wait for connection (established by layout) then fetch.
 		const unsub = connectionState.subscribe((s) => {
 			if (s === 'connected') {
 				unsub();
@@ -72,7 +64,6 @@
 
 	onDestroy(() => {
 		window.removeEventListener('focus', onFocus);
-		disconnect();
 	});
 </script>
 

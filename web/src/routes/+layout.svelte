@@ -1,17 +1,17 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { authUser } from '$lib/auth-store';
+	import { authUser, idToken } from '$lib/auth-store';
 	import { initFirebase } from '$lib/firebase';
 	import SignIn from '$lib/components/sign-in.svelte';
 	import ConnectionStatus from '$lib/components/connection-status.svelte';
 	import {
 		connectionState,
-		sendMatchRejoin,
-		onMatchRejoinAck,
-		removeHandler
+		connect,
+		disconnect,
+		sendMatchRejoin
 	} from '$lib/ws';
-	import { MessageType } from '$lib/pb/dleague/v1/envelope_pb';
+	import { matchRejoinStore } from '$lib/match-rejoin-store';
 
 	let { children } = $props();
 
@@ -20,8 +20,22 @@
 
 	onMount(() => {
 		const unsubscribe = initFirebase();
-		const unsub = authUser.subscribe(() => {
+
+		// Hoist WS lifecycle: connect on sign-in, disconnect on sign-out.
+		let connected = false;
+		const unsub = authUser.subscribe(async (u) => {
 			authResolved = true;
+			if (u && !connected) {
+				try {
+					connect(await idToken());
+					connected = true;
+				} catch (e) {
+					console.warn('ws: connect failed', e);
+				}
+			} else if (!u && connected) {
+				disconnect();
+				connected = false;
+			}
 		});
 
 		// Reconnect logic: when WS transitions to 'connected', check if there
@@ -33,7 +47,12 @@
 
 			sendMatchRejoin(activeMatchID)
 				.then((ack) => {
-					// Successfully rejoined: stay on /sync page (or navigate if needed).
+					// Set rejoin store BEFORE navigating so sync route can read it.
+					matchRejoinStore.set({
+						ownState: ack.ownState ?? undefined,
+						opponentHints: ack.opponentHints
+					});
+
 					const currentPath = window.location.pathname;
 					if (!currentPath.startsWith('/sync')) {
 						const seed = sessionStorage.getItem('activeSeed') ?? '0';
@@ -59,7 +78,7 @@
 			unsubscribe();
 			unsub();
 			unsubConn();
-			removeHandler(MessageType.MATCH_REJOIN_ACK);
+			if (connected) disconnect();
 		};
 	});
 </script>

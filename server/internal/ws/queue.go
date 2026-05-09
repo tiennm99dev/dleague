@@ -49,7 +49,7 @@ func (q *Queue) PopPair(gameID string) (a, b *Conn, ok bool) {
 	}
 	// Reject self-pair: if both front entries belong to the same user, leave
 	// them in the queue — a different opponent must join first.
-	if list[0].conn.userID != "" && list[0].conn.userID == list[1].conn.userID {
+	if list[0].conn.UserID() != "" && list[0].conn.UserID() == list[1].conn.UserID() {
 		return nil, nil, false
 	}
 	a, b = list[0].conn, list[1].conn

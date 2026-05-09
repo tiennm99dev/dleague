@@ -74,19 +74,19 @@ dleague/
 
 ### `server/internal/store/`
 - One repo struct per collection, constructed via `New*Repo(db)`
-- `UserRepo` — upsert by Firebase UID; increment win/loss stats
-- `MatchRepo` — create async/sync matches; join; complete; sweep expired
-- `AttemptRepo` — per-player guess log
+- `UserRepo` — upsert by Firebase UID; increment win/loss stats (idempotent on `ModifiedCount == 1`)
+- `MatchRepo` — create async/sync matches; join; complete (with state filter); sweep expired. `Complete` is idempotent via `state:"pending"` guard.
+- `AttemptRepo` — per-player guess log; handles unique constraint on `(match_id, player_uid)` via `ErrAttemptExists`
 - `DailyPuzzleRepo` — date-keyed puzzle seed + solution
 - `WordlistRepo` — answers + dictionary; fallback to embedded binary
 - `LeaderboardRepo` — pre-computed ranking snapshots
-- `EnsureIndexes` — 8 explicit indexes created at boot (idempotent)
+- `EnsureIndexes` — 9 explicit indexes created at boot (idempotent), including unique compound index on attempts
 
 ### `server/internal/ws/`
 - `Hub` — connection registry with `sync.RWMutex`; fan-out broadcast; max-conns cap
-- `Conn` — one WS connection: read/write loops, send channel, auth fields, rate limiter
+- `Conn` — one WS connection: read/write loops, send channel, auth fields (guarded by `mu`), rate limiter. Auth fields accessed via `UserID()`, `IsAnonymous()`, `IsAdmin()` methods for race safety.
 - `dispatch` — routes `Envelope.Type` to handler; `requiresAuth` gate
-- `Queue` — FIFO matchmaking with TTL eviction and self-pair guard
+- `Queue` — FIFO matchmaking with TTL eviction and self-pair guard; stale conns removed on disconnect
 - `RoomsRegistry` — concurrent-safe map of live sync match rooms
 - `MatchRoom` — per-match state: two Wordle engines, move handling, forfeit/timeout
 - `GraceTimers` — 30 s disconnect grace via `time.AfterFunc`

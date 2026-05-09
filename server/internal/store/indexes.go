@@ -10,10 +10,16 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-// EnsureIndexes creates the 8 application-level indexes across 5 collections.
+// EnsureIndexes creates the application-level indexes across all collections.
 // It is idempotent: MongoDB skips creation for indexes with identical key+options.
 // Called once at boot after Connect+Ping.
 func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
+	// Migration safety: refuse to create the unique (match_id, player_uid) index
+	// if duplicate documents already exist — auto-deletion would lose data.
+	if err := checkAttemptDups(ctx, db); err != nil {
+		return err
+	}
+
 	type collIndexes struct {
 		coll    string
 		indexes []mongo.IndexModel
@@ -73,12 +79,14 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 				{
 					Keys: bson.D{{Key: "match_id", Value: 1}},
 				},
-				// Lookup one player's attempts in a match.
+				// Unique compound: one attempt per player per match.
+				// Prevents concurrent-retry duplicate inserts.
 				{
 					Keys: bson.D{
 						{Key: "match_id", Value: 1},
 						{Key: "player_uid", Value: 1},
 					},
+					Options: options.Index().SetUnique(true),
 				},
 			},
 		},
@@ -106,5 +114,33 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 	}
 
 	log.Printf("store: ensured %d indexes", total)
+	return nil
+}
+
+// checkAttemptDups runs a lightweight aggregation to detect duplicate
+// (match_id, player_uid) documents in the attempts collection.
+// Returns an error (and logs a clear message) if any duplicates exist so that
+// the operator can clean up before the unique index can be created.
+func checkAttemptDups(ctx context.Context, db *mongo.Database) error {
+	pipeline := mongo.Pipeline{
+		{{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: bson.D{
+				{Key: "match_id", Value: "$match_id"},
+				{Key: "player_uid", Value: "$player_uid"},
+			}},
+			{Key: "n", Value: bson.D{{Key: "$sum", Value: 1}}},
+		}}},
+		{{Key: "$match", Value: bson.D{{Key: "n", Value: bson.D{{Key: "$gt", Value: 1}}}}}},
+		{{Key: "$limit", Value: 1}},
+	}
+	cur, err := db.Collection("attempts").Aggregate(ctx, pipeline)
+	if err != nil {
+		return fmt.Errorf("store: checkAttemptDups aggregate: %w", err)
+	}
+	defer func() { _ = cur.Close(ctx) }()
+	if cur.Next(ctx) {
+		log.Printf("store: ERROR refusing to create unique index: duplicate (match_id,player_uid) docs exist; manual cleanup required")
+		return fmt.Errorf("store: duplicate (match_id,player_uid) attempts detected; unique index creation aborted")
+	}
 	return nil
 }

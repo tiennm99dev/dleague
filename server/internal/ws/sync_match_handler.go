@@ -4,8 +4,8 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/binary"
+	"fmt"
 	"log"
-	"os"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"google.golang.org/protobuf/proto"
@@ -23,7 +23,7 @@ var _ = (*dleaguev1.QueueAck)(nil)
 // Adds the connection to the matchmaking queue. If a pair is available,
 // a match is created immediately and both players receive QUEUE_MATCHED.
 func handleQueueJoin(ctx context.Context, c *Conn, env *dleaguev1.Envelope, deps *GameDeps) (*dleaguev1.Envelope, error) {
-	if c.userID == "" {
+	if c.UserID() == "" {
 		return errorEnvelope(env.GetRequestId(), 401, "unauthenticated"), nil
 	}
 	if deps.Queue == nil || deps.Rooms == nil {
@@ -70,7 +70,7 @@ func handleQueueLeave(_ context.Context, c *Conn, _ *dleaguev1.Envelope, deps *G
 
 // handleMatchMove processes MESSAGE_TYPE_MATCH_MOVE.
 func handleMatchMove(ctx context.Context, c *Conn, env *dleaguev1.Envelope, deps *GameDeps) (*dleaguev1.Envelope, error) {
-	if c.userID == "" {
+	if c.UserID() == "" {
 		return errorEnvelope(env.GetRequestId(), 401, "unauthenticated"), nil
 	}
 
@@ -96,7 +96,7 @@ func handleMatchMove(ctx context.Context, c *Conn, env *dleaguev1.Envelope, deps
 	}
 
 	if err := room.HandleMove(ctx, c, msg.GetGuess(), deps); err != nil {
-		log.Printf("ws match_move: HandleMove matchID=%q uid=%q: %v", msg.GetMatchId(), c.userID, err)
+		log.Printf("ws match_move: HandleMove matchID=%q uid=%q: %v", msg.GetMatchId(), c.UserID(), err)
 		return errorEnvelope(env.GetRequestId(), 500, "move failed"), nil
 	}
 	// Response (own WordleState) is enqueued inside HandleMove; return nil here.
@@ -106,7 +106,7 @@ func handleMatchMove(ctx context.Context, c *Conn, env *dleaguev1.Envelope, deps
 // handleMatchRejoin processes MESSAGE_TYPE_MATCH_REJOIN.
 // Rebinds the conn to the live room and sends back current state.
 func handleMatchRejoin(_ context.Context, c *Conn, env *dleaguev1.Envelope, deps *GameDeps) (*dleaguev1.Envelope, error) {
-	if c.userID == "" {
+	if c.UserID() == "" {
 		return errorEnvelope(env.GetRequestId(), 401, "unauthenticated"), nil
 	}
 
@@ -129,9 +129,10 @@ func handleMatchRejoin(_ context.Context, c *Conn, env *dleaguev1.Envelope, deps
 
 	room.mu.Lock()
 	// Find and rebind the player slot.
+	cUID := c.UserID()
 	playerIdx := -1
 	for i, p := range room.Players {
-		if p != nil && p.userID == c.userID {
+		if p != nil && p.UserID() == cUID {
 			playerIdx = i
 			room.Players[i] = c // rebind to new conn
 			break
@@ -152,7 +153,7 @@ func handleMatchRejoin(_ context.Context, c *Conn, env *dleaguev1.Envelope, deps
 
 	// Cancel disconnect grace timer (player is back).
 	if deps.GraceTimers != nil {
-		deps.GraceTimers.Cancel(msg.GetMatchId(), c.userID)
+		deps.GraceTimers.Cancel(msg.GetMatchId(), cUID)
 	}
 	c.setActiveMatchID(msg.GetMatchId())
 
@@ -177,7 +178,13 @@ func handleMatchRejoin(_ context.Context, c *Conn, env *dleaguev1.Envelope, deps
 // startSyncMatch creates the Mongo match doc, builds the room, registers it,
 // and pushes QUEUE_MATCHED to both players.
 func startSyncMatch(ctx context.Context, a, b *Conn, gameID string, deps *GameDeps) error {
-	seed := cryptoSeed()
+	seed, err := cryptoSeed()
+	if err != nil {
+		log.Printf("ws startSyncMatch: cryptoSeed: %v", err)
+		a.enqueue(errorEnvelope("", 500, "match creation failed: seed error"))
+		b.enqueue(errorEnvelope("", 500, "match creation failed: seed error"))
+		return fmt.Errorf("startSyncMatch: %w", err)
+	}
 
 	// Derive solution from seed using the answer word list.
 	solution := ""
@@ -205,7 +212,7 @@ func startSyncMatch(ctx context.Context, a, b *Conn, gameID string, deps *GameDe
 
 	// Persist the match document (may be nil in tests).
 	if deps.MatchRepo != nil {
-		if err := deps.MatchRepo.CreateSyncWithID(ctx, matchOID, a.userID, b.userID, seed, gameID); err != nil {
+		if err := deps.MatchRepo.CreateSyncWithID(ctx, matchOID, a.UserID(), b.UserID(), seed, gameID); err != nil {
 			// Rollback the activeMatchID claim so the conns aren't haunted by
 			// a never-registered match.
 			a.setActiveMatchID("")
@@ -248,8 +255,8 @@ func displayName(c *Conn) string {
 	// Conn does not store display name — hub.userRepo would be needed for a
 	// DB lookup. For MVP we return the userID as the display label.
 	// Phase 10 can enrich this with a cached profile store.
-	if c.userID != "" {
-		return c.userID
+	if uid := c.UserID(); uid != "" {
+		return uid
 	}
 	return "anonymous"
 }
@@ -262,18 +269,17 @@ func validateSyncGuess(guess string, deps *GameDeps) error {
 }
 
 // cryptoSeed returns a random int64 seed using crypto/rand.
-// A failure here is a fundamental OS-level error; crash loudly rather than
-// silently falling back to a predictable seed. Phase 09 L1 fix.
-func cryptoSeed() int64 {
+// Returns an error on failure so the caller can fail one request rather than
+// crashing the whole server. Predictable seeds would break match fairness, so
+// we surface the error explicitly rather than falling back to math/rand.
+func cryptoSeed() (int64, error) {
 	var b [8]byte
 	if _, err := rand.Read(b[:]); err != nil {
-		// crypto/rand failure is unrecoverable — predictable seeds break fairness.
-		log.Printf("FATAL: crypto/rand.Read: %v", err)
-		os.Exit(1)
+		return 0, fmt.Errorf("cryptoSeed: %w", err)
 	}
 	v := int64(binary.LittleEndian.Uint64(b[:]))
 	if v < 0 {
 		v = -v
 	}
-	return v
+	return v, nil
 }

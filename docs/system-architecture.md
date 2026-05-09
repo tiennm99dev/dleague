@@ -95,7 +95,7 @@ main()
   decodeServiceAccount()        ← FIREBASE_SERVICE_ACCOUNT_B64 → /tmp/dleague-sa.json
   config.Load()                 ← env vars; fail-fast on missing MONGO_URI
   store.Connect() + Ping()      ← 15s boot context
-  store.EnsureIndexes()         ← 8 indexes, idempotent
+  store.EnsureIndexes()         ← 9 indexes, idempotent (includes unique compound on attempts)
   wordle.LoadAnswers/Dictionary ← Mongo first, embedded fallback
   wordle.EnsureToday()          ← seed today's daily puzzle
   auth.New()                    ← Firebase verifier (ADC / emulator)
@@ -143,7 +143,7 @@ Driver: `go.mongodb.org/mongo-driver/v2` (v2.6.0+). One `*store.Client` per proc
 
 All documents carry `schema_version: 1` for lazy in-place migration (Option A).
 
-#### Indexes (8 explicit, created by `store.EnsureIndexes` at boot)
+#### Indexes (9 explicit, created by `store.EnsureIndexes` at boot)
 
 | Collection | Keys | Options |
 |---|---|---|
@@ -152,7 +152,7 @@ All documents carry `schema_version: 1` for lazy in-place migration (Option A).
 | `matches` | `created_at DESC` | — |
 | `matches` | `state ASC, created_at DESC` | — (ESR compound) |
 | `attempts` | `match_id ASC` | — |
-| `attempts` | `match_id ASC, player_uid ASC` | — |
+| `attempts` | `match_id ASC, player_uid ASC` | unique |
 | `daily_puzzles` | `_id DESC` | — |
 | `leaderboards` | `game_id ASC, period_end DESC` | — |
 
@@ -175,7 +175,7 @@ WS open: ws://.../ws
                                                      → reject 401 if missing/malformed
                                                   2. verifier.VerifyIDToken(ctx, idToken)
                                                      → reject 401 on exp/sig failure
-                                                  3. conn.userID = token.UID
+                                                  3. conn.userID = token.UID (under c.mu)
                                                      conn.isAnonymous (sign_in_provider)
                                                      conn.tokenExpiresAt
                                                   4. userRepo.UpsertByUID(uid, profile)
@@ -183,10 +183,12 @@ WS open: ws://.../ws
                                                   5. websocket.Accept → 101 Switching
 ```
 
+**Conn auth fields:** Guarded by `Conn.mu` (RWMutex). Cross-goroutine reads use accessor methods: `UserID()`, `IsAnonymous()`, `IsAdmin()` for race safety.
+
 #### Auth gate (every dispatch)
 
 ```go
-if requiresAuth(env.GetType()) && c.userID == "" {
+if requiresAuth(env.GetType()) && c.UserID() == "" {
     return errorEnvelope(req_id, 401, "unauthenticated"), nil
 }
 ```

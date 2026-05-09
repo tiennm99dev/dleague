@@ -117,15 +117,19 @@ function openSocket(token: string): void {
 	ws.onclose = (evt: CloseEvent) => {
 		connectionState.set('disconnected');
 		clearTokenRefresh();
+		// Reject in-flight requests immediately on close.
+		rejectAllPending(new Error('WebSocket: connection lost'));
 		if (!closed && reconnectAttempt < MAX_RECONNECT_ATTEMPTS) {
-			scheduleReconnect(token, evt.code);
-		} else if (!closed && reconnectAttempt >= MAX_RECONNECT_ATTEMPTS) {
-			rejectAllPending(new Error('WebSocket: max reconnection attempts exceeded'));
+			scheduleReconnect(evt.code);
 		}
 	};
 }
 
-function scheduleReconnect(token: string, closeCode: number): void {
+function scheduleReconnect(closeCode: number): void {
+	if (reconnectAttempt >= MAX_RECONNECT_ATTEMPTS || closed) {
+		connectionState.set('disconnected');
+		return;
+	}
 	// 1001 = going away (server restart) — reset counter for a clean reconnect.
 	if (closeCode === 1001) reconnectAttempt = 0;
 	const delay = Math.min(
@@ -133,7 +137,15 @@ function scheduleReconnect(token: string, closeCode: number): void {
 		MAX_RECONNECT_DELAY_MS
 	);
 	reconnectAttempt++;
-	reconnectTimer = setTimeout(() => openSocket(token), delay);
+	// Fetch a fresh token at each retry — the old one may have expired.
+	reconnectTimer = setTimeout(async () => {
+		try {
+			const fresh = await idToken();
+			openSocket(fresh);
+		} catch {
+			scheduleReconnect(0);
+		}
+	}, delay);
 }
 
 // ── Message dispatch ──────────────────────────────────────────────────────────

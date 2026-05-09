@@ -2,7 +2,7 @@
 	// Challenge accept page: /m/<share_token>
 	// On mount, sends CHALLENGE_JOIN over WS. On success, navigates to /play
 	// with the match ID and seed as query params.
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { create, toBinary, fromBinary } from '@bufbuild/protobuf';
@@ -11,8 +11,7 @@
 		ChallengeJoinSchema,
 		ChallengeJoinAckSchema
 	} from '$lib/pb/dleague/v1/match_pb';
-	import { idToken } from '$lib/auth-store';
-	import { connect, disconnect, sendRequest, connectionState } from '$lib/ws';
+	import { sendRequest, connectionState } from '$lib/ws';
 
 	// ── State ────────────────────────────────────────────────────────────────
 
@@ -77,21 +76,10 @@
 			return;
 		}
 
-		try {
-			const fbToken = await idToken();
-			connect(fbToken);
-		} catch {
-			connect('');
-		}
-
 		await joinChallenge(token);
 	});
 
-	onDestroy(() => {
-		if (status !== 'redirecting') {
-			disconnect();
-		}
-	});
+
 </script>
 
 <svelte:head>

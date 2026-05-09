@@ -34,7 +34,7 @@ func (g *GraceTimers) Schedule(c *Conn, deps *GameDeps) {
 	if matchID == "" {
 		return
 	}
-	key := timerKey(matchID, c.userID)
+	key := timerKey(matchID, c.UserID())
 
 	g.mu.Lock()
 	// Cancel any prior timer for this player (idempotent re-schedule).
@@ -53,8 +53,9 @@ func (g *GraceTimers) Schedule(c *Conn, deps *GameDeps) {
 		if room == nil {
 			return // match already resolved
 		}
-		log.Printf("ws disconnect: grace expired matchID=%q loser=%q → forfeit", matchID, c.userID)
-		room.HandleForfeit(context.Background(), c.userID, deps)
+		uid := c.UserID()
+		log.Printf("ws disconnect: grace expired matchID=%q loser=%q → forfeit", matchID, uid)
+		room.HandleForfeit(context.Background(), uid, deps)
 	})
 	g.timers[key] = t
 	g.mu.Unlock()

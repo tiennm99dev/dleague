@@ -4,6 +4,22 @@ All notable changes to Dleague. Most recent first. Commits reference the main br
 
 ---
 
+## Post-MVP Hardening — Phase 01 Critical Correctness (2026-05-09)
+
+- **Queue stale connection fix:** Disconnect defer now calls `Queue.Remove(conn)` to prevent ghost matches.
+- **Auth field race closure:** All `Conn.userID/isAnonymous/isAdmin/tokenExpiresAt` writes wrapped in `c.mu.Lock()`. New read accessors `UserID()`, `IsAnonymous()`, `IsAdmin()` ensure safe cross-goroutine access.
+- **Server crash on crypto/rand error:** `cryptoSeed()` now returns `(int64, error)`; caller in `startSyncMatch` returns 500 instead of `os.Exit(1)`.
+- **Duplicate attempt prevention:** Compound index `(match_id, player_uid)` now `Unique: true`. `AttemptRepo.Insert` handles 11000 code → `ErrAttemptExists`.
+- **Idempotent match completion:** `MatchRepo.Complete` filters on `state:"pending"` guard; `IncrementStats` gates on `ModifiedCount == 1`.
+- **Web lifecycle hoisted:** `connect()`/`disconnect()` calls moved to `+layout.svelte` and triggered by `authUser` subscription; per-route calls removed.
+- **WS pending-promise rejection:** `onclose` now calls `rejectAllPending()` before any reconnect schedule, ensuring stale promises fail fast.
+- **Rejoin payload threading:** New `match-rejoin-store.ts` carries `ownState`/`opponentHints` from `MATCH_REJOIN_ACK` into `/sync` route.
+- **Sync Enter key fix:** On-screen keyboard now emits canonical `'Enter'`/`'Backspace'` casing; `sync-game-scene.svelte` comparisons normalized.
+- **GAME_STATE deduplication:** Removed server push path; kept request-response only to eliminate double-dispatch.
+- **Test results:** `go test -race` 83 tests pass; `svelte-check` 0 errors.
+
+---
+
 ## Phase 10 — Deploy + polish (pending commit)
 
 - **Deploy artifacts:** `Dockerfile` multi-stage (golang:1.23-alpine → node:20-alpine → distroless/static), `fly.toml` (app=dleague, region=iad, min_machines=1), `scripts/set-fly-secrets.sh`, `scripts/seed-wordlists.sh`, `scripts/promote-admin.sh`.

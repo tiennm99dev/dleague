@@ -16,7 +16,8 @@ import (
 // handleChallengeCreate processes MESSAGE_TYPE_CHALLENGE_CREATE.
 // Creates a pending async match and returns the share token + seed.
 func handleChallengeCreate(ctx context.Context, c *Conn, env *dleaguev1.Envelope, deps *GameDeps) (*dleaguev1.Envelope, error) {
-	if c.userID == "" {
+	uid := c.UserID()
+	if uid == "" {
 		return errorEnvelope(env.GetRequestId(), 401, "unauthenticated"), nil
 	}
 
@@ -33,17 +34,17 @@ func handleChallengeCreate(ctx context.Context, c *Conn, env *dleaguev1.Envelope
 	// Always use today's daily seed (ignore seed_override for wordle; anti-cheat).
 	seed, err := resolveDailySeed(ctx, deps)
 	if err != nil {
-		log.Printf("ws match_handler: resolveDailySeed uid=%q: %v", c.userID, err)
+		log.Printf("ws match_handler: resolveDailySeed uid=%q: %v", uid, err)
 		return errorEnvelope(env.GetRequestId(), 500, "failed to load daily seed"), nil
 	}
 
 	matchID, shareToken, err := deps.MatchRepo.Create(ctx, store.Match{
 		GameID:        gameID,
-		ChallengerUID: c.userID,
+		ChallengerUID: uid,
 		Seed:          seed,
 	})
 	if err != nil {
-		log.Printf("ws match_handler: Create match uid=%q: %v", c.userID, err)
+		log.Printf("ws match_handler: Create match uid=%q: %v", uid, err)
 		return errorEnvelope(env.GetRequestId(), 500, "failed to create match"), nil
 	}
 
@@ -65,7 +66,8 @@ func handleChallengeCreate(ctx context.Context, c *Conn, env *dleaguev1.Envelope
 // handleChallengeJoin processes MESSAGE_TYPE_CHALLENGE_JOIN.
 // Atomically sets challengee_uid; rejects self-join and concurrent duplicates.
 func handleChallengeJoin(ctx context.Context, c *Conn, env *dleaguev1.Envelope, deps *GameDeps) (*dleaguev1.Envelope, error) {
-	if c.userID == "" {
+	uid := c.UserID()
+	if uid == "" {
 		return errorEnvelope(env.GetRequestId(), 401, "unauthenticated"), nil
 	}
 
@@ -88,7 +90,7 @@ func handleChallengeJoin(ctx context.Context, c *Conn, env *dleaguev1.Envelope, 
 	if match == nil {
 		return errorEnvelope(env.GetRequestId(), 404, "challenge not found"), nil
 	}
-	if match.ChallengerUID == c.userID {
+	if match.ChallengerUID == uid {
 		return errorEnvelope(env.GetRequestId(), 400, "cannot join your own challenge"), nil
 	}
 
@@ -105,14 +107,14 @@ func handleChallengeJoin(ctx context.Context, c *Conn, env *dleaguev1.Envelope, 
 	// The ctx passed to the callback already carries the session.
 	_, txErr := session.WithTransaction(ctx, func(sc context.Context) (any, error) {
 		var joinErr error
-		joined, joinErr = deps.MatchRepo.JoinAsChallengee(sc, token, c.userID)
+		joined, joinErr = deps.MatchRepo.JoinAsChallengee(sc, token, uid)
 		return nil, joinErr
 	})
 	if txErr != nil {
 		if errors.Is(txErr, store.ErrAlreadyJoined) {
 			return errorEnvelope(env.GetRequestId(), 409, "challenge already taken"), nil
 		}
-		log.Printf("ws match_handler: JoinAsChallengee token=%q uid=%q: %v", token, c.userID, txErr)
+		log.Printf("ws match_handler: JoinAsChallengee token=%q uid=%q: %v", token, uid, txErr)
 		return errorEnvelope(env.GetRequestId(), 500, "join failed"), nil
 	}
 
@@ -135,7 +137,8 @@ func handleChallengeJoin(ctx context.Context, c *Conn, env *dleaguev1.Envelope, 
 // Records the attempt; when both sides have submitted, computes and persists
 // the winner atomically via a Mongo transaction.
 func handleAttemptSubmit(ctx context.Context, c *Conn, env *dleaguev1.Envelope, deps *GameDeps) (*dleaguev1.Envelope, error) {
-	if c.userID == "" {
+	uid := c.UserID()
+	if uid == "" {
 		return errorEnvelope(env.GetRequestId(), 401, "unauthenticated"), nil
 	}
 
@@ -156,7 +159,7 @@ func handleAttemptSubmit(ctx context.Context, c *Conn, env *dleaguev1.Envelope, 
 	}
 
 	// Idempotency: return existing result if already submitted.
-	prior, err := deps.AttemptRepo.GetByMatchAndPlayer(ctx, matchID, c.userID)
+	prior, err := deps.AttemptRepo.GetByMatchAndPlayer(ctx, matchID, uid)
 	if err != nil {
 		return errorEnvelope(env.GetRequestId(), 500, "internal error"), nil
 	}
@@ -175,7 +178,7 @@ func handleAttemptSubmit(ctx context.Context, c *Conn, env *dleaguev1.Envelope, 
 
 	attempt := store.Attempt{
 		MatchID:   matchOID,
-		PlayerUID: c.userID,
+		PlayerUID: uid,
 		Guesses:   msg.GetGuesses(),
 		TimeMs:    tms,
 		Won:       msg.GetWon(),
@@ -228,21 +231,27 @@ func handleAttemptSubmit(ctx context.Context, c *Conn, env *dleaguev1.Envelope, 
 		winnerUID = decideWinner(match, allAttempts)
 		completed = true
 
-		if cErr := deps.MatchRepo.Complete(sc, matchID, winnerUID); cErr != nil {
+		modified, cErr := deps.MatchRepo.Complete(sc, matchID, winnerUID)
+		if cErr != nil {
 			return nil, cErr
 		}
 
-		// Update stats (best-effort: log but don't abort on failure).
-		for _, uid := range []string{match.ChallengerUID, *match.ChallengeeUID} {
-			if sErr := deps.UserRepo.IncrementStats(sc, uid, uid == winnerUID); sErr != nil {
-				log.Printf("ws match_handler: IncrementStats uid=%q: %v", uid, sErr)
+		// Gate stats on ModifiedCount: if 0, this tx attempt raced another that
+		// already completed the match — skip increment to prevent double-counting.
+		if modified == 1 {
+			for _, pUID := range []string{match.ChallengerUID, *match.ChallengeeUID} {
+				if sErr := deps.UserRepo.IncrementStats(sc, pUID, pUID == winnerUID); sErr != nil {
+					log.Printf("ws match_handler: IncrementStats uid=%q: %v", pUID, sErr)
+				}
 			}
+		} else {
+			log.Printf("ws match_handler: match already completed; skipping stats matchID=%q", matchID)
 		}
 		return nil, nil
 	})
 
 	if txErr != nil {
-		log.Printf("ws match_handler: AttemptSubmit tx matchID=%q uid=%q: %v", matchID, c.userID, txErr)
+		log.Printf("ws match_handler: AttemptSubmit tx matchID=%q uid=%q: %v", matchID, uid, txErr)
 		return errorEnvelope(env.GetRequestId(), 500, "submit failed"), nil
 	}
 
