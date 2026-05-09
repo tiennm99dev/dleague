@@ -27,6 +27,7 @@ import type {
 	MatchRejoinAck
 } from './pb/dleague/v1/match_pb';
 import { idToken } from './auth-store';
+import { authError } from './auth-error-store';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -63,6 +64,10 @@ let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 // Set true when disconnect() is called intentionally to prevent auto-reconnect.
 let closed = false;
+// Auth-reject force-refresh state: tracks last force-refresh to cap at 1/min.
+let lastForceRefreshAt = 0;
+const FORCE_REFRESH_COOLDOWN_MS = 60_000;
+let pendingForceRefresh = false;
 
 // ── Connection lifecycle ──────────────────────────────────────────────────────
 
@@ -117,8 +122,25 @@ function openSocket(token: string): void {
 	ws.onclose = (evt: CloseEvent) => {
 		connectionState.set('disconnected');
 		clearTokenRefresh();
-		// Reject in-flight requests immediately on close.
 		rejectAllPending(new Error('WebSocket: connection lost'));
+
+		// Code 1006 = abnormal closure, which is what browsers report when the
+		// server rejects the HTTP upgrade (our auth failure path: HTTP 401 before
+		// WS handshake completes). Codes 1008/4401 kept for forward-compat.
+		const isAuthReject = evt.code === 1006 || evt.code === 1008 || evt.code === 4401;
+		if (isAuthReject && reconnectAttempt === 0) {
+			// Only treat first-attempt 1006 as auth reject; subsequent 1006s
+			// may be network drops, handled by normal backoff.
+			const now = Date.now();
+			if (now - lastForceRefreshAt > FORCE_REFRESH_COOLDOWN_MS) {
+				lastForceRefreshAt = now;
+				pendingForceRefresh = true;
+			} else {
+				authError.set({ kind: 'auth_failed', message: 'Authentication failed; please sign in again' });
+				return;
+			}
+		}
+
 		if (!closed && reconnectAttempt < MAX_RECONNECT_ATTEMPTS) {
 			scheduleReconnect(evt.code);
 		}
@@ -140,7 +162,9 @@ function scheduleReconnect(closeCode: number): void {
 	// Fetch a fresh token at each retry — the old one may have expired.
 	reconnectTimer = setTimeout(async () => {
 		try {
-			const fresh = await idToken();
+			const force = pendingForceRefresh;
+			pendingForceRefresh = false;
+			const fresh = await idToken(force);
 			openSocket(fresh);
 		} catch {
 			scheduleReconnect(0);

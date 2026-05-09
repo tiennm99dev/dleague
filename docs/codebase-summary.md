@@ -86,6 +86,8 @@ dleague/
 - `Hub` — connection registry with `sync.RWMutex`; fan-out broadcast; max-conns cap
 - `Conn` — one WS connection: read/write loops, send channel, auth fields (guarded by `mu`), rate limiter. Auth fields accessed via `UserID()`, `IsAnonymous()`, `IsAdmin()` methods for race safety.
 - `dispatch` — routes `Envelope.Type` to handler; `requiresAuth` gate
+- `UIDLimiter` — per-UID rate limiting with TTL eviction; defence-in-depth over per-conn limiter (Phase 02)
+- `log_redact.go` — `redactUID(uid)` HMAC-SHA256 hash with per-process salt; `truncateToken(token)` for bearer credentials
 - `Queue` — FIFO matchmaking with TTL eviction and self-pair guard; stale conns removed on disconnect
 - `RoomsRegistry` — concurrent-safe map of live sync match rooms
 - `MatchRoom` — per-match state: two Wordle engines, move handling, forfeit/timeout
@@ -103,6 +105,10 @@ dleague/
 
 ### `server/internal/scheduler/`
 - `Run(ctx, cfg, repos)` — goroutine: leaderboard refresh every 5 min, match sweep every 15 min
+
+### `web/src/lib/`
+- `auth-store.ts` — `idToken(force = false)` parameter for explicit refresh; supports force-refresh recovery (Phase 02)
+- `AuthErrorToast.svelte` — non-blocking alert mounted in layout; surfaces auth failures instead of degrading to anonymous (Phase 02)
 
 ## Build Commands
 

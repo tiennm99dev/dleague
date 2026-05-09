@@ -154,7 +154,7 @@ func UpgradeHandler(hub *Hub, opts UpgradeOptions) http.HandlerFunc {
 				profile := tokenToProfile(token.Claims)
 				profile.IsAnonymous = connAnonymous
 				if uErr := hub.userRepo.UpsertByUID(r.Context(), token.UID, profile); uErr != nil {
-					log.Printf("ws upsert user %q: %v", token.UID, uErr)
+					log.Printf("ws upsert user %s: %v", RedactUID(token.UID), uErr)
 					// Non-fatal: connection proceeds even when the DB write fails.
 				}
 			}
@@ -286,11 +286,20 @@ func (c *Conn) readLoop(ctx context.Context) {
 // handleFrame processes one inbound binary frame. It enqueues any response to
 // c.send; on send-channel overflow it cancels the connection.
 func (c *Conn) handleFrame(ctx context.Context, data []byte) {
-	// Rate-limit gate: 10 tokens burst, refills at 10/sec.
+	// Per-conn rate-limit gate: 10 tokens burst, refills at 10/sec.
 	// On overflow enqueue a 429 error and drop this frame (do NOT close conn).
 	if c.rateLimiter != nil && !c.rateLimiter.Allow() {
 		c.enqueue(errorEnvelope("", 429, "rate limit exceeded"))
 		return
+	}
+
+	// Per-UID rate-limit gate: defence-in-depth for authenticated users.
+	// Applies only when GameDeps.UIDLimiter is wired and uid is non-empty.
+	if uid := c.UserID(); uid != "" && c.hub.GameDeps != nil && c.hub.GameDeps.UIDLimiter != nil {
+		if !c.hub.GameDeps.UIDLimiter.Allow(uid) {
+			c.enqueue(errorEnvelope("", 429, "rate limit exceeded"))
+			return
+		}
 	}
 
 	var env dleaguev1.Envelope

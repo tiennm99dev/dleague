@@ -39,6 +39,10 @@ type GameDeps struct {
 	Queue       *Queue         // matchmaking queue
 	Rooms       *RoomsRegistry // active match rooms
 	GraceTimers *GraceTimers   // disconnect grace timers
+
+	// Phase 10 / security: per-UID rate limiter (defence-in-depth above per-conn).
+	// Nil-safe: if unset, per-UID limiting is skipped.
+	UIDLimiter *UIDLimiter
 }
 
 // wordleSession holds one user's in-progress Wordle game.
@@ -83,7 +87,7 @@ func handleGameMove(ctx context.Context, c *Conn, env *dleaguev1.Envelope, deps 
 	if !sess.loaded {
 		solution, err := wordle.EnsureToday(ctx, deps.DailyRepo, deps.Answers, nowUTC())
 		if err != nil {
-			log.Printf("ws game_handler: EnsureToday uid=%q: %v", uid, err)
+			log.Printf("ws game_handler: EnsureToday uid=%s: %v", RedactUID(uid), err)
 			return errorEnvelope(env.GetRequestId(), 500, "failed to load daily puzzle"), nil
 		}
 		sess.game = wordle.New(solution)

@@ -75,7 +75,7 @@ func (r *Room) HandleMove(ctx context.Context, c *Conn, guess string, deps *Game
 
 	idx := r.playerIndex(c)
 	if idx < 0 {
-		return fmt.Errorf("match_room: conn %q not a player in match %q", c.UserID(), r.MatchID)
+		return fmt.Errorf("match_room: conn %q not a player in match %q", RedactUID(c.UserID()), r.MatchID)
 	}
 
 	w := r.Wordles[idx]
@@ -224,7 +224,7 @@ func (r *Room) finishUnlocked(ctx context.Context, deps *GameDeps, winnerUID, re
 					pUID := p.UserID()
 					won := pUID == winnerUID
 					if sErr := deps.UserRepo.IncrementStats(ctx, pUID, won); sErr != nil {
-						log.Printf("match_room: IncrementStats uid=%q: %v", pUID, sErr)
+						log.Printf("match_room: IncrementStats uid=%s: %v", RedactUID(pUID), sErr)
 					}
 				}
 			}

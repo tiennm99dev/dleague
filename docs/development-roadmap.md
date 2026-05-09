@@ -11,7 +11,7 @@ Critical correctness, security, and UX bug fixes across 7 phases (Phase 01 compl
 | # | Phase | Priority | Status |
 |---|-------|----------|--------|
 | 01 | Critical correctness — races, DoS, duplicate writes | P1 | completed (2026-05-09) |
-| 02 | Security & abuse hardening | P1 | pending |
+| 02 | Security & abuse hardening | P1 | completed (2026-05-09) |
 | 03 | UX correctness — navigation, a11y, reconnect | P2 | pending |
 | 04 | Pluggability decision | P2 | pending |
 | 05 | Persistence & data integrity | P1 | pending |

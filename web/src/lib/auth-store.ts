@@ -20,8 +20,8 @@ export function setAuthUser(user: User | null): void {
  * Throws if no user is signed in.
  * Firebase caches the token and only hits the network when <5 min to expiry.
  */
-export async function idToken(): Promise<string> {
+export async function idToken(force = false): Promise<string> {
 	const user = get(authUser);
 	if (!user) throw new Error('idToken: no user signed in');
-	return user.getIdToken();
+	return user.getIdToken(force);
 }

@@ -108,7 +108,7 @@
 19. Add a `proto` job that runs `make proto-gen` then `git diff --exit-code` to catch un-committed regen drift.
 
 ## Todo List
-- [ ] Server handler tests (steps 1-5)
+- [ ] Server handler tests (steps 1-5). **Phase 02 note:** Add coverage for `UIDLimiter` (race + TTL evict), `RedactUID` (determinism + hex format), `AttemptSubmit` 422 path, force-refresh cap (1/min).
 - [ ] Auth-refresh race test (step 6)
 - [ ] Dispatch fuzz (step 7)
 - [ ] Mongo concurrency test (step 8)

@@ -10,7 +10,7 @@
 - **Description:** Repair UX edges around mid-match navigation, accessibility, anonymous-user clarity, reconnect affordance, and results-screen edge cases (opponent left, disconnect mid-race). Not new features — fixing what's broken or missing-but-implied.
 
 ## Key Insights
-- `web/src/routes/+layout.svelte:29-56` rejoin handler fires on every reconnect — visiting `/leaderboard` mid-match auto-bounces user back to `/sync` (web H6).
+- `web/src/routes/+layout.svelte:29-56` rejoin handler fires on every reconnect — visiting `/leaderboard` mid-match auto-bounces user back to `/sync` (web H6). **Phase 02 note:** Auth failures now surface via `AuthErrorToast` (non-blocking alert). Phase 03 can reference this store in connection-status or connection-error handling if deeper integration needed.
 - `web/src/lib/components/board.svelte:36` uses `role="grid"` without keyboard nav model; aria-label `"empty"` per cell is screen-reader noise (web M6).
 - `web/src/lib/components/keyboard.svelte:65-71` on-screen keys steal focus → autoscroll on Backspace (web M7).
 - `web/src/lib/components/sign-in.svelte:83-85` "Continue anonymously" with no warning that progress isn't persisted on leaderboard (web M20).

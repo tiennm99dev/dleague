@@ -54,7 +54,7 @@ func (g *GraceTimers) Schedule(c *Conn, deps *GameDeps) {
 			return // match already resolved
 		}
 		uid := c.UserID()
-		log.Printf("ws disconnect: grace expired matchID=%q loser=%q → forfeit", matchID, uid)
+		log.Printf("ws disconnect: grace expired matchID=%q loser=%s → forfeit", matchID, RedactUID(uid))
 		room.HandleForfeit(context.Background(), uid, deps)
 	})
 	g.timers[key] = t

@@ -27,7 +27,7 @@ hygiene, test infra, and code/doc cleanup. Goal: ship-ready post-MVP, no new gam
 | #  | Name                          | Priority | Status  | Description                                                          |
 |----|-------------------------------|----------|---------|----------------------------------------------------------------------|
 | 01 | Critical correctness          | P1       | completed | High-severity races/DoS/duplicate writes — must-fix before any trust |
-| 02 | Security & abuse hardening    | P1       | pending | Token/UID logging, WS origin, rate limits, anti-cheat, token refresh |
+| 02 | Security & abuse hardening    | P1       | completed | Token/UID logging, WS origin, rate limits, anti-cheat, token refresh |
 | 03 | UX correctness                | P2       | pending | Sync Enter key, rejoin nav, anon warning, a11y, results edges        |
 | 04 | Pluggability decision         | P2       | pending | Wire wordle through `shared/game.Game` OR drop the claim from docs   |
 | 05 | Persistence & data integrity  | P1       | pending | Unique indexes, state filters, idempotency, Atlas docs, Hints field  |

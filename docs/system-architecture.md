@@ -204,11 +204,15 @@ Client                                          Server (hub.dispatch)
 ──────                                          ─────────────────────
 AuthRefresh{id_token: newToken}  ─────────────►
                                                 verifier.VerifyIDToken(newToken)
-                                                → on error: ERROR{401} + close conn
+                                                → on error: ERROR{401} + close conn 1006
+                                                  [client: on 401/1006, trigger
+                                                   idToken(force=true) 1x/min cap]
                                                 → on ok: update conn.userID,
                                                          conn.tokenExpiresAt
                                                 AuthRefreshAck{expires_at_unix}  ◄──
 ```
+
+**Auth failure recovery (Phase 02):** If server rejects 401, client attempts one `idToken(force=true)` per minute. If force-refresh fails, web surfaces `AuthErrorToast` non-blocking alert instead of degrading to anonymous-silent-connect.
 
 #### Anonymous users
 
@@ -326,9 +330,10 @@ Conn close while activeMatchID != "":
 - If `room.Deadline < now && !room.resolved` → `room.HandleTimeout(deps)`.
 - Both players receive `MATCH_RESOLVED{winnerUID="", reason="timeout"}` when neither solved.
 
-### Per-conn rate limiting
-- Token bucket: 10 tokens burst, refill 10/sec.
-- Gate at top of `Conn.handleFrame` before any proto parsing.
+### Rate limiting (layered — Phase 02)
+- **Per-conn rate limit:** Token bucket 10 tokens burst, refill 10/sec. Gate at top of `Conn.handleFrame` before proto parsing.
+- **Per-UID rate limit:** Separate `UIDLimiter` map with same bucket params. Checks after auth; defence-in-depth against single-UID abuse across multiple connections.
+- **TTL eviction:** UID entries idle >1h removed automatically. Protects `buckets` map from unbounded growth on anonymous churn.
 - On denial: enqueue `ERROR{429, "rate limit exceeded"}`; frame dropped; conn stays open.
 
 ### Atomic match-end

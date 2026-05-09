@@ -34,7 +34,7 @@ func handleChallengeCreate(ctx context.Context, c *Conn, env *dleaguev1.Envelope
 	// Always use today's daily seed (ignore seed_override for wordle; anti-cheat).
 	seed, err := resolveDailySeed(ctx, deps)
 	if err != nil {
-		log.Printf("ws match_handler: resolveDailySeed uid=%q: %v", uid, err)
+		log.Printf("ws match_handler: resolveDailySeed uid=%s: %v", RedactUID(uid), err)
 		return errorEnvelope(env.GetRequestId(), 500, "failed to load daily seed"), nil
 	}
 
@@ -44,7 +44,7 @@ func handleChallengeCreate(ctx context.Context, c *Conn, env *dleaguev1.Envelope
 		Seed:          seed,
 	})
 	if err != nil {
-		log.Printf("ws match_handler: Create match uid=%q: %v", uid, err)
+		log.Printf("ws match_handler: Create match uid=%s: %v", RedactUID(uid), err)
 		return errorEnvelope(env.GetRequestId(), 500, "failed to create match"), nil
 	}
 
@@ -114,7 +114,7 @@ func handleChallengeJoin(ctx context.Context, c *Conn, env *dleaguev1.Envelope, 
 		if errors.Is(txErr, store.ErrAlreadyJoined) {
 			return errorEnvelope(env.GetRequestId(), 409, "challenge already taken"), nil
 		}
-		log.Printf("ws match_handler: JoinAsChallengee token=%q uid=%q: %v", token, uid, txErr)
+		log.Printf("ws match_handler: JoinAsChallengee token=%s uid=%s: %v", TruncateToken(token), RedactUID(uid), txErr)
 		return errorEnvelope(env.GetRequestId(), 500, "join failed"), nil
 	}
 
@@ -145,6 +145,11 @@ func handleAttemptSubmit(ctx context.Context, c *Conn, env *dleaguev1.Envelope, 
 	var msg dleaguev1.AttemptSubmit
 	if err := proto.Unmarshal(env.GetPayload(), &msg); err != nil {
 		return errorEnvelope(env.GetRequestId(), 400, "invalid AttemptSubmit payload"), nil
+	}
+
+	// Anti-cheat: bound guesses (Wordle allows at most MaxAttempts attempts).
+	if len(msg.GetGuesses()) > wordle.MaxAttempts {
+		return errorEnvelope(env.GetRequestId(), 422, "too many guesses: max 6"), nil
 	}
 
 	// Anti-cheat: reject impossibly fast (<500ms) or replay-attack (>24h) times.
@@ -241,7 +246,7 @@ func handleAttemptSubmit(ctx context.Context, c *Conn, env *dleaguev1.Envelope, 
 		if modified == 1 {
 			for _, pUID := range []string{match.ChallengerUID, *match.ChallengeeUID} {
 				if sErr := deps.UserRepo.IncrementStats(sc, pUID, pUID == winnerUID); sErr != nil {
-					log.Printf("ws match_handler: IncrementStats uid=%q: %v", pUID, sErr)
+					log.Printf("ws match_handler: IncrementStats uid=%s: %v", RedactUID(pUID), sErr)
 				}
 			}
 		} else {
@@ -251,7 +256,7 @@ func handleAttemptSubmit(ctx context.Context, c *Conn, env *dleaguev1.Envelope, 
 	})
 
 	if txErr != nil {
-		log.Printf("ws match_handler: AttemptSubmit tx matchID=%q uid=%q: %v", matchID, uid, txErr)
+		log.Printf("ws match_handler: AttemptSubmit tx matchID=%q uid=%s: %v", matchID, RedactUID(uid), txErr)
 		return errorEnvelope(env.GetRequestId(), 500, "submit failed"), nil
 	}
 

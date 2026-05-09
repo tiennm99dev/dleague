@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -130,11 +131,23 @@ func main() {
 	if cfg.IsProduction() && len(cfg.AllowedOrigins) == 0 {
 		log.Fatalf("DLEAGUE_WS_ORIGINS must be non-empty in production")
 	}
+	// Warn when a wildcard pattern is present in production — still operational
+	// but likely misconfigured.
+	if cfg.IsProduction() {
+		for _, origin := range cfg.AllowedOrigins {
+			if strings.Contains(origin, "*") {
+				log.Printf("WARN: production AllowedOrigins contains wildcard: %q", origin)
+			}
+		}
+	}
 
 	// Phase 09: in-memory sync PvP state — created once, shared via GameDeps.
 	syncQueue := ws.NewQueue()
 	syncRooms := ws.NewRoomsRegistry()
 	graceTimers := ws.NewGraceTimers()
+
+	// Per-UID rate limiter: 20 msg/sec, burst 40, evict idle after 1h.
+	uidLim := ws.NewUIDLimiter(20, 40, time.Hour)
 
 	hub := ws.NewHub(verifier, userRepo)
 	hub.MaxConns = cfg.MaxConns
@@ -150,6 +163,7 @@ func main() {
 		Queue:           syncQueue,
 		Rooms:           syncRooms,
 		GraceTimers:     graceTimers,
+		UIDLimiter:      uidLim,
 	}
 	wsOpts := ws.UpgradeOptions{AllowedOrigins: cfg.AllowedOrigins}
 
@@ -170,6 +184,9 @@ func main() {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	// Evict idle UID buckets every 5 minutes.
+	go uidLim.RunEvictor(ctx, 5*time.Minute)
 
 	// Background scheduler: refresh leaderboards every 5 min, sweep expired
 	// matches every 15 min. Tied to signal context — shuts down on SIGTERM.

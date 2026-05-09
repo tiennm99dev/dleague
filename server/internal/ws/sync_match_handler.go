@@ -96,7 +96,7 @@ func handleMatchMove(ctx context.Context, c *Conn, env *dleaguev1.Envelope, deps
 	}
 
 	if err := room.HandleMove(ctx, c, msg.GetGuess(), deps); err != nil {
-		log.Printf("ws match_move: HandleMove matchID=%q uid=%q: %v", msg.GetMatchId(), c.UserID(), err)
+		log.Printf("ws match_move: HandleMove matchID=%q uid=%s: %v", msg.GetMatchId(), RedactUID(c.UserID()), err)
 		return errorEnvelope(env.GetRequestId(), 500, "move failed"), nil
 	}
 	// Response (own WordleState) is enqueued inside HandleMove; return nil here.
@@ -250,15 +250,20 @@ func sendQueueMatched(c *Conn, matchID string, seed int64, opponentName, reqID s
 	})
 }
 
-// displayName returns the user's display name or their userID as fallback.
+// displayName returns a non-identifying label for the player.
+// Never broadcasts raw UID to the opponent.
 func displayName(c *Conn) string {
-	// Conn does not store display name — hub.userRepo would be needed for a
-	// DB lookup. For MVP we return the userID as the display label.
-	// Phase 10 can enrich this with a cached profile store.
-	if uid := c.UserID(); uid != "" {
-		return uid
+	if c.IsAnonymous() {
+		return "Anonymous"
 	}
-	return "anonymous"
+	uid := c.UserID()
+	if uid == "" {
+		return "Anonymous"
+	}
+	if len(uid) >= 4 {
+		return "Player " + uid[len(uid)-4:]
+	}
+	return "Player"
 }
 
 // validateSyncGuess validates a guess for a sync match (length + dictionary).

@@ -4,6 +4,18 @@ All notable changes to Dleague. Most recent first. Commits reference the main br
 
 ---
 
+## Post-MVP Hardening — Phase 02 Security & abuse hardening (2026-05-09)
+
+- **Log redaction:** UID redaction via HMAC-SHA256 per-process salt (`log_redact.go`); share token truncated to 8 chars in logs.
+- **Per-UID rate limiting:** New `UIDLimiter` struct with TTL eviction (1h idle); wired into dispatch after auth gate (defence in depth over per-conn limiter).
+- **Attempt bounds:** `AttemptSubmit` guesses array capped at 6 entries; rejects with 422 if exceeded.
+- **Web auth UX:** `idToken(force = false)` parameter; 401 WS close triggers one force-refresh per minute; `AuthErrorToast` non-blocking alert instead of silent empty-token connect.
+- **`displayName` privacy:** Sync-match opponent fallback → `"Player ${last4}"` strips UID from broadcast.
+- **OriginPatterns doc:** boot-time warn if production config contains wildcards.
+- **Test results:** `go test -race` 10/10 packages green (97 test runs); `svelte-check` 0 errors.
+
+---
+
 ## Post-MVP Hardening — Phase 01 Critical Correctness (2026-05-09)
 
 - **Queue stale connection fix:** Disconnect defer now calls `Queue.Remove(conn)` to prevent ghost matches.

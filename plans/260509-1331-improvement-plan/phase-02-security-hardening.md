@@ -7,7 +7,7 @@
 
 ## Overview
 - **Priority:** P1
-- **Status:** pending
+- **Status:** completed
 - **Description:** Stop logging credentials/UIDs at INFO; tighten WS origin matching; add per-UID rate limit; bound `AttemptSubmit.guesses`; force-refresh Firebase tokens on auth fail; surface auth errors instead of silently connecting with empty token.
 
 ## Key Insights
@@ -68,14 +68,14 @@
 12. Create `web/src/lib/components/auth-error-toast.svelte` — fixed-position alert with "Sign in to continue" + retry button; mounted in layout.
 
 ## Todo List
-- [ ] UID redaction helper + replace log emits (steps 1, 3)
-- [ ] Truncate share token in JoinAsChallengee log (step 2)
-- [ ] displayName fallback strips UID (step 4)
-- [ ] OriginPatterns doc + production wildcard warn (steps 5-6)
-- [ ] Per-UID rate limiter (step 7)
-- [ ] Bound AttemptSubmit.guesses (step 8)
-- [ ] `idToken(force)` overload (step 9)
-- [ ] WS auth-error path → force-refresh + surface (steps 10-12)
+- [x] UID redaction helper + replace log emits (steps 1, 3)
+- [x] Truncate share token in JoinAsChallengee log (step 2)
+- [x] displayName fallback strips UID (step 4)
+- [x] OriginPatterns doc + production wildcard warn (steps 5-6)
+- [x] Per-UID rate limiter (step 7)
+- [x] Bound AttemptSubmit.guesses (step 8)
+- [x] `idToken(force)` overload (step 9)
+- [x] WS auth-error path → force-refresh + surface (steps 10-12)
 
 ## Success Criteria
 - `grep -nE 'log\..*\b(c\.userID|token)\b' server/internal/ws/*.go` returns 0 unredacted hits.
@@ -97,3 +97,27 @@
 ## Next Steps
 - Phase 03 wires the auth-error toast into the broader UX affordance work.
 - Phase 06 adds tests for rate-limit per-UID and bounded guesses.
+
+## Completion Notes
+
+**Completed:** 2026-05-09
+
+**Summary of Changes:**
+- `log_redact.go` created: UID redaction via HMAC-SHA256 with per-process salt.
+- `match_handler.go:115` share token truncation → `truncateToken()` helper.
+- `match_room.go:78` raw UID in log redacted via `RedactUID()`.
+- `sync_match_handler.go:247-255` displayName fallback → `"Player ${last4}"` strips UID.
+- `rate_limiter.go` added per-UID `UIDLimiter` with TTL eviction; wired into dispatch.
+- `match_handler.go` AttemptSubmit handler bounds guesses to ≤6; rejects with 422.
+- `auth-store.ts:idToken(force=false)` parameter added.
+- `ws.ts` WS auth-error path forces token refresh (1/min cap) + signals auth error store.
+- `AuthErrorToast` component created; mounted in `+layout.svelte` on `idToken()` throw.
+- Review fix-ups: `match_room.go:78` raw UID redacted; `maxGuesses` → `wordle.MaxAttempts`; `auth-error-toast.svelte` `aria-live` removed (consistency with `role="alert"`).
+
+**Test Results:**
+- Server: `go test -race` 10/10 packages green (97 test runs).
+- Web: `svelte-check` 0 errors.
+
+**Reports:**
+- [Code review](reports/code-reviewer-phase-02-diff-260509-1502.md) (APPROVE_WITH_FIXES — fixes applied)
+- [Tester](reports/tester-phase-02-260509-1502.md) (green)

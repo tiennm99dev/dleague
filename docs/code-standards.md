@@ -94,6 +94,11 @@ dleague/
 - **Exported functions must have doc comments** — `// FunctionName does Y.`
 - **Complex logic:** Explain *why*, not *what* (code shows what)
 
+### Logging (Phase 02+)
+- **Never log raw Firebase UIDs at INFO+** — use `ws.RedactUID(uid string)` for HMAC-hashed output (format: `u_<8-hex>`).
+- **Never log full bearer tokens** — use `ws.TruncateToken(token string)` for first 8 chars only.
+- **No credential material in error envelopes** — do not include tokens, UIDs, or passwords in ERROR payloads sent to client.
+
 ## MongoDB Conventions (Phase 04+)
 
 - **Driver:** `go.mongodb.org/mongo-driver/v2`. One `*mongo.Client` per process.

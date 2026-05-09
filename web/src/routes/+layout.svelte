@@ -5,6 +5,7 @@
 	import { initFirebase } from '$lib/firebase';
 	import SignIn from '$lib/components/sign-in.svelte';
 	import ConnectionStatus from '$lib/components/connection-status.svelte';
+	import AuthErrorToast from '$lib/components/auth-error-toast.svelte';
 	import {
 		connectionState,
 		connect,
@@ -12,6 +13,7 @@
 		sendMatchRejoin
 	} from '$lib/ws';
 	import { matchRejoinStore } from '$lib/match-rejoin-store';
+	import { authError } from '$lib/auth-error-store';
 
 	let { children } = $props();
 
@@ -29,8 +31,9 @@
 				try {
 					connect(await idToken());
 					connected = true;
-				} catch (e) {
-					console.warn('ws: connect failed', e);
+					authError.set(null);
+				} catch {
+					authError.set({ kind: 'no_token', message: 'Sign in to continue' });
 				}
 			} else if (!u && connected) {
 				disconnect();
@@ -86,6 +89,7 @@
 {#if authResolved}
 	{#if $authUser}
 		<ConnectionStatus />
+		<AuthErrorToast />
 		{@render children()}
 	{:else}
 		<SignIn />

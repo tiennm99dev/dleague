@@ -21,8 +21,10 @@ type Config struct {
 	// WebRoot is the directory served as static assets. Defaults to "./web".
 	WebRoot string
 
-	// AllowedOrigins limits Origin headers accepted on the WebSocket upgrade.
-	// Empty slice means same-origin only.
+	// AllowedOrigins lists glob patterns matched by coder/websocket OriginPatterns.
+	// Use exact "scheme://host:port" strings unless wildcards are intended.
+	// Production deployments SHOULD NOT contain "*" — a boot-time warning is
+	// logged when IsProduction() and any entry contains "*".
 	AllowedOrigins []string
 
 	// MongoURI is the MongoDB connection string. Required.
