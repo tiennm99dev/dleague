@@ -1,10 +1,11 @@
 ---
 phase: 3
 title: "Migrate nhooyr.io/websocket → github.com/coder/websocket"
-status: pending
+status: completed
 priority: P2
 effort: 0.5w
 dependencies: [2]
+completed_on: 2026-05-09
 ---
 
 # Phase 03 — WebSocket library migration (nhooyr → coder)
@@ -59,13 +60,13 @@ No diagram needed — symbol-for-symbol substitution.
 8. Commit: `chore: migrate nhooyr.io/websocket to github.com/coder/websocket (archived → maintained fork)`.
 
 ## Todo List
-- [ ] Enumerate import sites
-- [ ] Replace import paths
-- [ ] `go mod tidy` + verify
-- [ ] `go build ./...`
-- [ ] `go test -race ./...`
-- [ ] Manual ping/pong smoke
-- [ ] Commit
+- [x] Enumerate import sites
+- [x] Replace import paths
+- [x] `go mod tidy` + verify
+- [x] `go build ./...`
+- [x] `go test -race ./...`
+- [ ] Manual ping/pong smoke (deferred — covered by automated WS test suite + future Phase 06 e2e)
+- [ ] Commit (pending git-manager invocation)
 
 ## Success Criteria
 - [ ] `grep -r "nhooyr.io" server/` returns no hits

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"google.golang.org/protobuf/proto"
-	"nhooyr.io/websocket"
+	"github.com/coder/websocket"
 
 	"github.com/tiennm99/dleague/server/internal/ws"
 	dleaguev1 "github.com/tiennm99/dleague/shared/pb/dleague/v1"

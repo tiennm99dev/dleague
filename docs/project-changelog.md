@@ -13,9 +13,11 @@ All notable changes to Dleague are documented here. Format: most recent first.
 - Three review reports (code, security, docs-audit) under `plans/reports/`.
 - Three research reports (svelte-phaser, firebase-admin-go, mongodb-atlas-go) under `plans/reports/`.
 
+### Changed (Phase 03)
+- `nhooyr.io/websocket` (archived) replaced by `github.com/coder/websocket` v1.8.14 — API-compatible fork by the same author. No behavior change.
+
 ### Deprecated (pending Phase 06)
 - `client/` Ebitengine module — to be deleted in Phase 06.
-- `nhooyr.io/websocket` — to be replaced by `github.com/coder/websocket` in Phase 03.
 
 ## 2026-05-08 — Phase 1 foundation
 *Commit `9937c7d`*

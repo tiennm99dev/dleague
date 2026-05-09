@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"google.golang.org/protobuf/proto"
-	"nhooyr.io/websocket"
+	"github.com/coder/websocket"
 
 	dleaguev1 "github.com/tiennm99/dleague/shared/pb/dleague/v1"
 )
@@ -28,7 +28,7 @@ type Conn struct {
 }
 
 // UpgradeOptions controls WebSocket Accept behaviour. Zero value enforces the
-// nhooyr default same-origin policy. To allow cross-origin clients, populate
+// coder/websocket default same-origin policy. To allow cross-origin clients, populate
 // AllowedOrigins (host:port matched case-insensitively).
 type UpgradeOptions struct {
 	AllowedOrigins []string
