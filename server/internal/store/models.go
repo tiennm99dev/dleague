@@ -79,9 +79,8 @@ type Attempt struct {
 	ID            bson.ObjectID `bson:"_id,omitempty"`
 	MatchID       bson.ObjectID `bson:"match_id"`
 	PlayerUID     string        `bson:"player_uid"`
-	Guesses       []string      `bson:"guesses"`         // word guesses in order
-	Hints         [][]int32     `bson:"hints,omitempty"` // per-letter color codes
-	TimeMs        int32         `bson:"time_ms"`         // milliseconds to solve
+	Guesses       []string      `bson:"guesses"` // word guesses in order
+	TimeMs        int32         `bson:"time_ms"` // milliseconds to solve
 	Won           bool          `bson:"won"`
 	Mode          string        `bson:"mode"` // "async" | "sync"
 	CreatedAt     time.Time     `bson:"created_at"`

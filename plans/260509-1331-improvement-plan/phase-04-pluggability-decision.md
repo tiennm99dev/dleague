@@ -101,4 +101,4 @@ None.
 
 ## Next Steps
 - Phase 07 picks up `system-architecture.md` dispatch table (H4) which depends on the renamed enum values from this phase.
-- If team later commits to a 2nd game: separate plan to wire interface, add `oneof Payload` or `game_id` field, build the actual game.
+- If team later commits to a 2nd game: separate plan to wire interface, add `oneof Payload` or `game_id` field, build the actual game. **Schema note (Phase 05 D-1):** `daily_puzzles._id` is currently date-only ("YYYY-MM-DD"). When adding the 2nd game, migrate to compound `_id` like `"<game>_<date>"` or add a new unique index on `(date, game_id)` to prevent collisions. See `phase-05-persistence-integrity.md` completion notes D-1.

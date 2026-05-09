@@ -77,10 +77,11 @@ dleague/
 - `UserRepo` — upsert by Firebase UID; increment win/loss stats (idempotent on `ModifiedCount == 1`)
 - `MatchRepo` — create async/sync matches; join; complete (with state filter); sweep expired. `Complete` is idempotent via `state:"pending"` guard.
 - `AttemptRepo` — per-player guess log; handles unique constraint on `(match_id, player_uid)` via `ErrAttemptExists`
-- `DailyPuzzleRepo` — date-keyed puzzle seed + solution
+- `DailyPuzzleRepo` — date-keyed puzzle seed + solution (single-game MVP: `_id = "YYYY-MM-DD"`; when adding 2nd game, migrate to compound `_id` or add unique index on `(date, game_id)`)
 - `WordlistRepo` — answers + dictionary; fallback to embedded binary
-- `LeaderboardRepo` — pre-computed ranking snapshots
+- `LeaderboardRepo` — pre-computed ranking snapshots; `ErrLeaderboardTooLarge` sentinel caps refresh at 5000 matches/day
 - `EnsureIndexes` — 9 explicit indexes created at boot (idempotent), including unique compound index on attempts
+- Atlas tier requirements documented in system-architecture.md (M10+ for prod; M0 is dev-only)
 
 ### `server/internal/ws/`
 - `Hub` — connection registry with `sync.RWMutex`; fan-out broadcast; max-conns cap

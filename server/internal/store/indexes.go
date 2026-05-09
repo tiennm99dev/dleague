@@ -30,9 +30,10 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 			coll: "users",
 			indexes: []mongo.IndexModel{
 				// Unique display name — enforces global uniqueness.
+				// Note: users._id is the Firebase UID (primary key, auto-unique).
 				{
 					Keys:    bson.D{{Key: "display_name", Value: 1}},
-					Options: options.Index().SetUnique(true),
+					Options: options.Index().SetUnique(true).SetName("users_display_name_unique"),
 				},
 			},
 		},
@@ -41,11 +42,13 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 			indexes: []mongo.IndexModel{
 				// Array-field index: find all matches a player participated in.
 				{
-					Keys: bson.D{{Key: "players", Value: 1}},
+					Keys:    bson.D{{Key: "players", Value: 1}},
+					Options: options.Index().SetName("matches_players"),
 				},
 				// Sort by recency (latest matches first).
 				{
-					Keys: bson.D{{Key: "created_at", Value: -1}},
+					Keys:    bson.D{{Key: "created_at", Value: -1}},
+					Options: options.Index().SetName("matches_created_at_desc"),
 				},
 				// ESR compound: state (equality) + created_at (sort).
 				{
@@ -53,6 +56,7 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 						{Key: "state", Value: 1},
 						{Key: "created_at", Value: -1},
 					},
+					Options: options.Index().SetName("matches_state_created_at"),
 				},
 				// Phase 08: unique share_token for O(1) challenge join lookups.
 				// Partial filter so Phase 09 sync matches (no share_token / empty
@@ -61,7 +65,8 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 					Keys: bson.D{{Key: "share_token", Value: 1}},
 					Options: options.Index().
 						SetUnique(true).
-						SetPartialFilterExpression(bson.M{"share_token": bson.M{"$gt": ""}}),
+						SetPartialFilterExpression(bson.M{"share_token": bson.M{"$gt": ""}}).
+						SetName("matches_share_token_unique"),
 				},
 				// Phase 08: sweep expired pending matches efficiently.
 				{
@@ -69,6 +74,7 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 						{Key: "state", Value: 1},
 						{Key: "expires_at", Value: 1},
 					},
+					Options: options.Index().SetName("matches_state_expires_at"),
 				},
 			},
 		},
@@ -77,7 +83,8 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 			indexes: []mongo.IndexModel{
 				// Find all attempts in a given match.
 				{
-					Keys: bson.D{{Key: "match_id", Value: 1}},
+					Keys:    bson.D{{Key: "match_id", Value: 1}},
+					Options: options.Index().SetName("attempts_match_id"),
 				},
 				// Unique compound: one attempt per player per match.
 				// Prevents concurrent-retry duplicate inserts.
@@ -86,7 +93,7 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 						{Key: "match_id", Value: 1},
 						{Key: "player_uid", Value: 1},
 					},
-					Options: options.Index().SetUnique(true),
+					Options: options.Index().SetUnique(true).SetName("attempts_match_player_unique"),
 				},
 			},
 		},
@@ -94,8 +101,10 @@ func EnsureIndexes(ctx context.Context, db *mongo.Database) error {
 			coll: "daily_puzzles",
 			indexes: []mongo.IndexModel{
 				// Date-range queries: recent puzzles sorted descending.
+				// Note: daily_puzzles._id is "YYYY-MM-DD" string (unique by primary key).
 				{
-					Keys: bson.D{{Key: "_id", Value: -1}},
+					Keys:    bson.D{{Key: "_id", Value: -1}},
+					Options: options.Index().SetName("daily_puzzles_id_desc"),
 				},
 			},
 		},

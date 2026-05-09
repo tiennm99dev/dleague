@@ -64,7 +64,10 @@ func Connect(_ context.Context, uri string) (*Client, error) {
 		return nil, fmt.Errorf("store: connect: %w", err)
 	}
 
-	dbName := parseDBName(uri)
+	dbName, err := parseDBName(uri)
+	if err != nil {
+		return nil, fmt.Errorf("store: connect: %w", err)
+	}
 	if dbName == "" {
 		dbName = defaultDB
 	}
@@ -72,13 +75,17 @@ func Connect(_ context.Context, uri string) (*Client, error) {
 }
 
 // parseDBName extracts the database name from a MongoDB URI's path segment.
-// Returns empty string when no path is set, deferring to defaultDB.
-func parseDBName(uri string) string {
+// Returns ("", error) on parse failure so the caller can fail fast at boot.
+// Returns ("", nil) when no path is set, deferring to defaultDB.
+func parseDBName(uri string) (string, error) {
 	u, err := url.Parse(uri)
-	if err != nil || len(u.Path) <= 1 {
-		return ""
+	if err != nil {
+		return "", fmt.Errorf("parse mongo URI: %w", err)
 	}
-	return strings.TrimPrefix(u.Path, "/")
+	if len(u.Path) <= 1 {
+		return "", nil
+	}
+	return strings.TrimPrefix(u.Path, "/"), nil
 }
 
 // Ping verifies that the server is reachable. Called during boot to fail fast.

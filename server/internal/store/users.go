@@ -100,6 +100,7 @@ func (r *UserRepo) IncrementStats(ctx context.Context, uid string, won bool) err
 	if won {
 		field = "stats.wins"
 	}
+	// not a state machine — stat counters (no source-state filter needed)
 	filter := bson.M{"_id": uid, "is_anonymous": bson.M{"$ne": true}}
 	update := bson.M{"$inc": bson.M{field: 1}}
 	_, err := r.coll.UpdateOne(ctx, filter, update)

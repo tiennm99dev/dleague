@@ -4,8 +4,11 @@ package scheduler
 
 import (
 	"context"
+	"errors"
 	"log"
 	"time"
+
+	"github.com/tiennm99/dleague/server/internal/store"
 )
 
 // LeaderboardRefresher is the subset of LeaderboardRepo used by the scheduler.
@@ -65,7 +68,11 @@ func Run(ctx context.Context, cfg Config, repos Repos) {
 			date := t.UTC().Format("2006-01-02")
 			tickCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 			if err := repos.Leaderboard.Refresh(tickCtx, "wordle", "daily", date); err != nil {
-				log.Printf("scheduler: leaderboard refresh error: %v", err)
+				if errors.Is(err, store.ErrLeaderboardTooLarge) {
+					log.Printf("scheduler: WARN leaderboard refresh skipped (too many matches): %v", err)
+				} else {
+					log.Printf("scheduler: leaderboard refresh error: %v", err)
+				}
 			} else {
 				log.Printf("scheduler: leaderboard refreshed for wordle/daily/%s", date)
 			}

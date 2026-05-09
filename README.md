@@ -49,7 +49,7 @@ Open http://localhost:5173 (web dev) or http://localhost:8080 (server only).
 | Client | [SvelteKit](https://kit.svelte.dev/) (adapter-static) + [Phaser 3.80+](https://phaser.io/) + [`@bufbuild/protobuf-es`](https://github.com/bufbuild/protobuf-es) |
 | Server | Go (`chi` HTTP + [`coder/websocket`](https://github.com/coder/websocket) — replaces archived `nhooyr.io/websocket`) |
 | Auth   | [Firebase Auth](https://firebase.google.com/products/auth) — Email/Password + Google + Anonymous; ID token over WS |
-| DB     | [MongoDB Atlas M0](https://www.mongodb.com/atlas) (free tier; replica-set transactions) |
+| DB     | [MongoDB Atlas M10+](https://www.mongodb.com/atlas) (production); local docker `mongo:7` for dev |
 | Wire   | Binary protobuf over single WebSocket (`-tags debug` adds protojson logging)          |
 | Deploy | [Fly.io](https://fly.io/) for Go server; static `web/dist/` served by the same binary |
 

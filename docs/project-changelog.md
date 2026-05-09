@@ -4,6 +4,18 @@ All notable changes to Dleague. Most recent first. Commits reference the main br
 
 ---
 
+## Post-MVP Hardening — Phase 05 Persistence & data integrity (2026-05-09)
+
+- **State-filter audit:** All state-mutating `UpdateOne`/`FindOneAndUpdate` operations across `store/` package now filter on source state. `JoinAsChallengee` adds `state:"pending"` guard; `Complete` and `CompleteSync` already filtered. Comments mark each: `// MUST: filter on source state to prevent double-resolve`.
+- **Leaderboard threshold guard:** Hard cap at 5000 matches/day; `Refresh` queries `countDocuments()` first. If exceeded, logs WARN and returns sentinel `ErrLeaderboardTooLarge` (scheduler continues). Explicit boundary prevents silent O(N) memory growth; scale-out path documented (aggregation pipeline via `$lookup`).
+- **`Attempt.Hints` field dropped:** Field existed but was never written by any code path. Rationale: replay-from-guesses computable on-demand if anti-cheat needs it (re-run `wordle.Score` over `attempt.guesses[]`). No data migration needed (field was always empty).
+- **Atlas tier documented:** system-architecture.md adds "Atlas tier requirements" subsection: M0 free tier (500 cluster-wide conns, 100 per user) sufficient for dev only; production requires M10+ (1500 max conns/cluster). Connection pool (100 max, 10 min) sized for M10; scale to 200/20 on M20+ tier.
+- **`parseDBName` fail-fast:** Malformed `MONGO_URI` now fails at boot before listening. Returns `(string, error)` from parse; caller in `Connect` propagates upstream to `main.go`. Caveat: `mongo.Connect.ApplyURI` already validates upstream; this is defensive redundancy (mostly cosmetic but harmless).
+- **Index naming audit:** All 9 indexes named consistently and self-documenting: `attempts_match_player_unique`, `matches_share_token_unique`, `users_display_name_unique`, etc. Names visible in `db.collection.getIndexes()` output for operator clarity.
+- **Test results:** `go build/vet ./...` pass; `go test -race` clean across store + scheduler + ws packages. Server build + web svelte-check both green.
+
+---
+
 ## Post-MVP Hardening — Phase 03 UX correctness (2026-05-09)
 
 - **Mid-match navigation gating:** Rejoin logic gated to landing routes (`/`, `/play`, `/leaderboard`); `inMatch` flag prevents auto-navigation when user is rendering live sync match on `/sync`.

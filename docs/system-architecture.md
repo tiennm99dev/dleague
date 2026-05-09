@@ -18,7 +18,7 @@
             │ ID token verify                                    │
             ▼                                                    ▼
    ┌──────────────────┐                              ┌──────────────────────┐
-   │ Firebase Auth    │                              │ MongoDB Atlas (M0)   │
+   │ Firebase Auth    │                              │ MongoDB Atlas (M10+) │
    │ (Google managed) │                              │ replica set, TLS     │
    └──────────────────┘                              └──────────────────────┘
 ```
@@ -125,9 +125,17 @@ main()
 | MATCH_MOVE | handleMatchMove | yes |
 | MATCH_REJOIN | handleMatchRejoin | yes |
 
-### Persistence (MongoDB Atlas M0)
+### Persistence (MongoDB Atlas)
 
-Driver: `go.mongodb.org/mongo-driver/v2` (v2.6.0+). One `*store.Client` per process; pool max 100. Atlas TLS is implicit via `mongodb+srv://`. Transactions are supported on M0's 3-node replica set.
+Driver: `go.mongodb.org/mongo-driver/v2` (v2.6.0+). One `*store.Client` per process; pool max 100. Atlas TLS is implicit via `mongodb+srv://`. Transactions are supported on Atlas replica-set clusters.
+
+#### Atlas tier requirements
+
+- **Production tier: M10+** (Atlas dedicated cluster). Provides 1500 max conns/cluster.
+- **Connection pool** (`server/internal/store/mongo.go:23-24`): max 100, min 10. Sized for M10.
+- **Local dev:** docker-compose `mongo:7` single-instance — no transaction issue (single-shard).
+- **Atlas M0 (free) is INSUFFICIENT** for production — it caps at 500 cluster-wide conns and pauses after 60 days of inactivity. M0 is acceptable for local dev or prototyping only.
+- **On scale-up to M20+:** raise pool to 200/20 (`poolMaxSize`/`poolMinSize` in `mongo.go`).
 
 #### Collections
 
@@ -157,6 +165,10 @@ All documents carry `schema_version: 1` for lazy in-place migration (Option A).
 | `leaderboards` | `game_id ASC, period_end DESC` | — |
 
 `EnsureIndexes` is idempotent — re-runnable on every boot without error.
+
+#### Operational limits
+
+- **Leaderboard refresh:** Current implementation decodes all attempts for all matches every 5 min. Acceptable up to ~5000 matches/day (~2 attempts/match × ~500 B/doc ≈ 5 MB peak memory). If refresh day count exceeds 5000, the scheduler returns sentinel error `ErrLeaderboardTooLarge`, logs WARN, and skips that cycle. **Scale-out path:** aggregation pipeline (`$lookup` + `$group` + `$sort`) in MongoDB for real-time computation. See `server/internal/store/leaderboards.go` for implementation notes.
 
 ### Auth (Firebase Auth)
 
@@ -384,7 +396,7 @@ Fly machine (shared-cpu-1x, 256 MB)
        /*      → static file server + SPA fallback
 
 External services:
-  MongoDB Atlas M0 (us-east-1) ← mongodb+srv via MONGO_URI secret
+  MongoDB Atlas M10+ (us-east-1) ← mongodb+srv via MONGO_URI secret
   Firebase Auth (global)       ← service account via FIREBASE_SERVICE_ACCOUNT_B64 secret
 ```
 
@@ -399,8 +411,8 @@ Fly secrets (never in image):
 
 | Domain | Failure mode | Mitigation |
 |--------|-------------|------------|
-| Atlas M0 pause | DB unavailable after 60d inactivity | Nightly CI ping; upgrade to M10 for production |
-| Atlas M0 conn cap (500) | 429 on new WS connections | `DLEAGUE_MAX_CONNS=400` headroom; upgrade path |
+| Atlas M0 pause (dev only) | DB unavailable after 60d inactivity | M10+ prod cluster has no auto-pause; M0 dev: nightly CI ping |
+| Atlas conn cap | 429 on new WS connections | M10+: 1500 cluster conns; pool max 100; `DLEAGUE_MAX_CONNS=400` headroom |
 | Firebase Auth outage | New WS upgrades fail (401) | Existing connections unaffected (token cached); reconnect retries |
 | Fly region failure | App unreachable | Single-region MVP; multi-region is v2 |
 | Service-account expiry | Firebase Admin SDK fails | Service accounts don't expire; rotate manually if compromised |

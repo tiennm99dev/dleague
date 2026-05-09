@@ -14,7 +14,7 @@ Critical correctness, security, and UX bug fixes across 7 phases (Phase 01 compl
 | 02 | Security & abuse hardening | P1 | completed (2026-05-09) |
 | 03 | UX correctness — navigation, a11y, reconnect | P2 | completed (2026-05-09) |
 | 04 | Pluggability decision | P2 | pending |
-| 05 | Persistence & data integrity | P1 | pending |
+| 05 | Persistence & data integrity | P1 | completed (2026-05-09) |
 | 06 | Test coverage + local CI | P2 | pending |
 | 07 | Code/doc hygiene | P3 | pending |
 

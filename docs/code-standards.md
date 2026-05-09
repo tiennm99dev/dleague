@@ -114,6 +114,7 @@ dleague/
 - **`schema_version` field** on every document. Lazy-migrate on read; bump on shape change.
 - **Indexes** declared in code at startup (`EnsureIndexes` per repo). Never created ad-hoc.
 - **Transactions:** `session.WithTransaction()` callback API for atomic sync-PvP match-end. M0 supports replica-set transactions out of the box.
+- **State-machine filters:** All conditional updates that mutate state (e.g., `match → complete`, `attempt insert`) must filter on source state. Mark each with a comment: `// MUST: filter on source state to prevent double-resolve under transaction retries`. Non-state-machine updates (e.g., increment counters) may omit the filter; mark as `// not a state machine`.
 - **Timeouts:** `ConnectTimeout: 10s`, `ServerSelectionTimeout: 5s`. Per-op contexts inherit caller's deadline.
 
 ## CI/CD & Validation

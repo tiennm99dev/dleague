@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"sort"
 	"time"
 
@@ -11,6 +12,14 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
+
+// leaderboardMaxMatches is the daily completed-match threshold above which
+// Refresh aborts to avoid unbounded memory growth. See review M2.
+const leaderboardMaxMatches = 5000
+
+// ErrLeaderboardTooLarge is returned by Refresh when the daily completed-match
+// count exceeds leaderboardMaxMatches. The scheduler logs WARN and continues.
+var ErrLeaderboardTooLarge = errors.New("leaderboard refresh aborted: too many matches")
 
 // LeaderboardRepo provides access to the `leaderboards` collection.
 type LeaderboardRepo struct {
@@ -42,9 +51,8 @@ func leaderboardID(gameID, period, date string) string {
 // users in Go (pragmatic alternative to aggregation pipeline; avoids 32 MB
 // in-memory sort limit on M0 while keeping the logic readable).
 //
-// Trade-off documented: a Mongo aggregation pipeline would be more efficient
-// at scale (single round-trip), but Go-side join is simpler and adequate for
-// MVP at <10K matches/day. Migrate to $lookup + $sort pipeline in Phase 10.
+// Current implementation: full re-decode every 5 min. Acceptable up to ~5000 matches/day.
+// Scale-out path: aggregation pipeline ($lookup + $sort + $limit). See server review M2.
 func (r *LeaderboardRepo) Refresh(ctx context.Context, gameID, period, date string) error {
 	// Step 1: find all completed async matches for this date window.
 	// We use the date portion of completed_at to scope the daily board.
@@ -60,6 +68,17 @@ func (r *LeaderboardRepo) Refresh(ctx context.Context, gameID, period, date stri
 			"$lt":  dayEnd,
 		},
 	}
+
+	// Guard: abort if daily match volume would cause O(N) memory spike.
+	count, countErr := r.matchColl.CountDocuments(ctx, matchFilter)
+	if countErr != nil {
+		return fmt.Errorf("store: leaderboard refresh count matches: %w", countErr)
+	}
+	if count > leaderboardMaxMatches {
+		log.Printf("store: WARN leaderboard refresh aborted: date=%s count=%d exceeds threshold=%d", date, count, leaderboardMaxMatches)
+		return ErrLeaderboardTooLarge
+	}
+
 	matchCur, err := r.matchColl.Find(ctx, matchFilter, options.Find().SetProjection(bson.M{"_id": 1}))
 	if err != nil {
 		return fmt.Errorf("store: leaderboard refresh find matches: %w", err)

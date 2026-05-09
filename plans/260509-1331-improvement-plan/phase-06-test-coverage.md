@@ -19,6 +19,7 @@
 - Web has no eslint/prettier (web M16).
 - Web `tsconfig.json:16-17` has `noUnusedLocals/noUnusedParameters: false` (web M17).
 - Existing CI: `.github/workflows/ci.yml` runs Go test + Mongo + Firebase emulator (arch strengths) — exists; add web pipeline.
+- **Phase 05 specific tests:** state-filter audit (concurrent `JoinAsChallengee` with `state:"pending"` guard), leaderboard threshold guard (synthetic 6000-match day triggers `ErrLeaderboardTooLarge`), `parseDBName` fail-fast (malformed URI rejected at boot).
 
 ## Requirements
 - Each handler file gets at least 1 happy-path + 2 error-path tests.

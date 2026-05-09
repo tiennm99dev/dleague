@@ -94,8 +94,10 @@ func (r *MatchRepo) GetByID(ctx context.Context, matchID string) (*Match, error)
 // Returns ErrAlreadyJoined if the token does not exist or is already taken.
 func (r *MatchRepo) JoinAsChallengee(ctx context.Context, token, uid string) (*Match, error) {
 	now := time.Now().UTC()
+	// MUST: filter on source state to prevent double-resolve
 	filter := bson.M{
 		"share_token":    token,
+		"state":          "pending",
 		"challengee_uid": bson.M{"$exists": false},
 	}
 	update := bson.M{
@@ -129,6 +131,7 @@ func (r *MatchRepo) Complete(ctx context.Context, matchID, winnerUID string) (in
 		return 0, fmt.Errorf("store: Complete: invalid ObjectID %q: %w", matchID, err)
 	}
 	now := time.Now().UTC()
+	// MUST: filter on source state to prevent double-resolve
 	filter := bson.M{"_id": oid, "state": "pending"}
 	update := bson.M{
 		"$set": bson.M{
@@ -197,8 +200,8 @@ func (r *MatchRepo) CompleteSync(
 
 	_, txErr := session.WithTransaction(ctx, func(sc context.Context) (any, error) {
 		now := time.Now().UTC()
-		// Filter on state:"active" so re-resolution of an already-completed match
-		// is a silent no-op rather than overwriting the winner. Phase 09 M5 fix.
+		// MUST: filter on source state to prevent double-resolve
+		// state:"active" ensures re-resolution of already-completed match is a no-op.
 		filter := bson.M{"_id": oid, "state": "active"}
 		update := bson.M{
 			"$set": bson.M{

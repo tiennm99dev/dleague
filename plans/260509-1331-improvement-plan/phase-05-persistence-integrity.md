@@ -6,7 +6,7 @@
 
 ## Overview
 - **Priority:** P1
-- **Status:** pending
+- **Status:** completed
 - **Description:** Solidify persistence boundary: enforce DB-level uniqueness, add defensive state filters, document Atlas tier expectations, decide `Attempt.Hints` future, audit idempotency, harden leaderboard refresh path. Phase 01 lands the must-fix index; this phase is the surrounding cleanup.
 
 ## Key Insights
@@ -74,12 +74,12 @@
 12. `docs/codebase-summary.md` — one-line note that Atlas M0 limits are documented in system-architecture.md.
 
 ## Todo List
-- [ ] State-filter audit + comments across `store/` (steps 1-2)
-- [ ] Unique-index audit (step 3)
-- [ ] `parseDBName` fail-fast (step 4)
-- [ ] Leaderboard threshold guard + comment (steps 5-6)
-- [ ] Drop `Attempt.Hints` field (steps 8-10)
-- [ ] Atlas tier docs (steps 11-12)
+- [x] State-filter audit + comments across `store/` (steps 1-2)
+- [x] Unique-index audit (step 3)
+- [x] `parseDBName` fail-fast (step 4)
+- [x] Leaderboard threshold guard + comment (steps 5-6)
+- [x] Drop `Attempt.Hints` field (steps 8-10)
+- [x] Atlas tier docs (steps 11-12)
 
 ## Success Criteria
 - `grep -rn "UpdateOne\|FindOneAndUpdate" server/internal/store/*.go` — every state-mutating call has a state filter or a "// not state-machine" comment.
@@ -100,3 +100,19 @@
 ## Next Steps
 - Phase 06 adds tests for state-filter behaviour (concurrent join attempts, double-complete attempts).
 - v2 backlog: leaderboard aggregation pipeline if scale crosses threshold.
+
+## Completion Notes
+
+**Date:** 2026-05-09
+
+**Summary:** All 12 steps completed. State-filter audit + comments applied across store/ package; unique-index audit confirmed 9 indexes in place (naming clean); `parseDBName` fail-fast on malformed URI; leaderboard threshold guard at 5000 matches with `ErrLeaderboardTooLarge` sentinel; `Attempt.Hints` field dropped (never written); Atlas tier requirements documented in system-architecture.md (M10+ prod, M0 dev-only); codebase-summary pointer added.
+
+**Reports:**
+- [Code Review Phase 05](reports/code-reviewer-phase-05-diff-260509-1502.md) — APPROVE_WITH_FIXES
+- Tester Phase 05 — green (build + race-detector clean)
+
+**Known Limitations (record for future phases):**
+
+**D-1 (Medium — spec deviation):** `daily_puzzles._id` is date-only string ("YYYY-MM-DD"). Single-game MVP is fine (no collision possible). When 2nd game type lands, switch to compound `_id` unique index or change shape to `"<game>_<date>"`. Per code reviewer: "MVP-acceptable; document migration trigger." Action: add comment in `daily_puzzles.go` near `Upsert`: `// SCHEMA NOTE: when adding a second game, migrate _id to "<game>_<date>"`.
+
+**M-1 (Medium — redundancy note):** `parseDBName` fail-fast is partially redundant. `mongo.Connect.ApplyURI` already validates URIs upstream via canonical driver validation. The new error path catches almost nothing the driver wouldn't catch first. Per code reviewer: "largely cosmetic." Action: update comment at `mongo.go:77` to: "Returns error on parse failure (rare; mongo.Connect's ApplyURI catches most malformed URIs first)."
