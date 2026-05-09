@@ -6,8 +6,8 @@ import "net/http"
 // to static-asset responses. Applied only to the "/*" FileServer route, NOT to
 // /ws or /health, so the headers don't interfere with protocol upgrades.
 //
-// CSP note: wasm-unsafe-eval has been removed in Phase 06 — the WASM bundle is
-// replaced by native SvelteKit + Phaser JS, which does not require eval.
+// CSP note: no eval or unsafe directives needed — the client is pure SvelteKit +
+// Phaser JS with no runtime code evaluation.
 func securityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := w.Header()

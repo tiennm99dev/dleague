@@ -1,47 +1,77 @@
 # Project Overview & PDR — Dleague
 
-**Status:** skeleton — populated incrementally as phases land.
+## Product Goal
 
-## Purpose
-PvP twist on -dle puzzle games. Players race head-to-head (sync) or compete on shared daily puzzles (async). Single Wordle-style game at launch; pluggable architecture for music/geography/image variants.
-
-## Vision
-> League of -dle games. Take the daily-puzzle social loop (Wordle, LoLdle, Heardle) and add competitive PvP modes.
+Dleague turns solo -dle games into head-to-head competition. Most Wordle-style
+games are solitary: solve the daily puzzle, post your score, done. Dleague adds
+real-time matchmaking, challenge links, and a shared daily leaderboard so players
+compete directly rather than comparing grid emojis on social media.
 
 ## Pillars
-1. **Daily Leaderboard** — everyone plays the same puzzle; ranked by attempts then time.
-2. **Challenge a Friend** — share a link; opponent plays the same seed; results compared.
-3. **Quick Match** — matchmaking queue pairs against a live opponent; real-time race.
-4. **Pluggable game types** — Wordle at launch; music, geography, image planned.
 
-## Non-goals (v1)
-- ELO / MMR ranked ladder
-- Tournaments, brackets, spectator
-- Multiple game variants live simultaneously
-- Native mobile app store releases
-- Cosmetics / monetization
-- Localization
+| Pillar | Description |
+|--------|-------------|
+| **Daily Leaderboard** | Everyone plays the same puzzle each day. Rankings by attempts, then time. Anonymous users excluded. |
+| **Challenge a Friend** | Generate a share link; opponent plays the same seed; results compared side-by-side. Async — no live connection required. |
+| **Quick Match** | In-memory matchmaking queue pairs two players for a synchronous, real-time race over WebSocket. |
+| **Pluggable game types** | `shared/game.Game` interface supports Wordle at launch; music, geography, and image variants planned for v2. |
 
-## Stack
-See [`../README.md`](../README.md) Stack table — kept as the single source of truth.
+## MVP Scope
 
-## Roadmap
-See [`development-roadmap.md`](development-roadmap.md). Active plan: [`../plans/260508-2300-svelte-phaser-firebase-mongo-pivot/plan.md`](../plans/260508-2300-svelte-phaser-firebase-mongo-pivot/plan.md).
+| In scope | Out of scope (v2+) |
+|----------|--------------------|
+| Wordle game type only | Additional -dle types (music, geography, image) |
+| Email/Password + Google + Anonymous sign-in | Apple sign-in, SSO |
+| Web client (SvelteKit + Phaser) | Native iOS / Android |
+| Fly.io single-region deploy (iad) | Multi-region, CDN edge |
+| MongoDB Atlas M0 (free tier) | M10+ with VPC peering |
+| Per-day leaderboard | Historical cross-day rankings |
+| Challenge link (async PvP) | Tournaments, brackets |
+| Quick match (sync PvP, 2 players) | Spectator, team modes |
+| Admin claim + CLI for moderation plumbing | Full moderation dashboard |
 
-## Stakeholders
-- **Owner / Eng:** TODO
-- **Design:** TODO (Phase 06 lead)
+## Success Metrics (MVP)
 
-## Success metrics (v1)
-- [ ] WASM bundle replaced by Svelte JS bundle <400 KB gz (was: WASM <10 MB target)
-- [ ] Sync match opponent-progress propagation p95 <200 ms
-- [ ] Daily puzzle resets at consistent UTC midnight
-- [ ] Atlas M0 handles MVP load (<8.6M ops/day budget)
-- [ ] CI green on `go test -race`, `golangci-lint`, `buf lint`, `npm run build`
+| Metric | Target |
+|--------|--------|
+| Daily active users (Week 1) | > 10 (internal) |
+| Average match completion rate | > 80% (both players finish) |
+| Server uptime | > 99.5% (Fly.io SLA) |
+| Health check p99 | < 200 ms |
+| WS round-trip p99 | < 100 ms (same-region) |
+| Bundle size (gzip) | < 450 KB (target 400 KB) |
+| Test coverage — game logic | > 80% |
+| Test coverage — WS handlers | > 70% |
 
-## Open questions
-Tracked in active plan's §Unresolved Questions.
+## Constraints
 
-## Revision log
-- 2026-05-08 — created (Phase 01).
-- TODO — first revision after Phase 06 lands.
+- **Free tier first:** All infrastructure (Atlas M0, Firebase free tier, Fly.io hobby)
+  must fit within free-tier limits at MVP launch.
+- **No WASM:** Dropped in Phase 06 (bundle size + complexity). Pure JS client.
+- **Server-authoritative:** Clients never see the solution until game ends.
+  Score calculation happens server-side only.
+- **Single WebSocket per client:** All game, auth, and match messages travel
+  over one `/ws` connection. No REST game endpoints.
+- **Stateless server:** No sticky sessions; reconnect restores state from Mongo.
+  In-memory sync match state is ephemeral (grace timer handles reconnects).
+
+## Technical Decisions Log
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Client framework | SvelteKit + adapter-static | Minimal bundle, SSR optional, fast DX |
+| Game rendering | Phaser 3 canvas | Rich animation; Svelte owns DOM state |
+| Auth | Firebase Auth | Zero-cost at MVP scale; proven JWT flow |
+| Database | MongoDB Atlas M0 | Free replica set with transactions; Go driver v2 |
+| WS library | coder/websocket | Maintained fork of archived nhooyr; minimal API |
+| Deploy | Fly.io | Simple Docker deploy; free hobby tier; `iad` ↔ Atlas us-east-1 |
+| Wire format | Binary protobuf | Type-safe; compact; `buf generate` for Go + TS |
+| Game interface | Go interface + Registry | Pluggable without modifying core protocol |
+| Session auth | ID token in Sec-WebSocket-Protocol | Token refresh without re-upgrading |
+
+## References
+
+- Active plan: `plans/260508-2300-svelte-phaser-firebase-mongo-pivot/plan.md`
+- Architecture: `docs/system-architecture.md`
+- Code standards: `docs/code-standards.md`
+- Deployment: `docs/deployment-guide.md`

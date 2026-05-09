@@ -106,11 +106,28 @@ func handleGameMove(ctx context.Context, c *Conn, env *dleaguev1.Envelope, deps 
 		return nil, err
 	}
 
+	// Evict the session once the game reaches a terminal state so memory is
+	// reclaimed promptly. The next GAME_MOVE reloads today's puzzle via
+	// EnsureToday — safe because the daily seed is deterministic. Phase 07 M3 fix.
+	// Trade-off: in-progress state is lost on disconnect, but for solo daily play
+	// the puzzle regenerates from the same seed, so no user-visible data is lost.
+	if stateProto.GetWon() || stateProto.GetLost() {
+		sessions.Delete(c.userID)
+	}
+
 	return &dleaguev1.Envelope{
 		Type:      dleaguev1.MessageType_MESSAGE_TYPE_GAME_STATE,
 		RequestId: env.GetRequestId(),
 		Payload:   payload,
 	}, nil
+}
+
+// deleteSession removes the solo game session for the given userID.
+// Called on conn disconnect to free memory. Phase 07 M3 fix.
+func deleteSession(uid string) {
+	if uid != "" {
+		sessions.Delete(uid)
+	}
 }
 
 // loadOrCreateSession returns the existing session for uid, or creates a new

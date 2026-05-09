@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"log"
+	"os"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"google.golang.org/protobuf/proto"
@@ -261,11 +262,14 @@ func validateSyncGuess(guess string, deps *GameDeps) error {
 }
 
 // cryptoSeed returns a random int64 seed using crypto/rand.
+// A failure here is a fundamental OS-level error; crash loudly rather than
+// silently falling back to a predictable seed. Phase 09 L1 fix.
 func cryptoSeed() int64 {
 	var b [8]byte
 	if _, err := rand.Read(b[:]); err != nil {
-		// Should never happen; fall back to a deterministic value.
-		return 42
+		// crypto/rand failure is unrecoverable — predictable seeds break fairness.
+		log.Printf("FATAL: crypto/rand.Read: %v", err)
+		os.Exit(1)
 	}
 	v := int64(binary.LittleEndian.Uint64(b[:]))
 	if v < 0 {

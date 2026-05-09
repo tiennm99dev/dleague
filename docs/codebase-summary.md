@@ -1,62 +1,169 @@
 # Codebase Summary
 
-**Status:** skeleton — populated incrementally. Authoritative version generated from final state in Phase 10 polish.
+Current state after Phase 10. All 10 phases complete.
 
-## Top-level layout
-See [`../README.md`](../README.md) §Repo layout.
+## Repository Layout
 
-## Modules
+```
+dleague/
+├── Dockerfile               — multi-stage: go-builder → node-builder → distroless runtime
+├── fly.toml                 — Fly.io app config (app=dleague, region=iad)
+├── go.work / go.work.sum    — Go workspace linking server/ + shared/
+├── Makefile                 — dev, build, test, lint, deploy, proto-gen targets
+├── docker-compose.yml       — local dev: mongo:7 + mongo-express
+├── .github/
+│   ├── workflows/ci.yml     — lint + test + build + proto check (all actions SHA-pinned)
+│   └── dependabot.yml       — weekly updates: actions, gomod (server+shared), npm (web)
+├── proto/
+│   ├── dleague/v1/          — .proto schema files (envelope, wordle, match)
+│   ├── buf.yaml             — buf lint + breaking config
+│   └── buf.gen.yaml         — codegen: Go (shared/pb) + TS (web/src/lib/pb)
+├── shared/                  — exported Go types (imported by server/)
+│   ├── game/                — Game interface + Registry factory
+│   └── pb/dleague/v1/       — generated Go protobuf (committed)
+├── server/                  — Go HTTP + WebSocket server
+│   ├── cmd/api/main.go      — entry point: boot wiring
+│   ├── cmd/admin/main.go    — admin CLI: promote-admin, revoke-token
+│   ├── cmd/seed-wordlists/  — one-shot: upload wordlists to Mongo
+│   └── internal/
+│       ├── auth/            — Firebase ID token verifier + Admin client
+│       ├── config/          — env-var loader (Config, IsProduction)
+│       ├── game/wordle/     — server-authoritative Wordle engine
+│       ├── http/            — chi router, /health, static file server + SPA fallback
+│       ├── scheduler/       — background: leaderboard refresh + match sweep
+│       ├── store/           — Mongo per-collection repos + models + EnsureIndexes
+│       └── ws/              — Hub, Conn, dispatch, game/match handlers, queue, rooms
+├── web/                     — SvelteKit + Phaser client
+│   ├── src/
+│   │   ├── routes/          — SvelteKit pages (/, /play, /leaderboard, /quick-match, /sync, /m/[token])
+│   │   └── lib/
+│   │       ├── firebase.ts  — initializeApp, connectAuthEmulator, sign-in helpers
+│   │       ├── auth-store.ts — writable<User|null>, idToken(), onAuthStateChanged
+│   │       ├── ws.ts        — WS client: binary protobuf, reconnect, requestId correlation
+│   │       ├── pb/          — generated TS protobuf (committed)
+│   │       ├── game/        — wordle client types + colors.ts scoring
+│   │       ├── phaser/      — event-bus, phaser-game.svelte, scenes/
+│   │       └── components/  — sign-in, board, keyboard, connection-status
+│   ├── static/              — favicon, sprites
+│   ├── package.json
+│   └── svelte.config.js
+├── scripts/
+│   ├── set-fly-secrets.sh   — documentation: fly secrets set commands (DO NOT execute)
+│   ├── seed-wordlists.sh    — one-shot: upload wordlists to prod Mongo
+│   └── promote-admin.sh     — one-shot: set Firebase admin custom claim
+├── docs/                    — project documentation (all filled as of Phase 10)
+└── plans/                   — implementation plans + reports
+```
 
-### `server/` — Go HTTP + WebSocket
-TODO (Phase 02–05). Currently:
-- `cmd/api/main.go` — boot wiring (config → http → ws hub → store → verifier)
-- `internal/config/` — env-var loader
-- `internal/http/` — `chi` router, `/health`, static file server, WS upgrade
-- `internal/ws/` — connection hub, per-conn dispatch, ping/pong, debug-log split (`debug_log.go` + `debug_log_noop.go`)
-- `internal/store/` — Mongo per-collection repos (Phase 04)
-- `internal/auth/` — Firebase ID token verifier (Phase 05)
-- `internal/game/` — server-authoritative Wordle logic (Phase 07)
+## Module Roles
 
-### `shared/` — exported Go types
-- `pb/dleague/v1/` — generated protobuf (committed)
-- `game/` — `Game` interface + `Registry`
+### `shared/` — exported interfaces
+- `game.Game` — pluggable game interface (`Validate`, `Apply`, `ToProto`, `Score`)
+- `game.Registry` — factory: `Register(id, factory)`, `New(id) Game`
+- `pb/dleague/v1/` — generated Go protobuf types (Envelope, WordleMove, WordleState, etc.)
 
-### `web/` — SvelteKit + Phaser client
-TODO (Phase 06–07). Will contain:
-- `src/lib/pb/` — generated TS protobuf
-- `src/lib/ws.ts` — WebSocket client + reconnect + request_id correlation
-- `src/lib/auth.ts` — Firebase JS SDK wrapper
-- `src/lib/game/` — Phaser scenes + Svelte board components
-- `src/routes/` — SvelteKit pages
-- `static/` — sprites, fonts, audio
+### `server/internal/auth/`
+- `Verifier` — Firebase ID token verification (hot WS path)
+- `Admin` — privileged ops: `SetAdminClaim`, `RevokeRefreshTokens`, `VerifyIDTokenAndCheckRevoked`
+- Credential chain: emulator → `credsPath` → ADC (Fly.io Workload Identity or `GOOGLE_APPLICATION_CREDENTIALS`)
 
-### `proto/` — protobuf schema
-- `dleague/v1/envelope.proto` — single Envelope wrapping every WS message
-- `buf.yaml`, `buf.gen.yaml` — codegen config (Go + TS targets after Phase 06)
+### `server/internal/config/`
+- `Config` — all runtime settings from env vars
+- `Load()` — validates required fields; fails fast on missing `MONGO_URI`
+- `IsProduction()` — case-insensitive check for "production"/"prod"
 
-### `plans/` — implementation plans
-- `260508-2300-svelte-phaser-firebase-mongo-pivot/` — active
-- `archive/` — superseded plans (do not edit)
-- `reports/` — review + research reports
+### `server/internal/store/`
+- One repo struct per collection, constructed via `New*Repo(db)`
+- `UserRepo` — upsert by Firebase UID; increment win/loss stats
+- `MatchRepo` — create async/sync matches; join; complete; sweep expired
+- `AttemptRepo` — per-player guess log
+- `DailyPuzzleRepo` — date-keyed puzzle seed + solution
+- `WordlistRepo` — answers + dictionary; fallback to embedded binary
+- `LeaderboardRepo` — pre-computed ranking snapshots
+- `EnsureIndexes` — 8 explicit indexes created at boot (idempotent)
 
-### `docs/` — this directory
-See README of [`../README.md`](../README.md).
+### `server/internal/ws/`
+- `Hub` — connection registry with `sync.RWMutex`; fan-out broadcast; max-conns cap
+- `Conn` — one WS connection: read/write loops, send channel, auth fields, rate limiter
+- `dispatch` — routes `Envelope.Type` to handler; `requiresAuth` gate
+- `Queue` — FIFO matchmaking with TTL eviction and self-pair guard
+- `RoomsRegistry` — concurrent-safe map of live sync match rooms
+- `MatchRoom` — per-match state: two Wordle engines, move handling, forfeit/timeout
+- `GraceTimers` — 30 s disconnect grace via `time.AfterFunc`
 
-## Build entrypoints
-- `make tools` — install buf + protoc-gen-go + protoc-gen-es (post-Phase-06)
-- `make proto-gen` — regenerate Go + TS protobuf
-- `make dev` — full stack: mongo + emulator + go + svelte (post-pivot, Phase 06)
-- `make dev-debug` — same with `-tags debug` for protojson logging
-- `make test` — `go test -race ./...` + `npm --prefix web test`
-- `make lint` — `golangci-lint` + `buf lint`
+### `server/internal/game/wordle/`
+- `Wordle` — game state machine: `New`, `Validate`, `Apply`, `Score`, `ToProto`
+- `Score` — two-pass color algorithm (correct-position first, then present)
+- `EnsureToday` — idempotent daily puzzle seeding from SHA-256 seed
+- `LoadAnswers` / `LoadDictionary` — Mongo first, embedded fallback
 
-## File size discipline
-- Go files <200 LOC. Split modules early.
-- Svelte / TS files <200 LOC where practical.
-- Markdown / config / SQL exempt.
+### `server/internal/http/`
+- `NewRouter` — chi router: `/health` (JSON), `/ws` (WS upgrade), `/*` (static SPA)
+- `spa_fallback.go` — returns `index.html` for unknown GET paths (client-side routing)
 
-## Key patterns
-- **Single-WS transport** — auth, game, match, admin all over one connection.
-- **Binary protobuf wire** — `proto.Marshal`/`Unmarshal` both sides; `-tags debug` adds protojson logging.
-- **Build-tag debug split** — `*_debug_log.go` paired with `*_debug_log_noop.go` for zero-cost prod builds.
-- **Server-authoritative game** — client never knows the answer; only color feedback.
+### `server/internal/scheduler/`
+- `Run(ctx, cfg, repos)` — goroutine: leaderboard refresh every 5 min, match sweep every 15 min
+
+## Build Commands
+
+```bash
+# Server
+make dev                # go run ./server/cmd/api (port 8080)
+make dev-debug          # with -tags debug (protojson logging)
+make build              # go build → bin/dleague-server
+make test               # go test -race ./shared/... ./server/...
+make lint               # golangci-lint on shared/ + server/
+
+# Web client
+make web-install        # npm ci in web/
+make web-build          # npm run build → web/dist/
+make web-dev            # Vite dev server on :5173 (proxies /ws to :8080)
+
+# Protobuf
+make proto-gen          # buf generate → shared/pb/ + web/src/lib/pb/
+make proto-lint         # buf lint
+make proto-breaking     # buf breaking (against main branch)
+
+# Infrastructure
+make deploy             # fly deploy --remote-only (production)
+make deploy-staging     # fly deploy --remote-only --app dleague-staging
+make compose-up         # docker compose up -d (local Mongo)
+make firebase-emulator  # start Firebase Auth emulator on :9099
+make seed-wordlists     # upload wordlists to local Mongo
+```
+
+## Common Operations
+
+```bash
+# Run full test suite (requires Mongo + Firebase emulator).
+MONGO_TEST_URI=mongodb://localhost:27017/dleague_test \
+FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 \
+make test
+
+# Regenerate protobuf after .proto changes.
+make proto-gen && git diff --exit-code -- shared/pb web/src/lib/pb
+
+# Check bundle size after web changes.
+cd web && npm run build 2>&1 | grep -E "gzip|KB"
+
+# Promote a user to admin.
+bash scripts/promote-admin.sh <firebase-uid>
+
+# View production logs.
+fly logs --app dleague
+```
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `server/cmd/api/main.go` | Boot wiring: decode secrets, connect Mongo, init Firebase, start Hub + HTTP server |
+| `server/internal/ws/conn.go` | WS upgrade, read/write loops, auth token extraction, `tokenToProfile` |
+| `server/internal/ws/hub.go` | Connection registry, dispatch routing |
+| `server/internal/ws/queue.go` | Matchmaking FIFO with TTL eviction |
+| `server/internal/ws/sync_match_handler.go` | Queue join/leave, match start, move/rejoin handlers |
+| `server/internal/ws/match_room.go` | Per-match state: moves, forfeit, timeout, resolution |
+| `server/internal/game/wordle/wordle.go` | Core game engine (server-authoritative) |
+| `web/src/lib/ws.ts` | WS client: reconnect, requestId correlation, token refresh |
+| `web/src/lib/auth-store.ts` | Firebase auth state reactive store |
+| `proto/dleague/v1/` | Single source of truth for all message types |

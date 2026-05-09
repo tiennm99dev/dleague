@@ -1,7 +1,7 @@
 ---
 title: "Dleague stack pivot: Svelte+Phaser / Firebase / MongoDB"
 description: "Pivot client to Svelte+Phaser, auth to Firebase, DB to MongoDB Atlas; harden Phase 1 server; ship PvP."
-status: pending
+status: completed
 priority: P1
 effort: 10-12w
 branch: main
@@ -63,7 +63,7 @@ Pivot Dleague off Ebitengine/WASM + MySQL HeatWave + cookie-sessions to Svelte+P
 | 07 | [Game core pluggable + Wordle](phase-07-game-core-pluggable.md)        | 2w     | completed |
 | 08 | [Async PvP](phase-08-async-pvp.md)                                     | 1w     | completed |
 | 09 | [Sync PvP](phase-09-sync-pvp-websocket.md)                             | 1.5w   | completed |
-| 10 | [Deploy + polish](phase-10-deploy-and-polish.md)                       | 1w     | pending |
+| 10 | [Deploy + polish](phase-10-deploy-and-polish.md)                       | 1w     | completed |
 
 ## Key Decisions
 | # | Decision                                          | Rationale                                                                                                                  |

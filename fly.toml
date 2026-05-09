@@ -1,0 +1,44 @@
+# Fly.io application configuration for dleague.
+# Region: iad (us-east-1) — paired with Atlas M0 on us-east-1 for low latency.
+# Deploy with: fly deploy --remote-only
+
+app = "dleague"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  DLEAGUE_ADDR    = ":8080"
+  DLEAGUE_WEB     = "/web/dist"
+  DLEAGUE_ENV     = "production"
+  DLEAGUE_MAX_CONNS = "400"
+  # MONGO_URI, FIREBASE_PROJECT_ID, FIREBASE_SERVICE_ACCOUNT_B64,
+  # DLEAGUE_WS_ORIGINS, DLEAGUE_TRUSTED_PROXIES — set via `fly secrets set`.
+  # See scripts/set-fly-secrets.sh.
+
+[http_service]
+  internal_port       = 8080
+  force_https         = true
+  auto_stop_machines  = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+  [http_service.concurrency]
+    type       = "connections"
+    hard_limit = 400
+    soft_limit = 300
+
+[[vm]]
+  cpu_kind   = "shared"
+  cpus       = 1
+  memory_mb  = 256
+
+[checks]
+  [checks.health]
+    grace_period = "10s"
+    interval     = "30s"
+    method       = "GET"
+    path         = "/health"
+    protocol     = "http"
+    timeout      = "5s"
+    type         = "http"

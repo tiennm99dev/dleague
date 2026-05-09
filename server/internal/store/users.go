@@ -16,9 +16,12 @@ var ErrEmptyUID = errors.New("store: uid must not be empty")
 
 // UserProfile contains the mutable fields set on login / registration.
 // Used as the upsert payload so callers don't construct a full User.
+// Only non-zero fields are written by UpsertByUID to avoid overwriting
+// existing display_name/avatar_url with empty values (Phase 05 M3 fix).
 type UserProfile struct {
 	DisplayName string
 	AvatarURL   string
+	Email       string
 	Verified    bool
 	IsAnonymous bool
 }
@@ -44,16 +47,28 @@ func (r *UserRepo) UpsertByUID(ctx context.Context, uid string, p UserProfile) e
 
 	now := time.Now().UTC()
 
+	// Build $set map dynamically: only include non-empty string fields so that
+	// an anonymous login (no name/avatar claims) never blanks out an existing
+	// display_name or avatar_url set by a prior full-auth login. Phase 05 M3 fix.
+	setFields := bson.M{
+		"is_anonymous":   p.IsAnonymous,
+		"verified":       p.Verified,
+		"last_login":     now,
+		"schema_version": currentSchemaVersion,
+	}
+	if p.DisplayName != "" {
+		setFields["display_name"] = p.DisplayName
+	}
+	if p.AvatarURL != "" {
+		setFields["avatar_url"] = p.AvatarURL
+	}
+	if p.Email != "" {
+		setFields["email"] = p.Email
+	}
+
 	filter := bson.M{"_id": uid}
 	update := bson.M{
-		"$set": bson.M{
-			"display_name":   p.DisplayName,
-			"avatar_url":     p.AvatarURL,
-			"verified":       p.Verified,
-			"is_anonymous":   p.IsAnonymous,
-			"last_login":     now,
-			"schema_version": currentSchemaVersion,
-		},
+		"$set": setFields,
 		"$setOnInsert": bson.M{
 			"created_at": now,
 			"stats": bson.M{

@@ -25,16 +25,28 @@ const COLOR_MAP: Record<Color, number> = {
 };
 
 export class WordleScene extends Phaser.Scene {
+	// Bound handler stored so we can call eventBus.off() in shutdown. Phase 07 M5 fix.
+	private readonly flipRowHandler = (payload: unknown): void => {
+		const { row, colors } = payload as FlipRowPayload;
+		this.flipRow(row, colors);
+	};
+
 	constructor() {
 		super({ key: 'WordleScene' });
 	}
 
 	create(): void {
-		// Listen for flip-row events emitted after each server response.
-		eventBus.on('wordle:flip-row', (payload: unknown) => {
-			const { row, colors } = payload as FlipRowPayload;
-			this.flipRow(row, colors);
-		});
+		// Listen for flip-row events emitted after each server GAME_STATE reply.
+		eventBus.on('wordle:flip-row', this.flipRowHandler);
+	}
+
+	/**
+	 * shutdown is called by Phaser when the scene is stopped or destroyed.
+	 * Remove the EventBus listener to prevent memory leaks and stale callbacks
+	 * if the scene is restarted. Phase 07 M5 fix.
+	 */
+	shutdown(): void {
+		eventBus.off('wordle:flip-row', this.flipRowHandler);
 	}
 
 	/**

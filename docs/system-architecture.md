@@ -23,7 +23,7 @@
    └──────────────────┘                              └──────────────────────┘
 ```
 
-TODO Phase 10: Mermaid version + deployment topology.
+See deploy topology section below for full Fly.io layout.
 
 ## Components
 
@@ -86,7 +86,44 @@ web/src/
 **Reference:** `plans/reports/researcher-260508-2300-svelte-phaser-protobuf-client.md`
 
 ### Server (Go)
-TODO Phase 02–05.
+
+**Stack:** Go 1.23, `chi` HTTP router, `coder/websocket` for WS, `firebase.google.com/go/v4` for Auth, `go.mongodb.org/mongo-driver/v2`.
+
+**Boot flow:**
+```
+main()
+  decodeServiceAccount()        ← FIREBASE_SERVICE_ACCOUNT_B64 → /tmp/dleague-sa.json
+  config.Load()                 ← env vars; fail-fast on missing MONGO_URI
+  store.Connect() + Ping()      ← 15s boot context
+  store.EnsureIndexes()         ← 8 indexes, idempotent
+  wordle.LoadAnswers/Dictionary ← Mongo first, embedded fallback
+  wordle.EnsureToday()          ← seed today's daily puzzle
+  auth.New()                    ← Firebase verifier (ADC / emulator)
+  [production] assert WSOrigins non-empty
+  ws.NewHub() + GameDeps        ← in-memory state
+  srvhttp.NewRouter()           ← chi routes: /health, /ws, /*
+  go scheduler.Run()            ← leaderboard + match sweep
+  go rooms/queue ticker         ← 1s tick: timeouts + TTL eviction
+  srv.ListenAndServe(:8080)
+  <signal> → hub.CloseAll() → srv.Shutdown(5s)
+```
+
+**WS dispatch table:**
+
+| Message type | Handler | Auth required |
+|---|---|---|
+| PING | → PONG | no |
+| AUTH_REFRESH | update Conn.userID + tokenExpiresAt | no |
+| GAME_MOVE | handleGameMove | yes |
+| CREATE_MATCH | handleCreateMatch | yes |
+| JOIN_MATCH | handleJoinMatch | yes |
+| SUBMIT_ATTEMPT | handleSubmitAttempt | yes |
+| MATCH_RESULT | handleMatchResult | yes |
+| LEADERBOARD_QUERY | handleLeaderboardQuery | yes |
+| QUEUE_JOIN | handleQueueJoin | yes |
+| QUEUE_LEAVE | handleQueueLeave | yes |
+| MATCH_MOVE | handleMatchMove | yes |
+| MATCH_REJOIN | handleMatchRejoin | yes |
 
 ### Persistence (MongoDB Atlas M0)
 
@@ -319,11 +356,71 @@ Conn close while activeMatchID != "":
 - `RoomsRegistry`: `sync.RWMutex`; reads parallel, writes serialised.
 - `GraceTimers`: `sync.Mutex`; `time.AfterFunc` goroutines hold no locks when firing.
 
+## Deploy topology (Phase 10)
+
+```
+Internet
+  │  HTTPS (TLS terminated by Fly.io, force_https=true)
+  ▼
+Fly.io edge proxy (region: iad, us-east-1)
+  │  X-Forwarded-For trusted from DLEAGUE_TRUSTED_PROXIES
+  ▼
+Fly machine (shared-cpu-1x, 256 MB)
+  distroless/static container
+  ├─ /server (Go binary, CGO_ENABLED=0 static)
+  └─ /web/dist/ (SvelteKit adapter-static output)
+       HTTP :8080 internal
+       /health → JSON {"status":"ok","mongo":"ok"}
+       /ws     → WebSocket upgrade
+       /*      → static file server + SPA fallback
+
+External services:
+  MongoDB Atlas M0 (us-east-1) ← mongodb+srv via MONGO_URI secret
+  Firebase Auth (global)       ← service account via FIREBASE_SERVICE_ACCOUNT_B64 secret
+```
+
+Fly secrets (never in image):
+- `MONGO_URI` — Atlas SRV connection string
+- `FIREBASE_PROJECT_ID` — Firebase project ID
+- `FIREBASE_SERVICE_ACCOUNT_B64` — base64-encoded service-account JSON
+- `DLEAGUE_WS_ORIGINS` — comma-separated allowed WS origins
+- `DLEAGUE_TRUSTED_PROXIES` — Fly proxy CIDR ranges
+
 ## Failure domains
-TODO Phase 10. Atlas pause, Firebase outage, Fly region failure, etc.
+
+| Domain | Failure mode | Mitigation |
+|--------|-------------|------------|
+| Atlas M0 pause | DB unavailable after 60d inactivity | Nightly CI ping; upgrade to M10 for production |
+| Atlas M0 conn cap (500) | 429 on new WS connections | `DLEAGUE_MAX_CONNS=400` headroom; upgrade path |
+| Firebase Auth outage | New WS upgrades fail (401) | Existing connections unaffected (token cached); reconnect retries |
+| Fly region failure | App unreachable | Single-region MVP; multi-region is v2 |
+| Service-account expiry | Firebase Admin SDK fails | Service accounts don't expire; rotate manually if compromised |
+| Memory pressure (256 MB) | OOM kill | Each Conn ~2 KB; 400 conns ≈ 1 MB WS overhead; distroless binary ~15 MB |
 
 ## Security boundaries
-TODO Phase 10. WS origin allowlist, conn cap, request_id length cap, security headers, etc.
+
+| Boundary | Mechanism |
+|----------|-----------|
+| WS origin | `DLEAGUE_WS_ORIGINS` allowlist; boot-time fatal if empty in production |
+| Connection cap | `DLEAGUE_MAX_CONNS` (default 400); pre-accept cap check + hub register check |
+| Per-conn rate limit | Token bucket 10 burst / 10 per sec; `ERROR{429}` on overflow, conn stays open |
+| request_id length | Max 128 bytes; `ERROR{400}` on overflow (prevents log injection) |
+| Token verification | Firebase ID token verified on every WS upgrade; refreshed mid-connection |
+| Admin operations | `Conn.isAdmin` from custom claim; `VerifyIDTokenAndCheckRevoked` for revocation |
+| TLS | Fly.io terminates; `force_https=true` in fly.toml |
+| Security headers | CSP (no `wasm-unsafe-eval`), HSTS, X-Frame-Options, X-Content-Type-Options |
+| Secrets | Never embedded in image; injected via Fly secrets at runtime |
+| Atlas access | User/password auth; `0.0.0.0/0` accepted-risk (see deployment-guide.md) |
 
 ## Observability
-TODO Phase 10. Structured logs, metrics, tracing (if any).
+
+Current (MVP):
+- `log.Printf` structured messages to stdout — visible via `fly logs`.
+- `/health` returns `{"status":"ok","mongo":"ok"}` — Fly checks every 30 s.
+- Fly.io dashboard: CPU, memory, HTTP request rate, latency histograms.
+- Atlas monitor tab: ops/sec, connections, storage usage.
+
+v2 improvements:
+- Replace `log.Printf` with `slog` (structured JSON) for log drain queries.
+- Add Prometheus metrics endpoint (`/metrics`) for custom dashboards.
+- Distributed tracing via OpenTelemetry + Fly OTLP export.

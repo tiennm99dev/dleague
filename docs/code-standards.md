@@ -55,7 +55,7 @@ dleague/
 - **Validation:** `buf lint` and `buf breaking` run in CI
 
 ### Debug Logging
-- **Production build** (default `go build`): Binary protobuf only. No serialization overhead, no protojson symbols in WASM.
+- **Production build** (default `go build`): Binary protobuf only. No serialization overhead.
 - **Debug build** (`go build -tags debug`): Every WS message also serialized to `protojson` and logged:
   - **Server:** stdout (human-readable JSON)
   - **Client:** browser console (dev tools)

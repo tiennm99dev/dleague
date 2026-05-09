@@ -49,3 +49,6 @@ firestore-debug.log
 # Service-account JSON files must never be committed.
 # Name them with this prefix to get automatic protection.
 serviceAccount*.json
+
+# Fly.io local state.
+.fly/

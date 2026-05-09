@@ -13,7 +13,9 @@ Most -dle games are solo: solve the daily puzzle, share your score on Twitter, d
 
 ## Status
 
-Phase 1 (Go workspace + protobuf wire + WS ping-pong + `/health`) shipped. Pivoting to **Svelte+Phaser client + MongoDB Atlas + Firebase Auth**. See active plan: [`plans/260508-2300-svelte-phaser-firebase-mongo-pivot/plan.md`](plans/260508-2300-svelte-phaser-firebase-mongo-pivot/plan.md).
+All 10 phases complete. Server + client + Firebase Auth + MongoDB Atlas + sync/async PvP all functional. Deploy artifacts ready for Fly.io.
+
+See: [`docs/deployment-guide.md`](docs/deployment-guide.md) for step-by-step production deploy instructions.
 
 ## Quickstart
 
@@ -24,14 +26,21 @@ make tools
 # (re)generate protobuf Go code into shared/pb/
 make proto-gen
 
-# run server + WASM client (prod)
+# start local Mongo + Firebase emulator
+make compose-up
+make firebase-emulator
+
+# run server (port 8080)
 make dev
 
 # run with -tags debug — every WS message logs as protojson on both sides
 make dev-debug
+
+# run web dev server (port 5173, proxies /ws and /health to :8080)
+make web-dev
 ```
 
-Open http://localhost:8080.
+Open http://localhost:5173 (web dev) or http://localhost:8080 (server only).
 
 ## Stack
 
@@ -59,23 +68,33 @@ dleague/
 └── docker-compose.yml  # mongo:7 + mongo-express for local dev
 ```
 
+## Deploy
+
+```bash
+# Set Fly.io secrets (one-time — see scripts/set-fly-secrets.sh)
+# Then:
+make deploy
+```
+
+See [`docs/deployment-guide.md`](docs/deployment-guide.md) for full instructions including Atlas, Firebase setup, and rollback procedure.
+
 ## Plan
 
-Active plan: [`plans/260508-2300-svelte-phaser-firebase-mongo-pivot/plan.md`](plans/260508-2300-svelte-phaser-firebase-mongo-pivot/plan.md)
+Plan: [`plans/260508-2300-svelte-phaser-firebase-mongo-pivot/plan.md`](plans/260508-2300-svelte-phaser-firebase-mongo-pivot/plan.md)
 
-| #  | Phase                              | Effort | Status    |
-|----|------------------------------------|--------|-----------|
-| 00 | Phase 1 foundation (Go + WS + pb)  | 1w     | completed |
-| 01 | Archive + docs bootstrap           | 0.5w   | pending   |
-| 02 | Server hardening                   | 1w     | pending   |
-| 03 | WS lib migration nhooyr → coder    | 0.5w   | pending   |
-| 04 | MongoDB store rewrite              | 1w     | pending   |
-| 05 | Firebase Auth integration          | 1w     | pending   |
-| 06 | Svelte+Phaser client scaffold      | 1.5w   | pending   |
-| 07 | Game core pluggable + Wordle       | 2w     | pending   |
-| 08 | Async PvP                          | 1w     | pending   |
-| 09 | Sync PvP                           | 1.5w   | pending   |
-| 10 | Deploy + polish                    | 1w     | pending   |
+| #  | Phase                              | Status    |
+|----|------------------------------------|-----------|
+| 00 | Phase 1 foundation (Go + WS + pb)  | completed |
+| 01 | Archive + docs bootstrap           | completed |
+| 02 | Server hardening                   | completed |
+| 03 | WS lib migration nhooyr → coder    | completed |
+| 04 | MongoDB store rewrite              | completed |
+| 05 | Firebase Auth integration          | completed |
+| 06 | Svelte+Phaser client scaffold      | completed |
+| 07 | Game core pluggable + Wordle       | completed |
+| 08 | Async PvP                          | completed |
+| 09 | Sync PvP                           | completed |
+| 10 | Deploy + polish                    | completed |
 
 Superseded plans live under [`plans/archive/`](plans/archive/README.md).
 

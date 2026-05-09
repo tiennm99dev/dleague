@@ -193,6 +193,9 @@ func (r *MatchRepo) CompleteSync(
 
 	_, txErr := session.WithTransaction(ctx, func(sc context.Context) (any, error) {
 		now := time.Now().UTC()
+		// Filter on state:"active" so re-resolution of an already-completed match
+		// is a silent no-op rather than overwriting the winner. Phase 09 M5 fix.
+		filter := bson.M{"_id": oid, "state": "active"}
 		update := bson.M{
 			"$set": bson.M{
 				"state":        "complete",
@@ -201,7 +204,7 @@ func (r *MatchRepo) CompleteSync(
 				"reason":       reason,
 			},
 		}
-		if _, uErr := r.coll.UpdateOne(sc, bson.M{"_id": oid}, update); uErr != nil {
+		if _, uErr := r.coll.UpdateOne(sc, filter, update); uErr != nil {
 			return nil, fmt.Errorf("store: CompleteSync update match: %w", uErr)
 		}
 		return nil, nil

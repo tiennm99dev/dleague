@@ -33,6 +33,7 @@ type Conn struct {
 	// Auth fields — populated during UpgradeHandler and updated by AuthRefresh.
 	userID         string    // Firebase UID; empty means unauthenticated
 	isAnonymous    bool      // true when sign_in_provider == "anonymous"
+	isAdmin        bool      // true when token.Claims["admin"] == true
 	tokenExpiresAt time.Time // when the current ID token expires
 
 	// Phase 09: sync PvP fields. activeMatchID is read from the disconnect
@@ -98,6 +99,7 @@ func UpgradeHandler(hub *Hub, opts UpgradeOptions) http.HandlerFunc {
 		// the connection proceeds with an empty userID (unauthenticated guest mode).
 		var connUserID string
 		var connAnonymous bool
+		var connIsAdmin bool
 		var connTokenExp time.Time
 
 		if hub.verifier != nil {
@@ -116,6 +118,8 @@ func UpgradeHandler(hub *Hub, opts UpgradeOptions) http.HandlerFunc {
 			connUserID = token.UID
 			connAnonymous = isAnonymousToken(token)
 			connTokenExp = time.Unix(token.Expires, 0)
+			// Defensive cast: absent or non-bool claim safely yields false.
+			connIsAdmin, _ = token.Claims["admin"].(bool)
 
 			// Upsert the user document in Mongo on every connection (idempotent).
 			if hub.userRepo != nil {
@@ -143,6 +147,7 @@ func UpgradeHandler(hub *Hub, opts UpgradeOptions) http.HandlerFunc {
 			cancelRead:     cancelRead,
 			userID:         connUserID,
 			isAnonymous:    connAnonymous,
+			isAdmin:        connIsAdmin,
 			tokenExpiresAt: connTokenExp,
 			rateLimiter:    NewRateLimiter(),
 		}
@@ -161,6 +166,8 @@ func UpgradeHandler(hub *Hub, opts UpgradeOptions) http.HandlerFunc {
 			if conn.getActiveMatchID() != "" && hub.GameDeps != nil && hub.GameDeps.GraceTimers != nil {
 				hub.GameDeps.GraceTimers.Schedule(conn, hub.GameDeps)
 			}
+			// Evict the solo game session on disconnect to free memory. Phase 07 M3 fix.
+			deleteSession(conn.userID)
 			hub.unregister(conn)
 		}()
 		defer func() { _ = c.CloseNow() }()
@@ -181,15 +188,24 @@ func UpgradeHandler(hub *Hub, opts UpgradeOptions) http.HandlerFunc {
 }
 
 // tokenToProfile maps Firebase ID token claims to a store.UserProfile.
-// Anonymous users produce an empty DisplayName (no email/name claim).
+// Only non-empty string fields are set so UpsertByUID's dynamic $set map does
+// not overwrite an existing avatar/displayName with blank values when a claim
+// is absent (e.g. anonymous users). Phase 05 M3/M4 fix.
 func tokenToProfile(claims map[string]interface{}) store.UserProfile {
 	p := store.UserProfile{}
-	if name, ok := claims["name"].(string); ok {
+	if name, ok := claims["name"].(string); ok && name != "" {
 		p.DisplayName = name
+	}
+	if picture, ok := claims["picture"].(string); ok && picture != "" {
+		p.AvatarURL = picture
 	}
 	// email_verified claim indicates a verified provider (Google, email+link, etc.).
 	if verified, ok := claims["email_verified"].(bool); ok {
 		p.Verified = verified
+	}
+	// Persist email when present (non-anonymous providers include it).
+	if email, ok := claims["email"].(string); ok && email != "" {
+		p.Email = email
 	}
 	return p
 }
@@ -269,6 +285,13 @@ func (c *Conn) handleFrame(ctx context.Context, data []byte) {
 	}
 
 	c.enqueue(resp)
+}
+
+// EnqueueError sends an ERROR envelope with the given message to the client.
+// Used externally (e.g. main's queue TTL eviction). Non-blocking: drops the
+// frame if the send buffer is full (conn is considered stuck and will close).
+func (c *Conn) EnqueueError(message string) {
+	c.enqueue(errorEnvelope("", 408, message))
 }
 
 // enqueue places serialized bytes onto the send channel. If the channel is full

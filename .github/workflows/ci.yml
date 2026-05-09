@@ -19,14 +19,14 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32  # v5.0.0
         with:
           go-version: "1.26"
           cache: true
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af  # v4.1.0
         with:
           node-version: "20"
           cache: npm
@@ -55,14 +55,14 @@ jobs:
             { echo "::error::generated protobuf is stale; run 'make proto-gen' and commit"; exit 1; }
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@aaa42aa0628b4ae2578232a66b541047968fac86  # v6.1.1
         with:
           version: latest
           args: --timeout=5m
           working-directory: server
 
       - name: golangci-lint shared
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@aaa42aa0628b4ae2578232a66b541047968fac86  # v6.1.1
         with:
           version: latest
           args: --timeout=5m
@@ -102,7 +102,7 @@ jobs:
         run: npm run --prefix web build
 
       - name: upload web artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882  # v4.4.3
         with:
           name: dleague-web
           path: web/dist/

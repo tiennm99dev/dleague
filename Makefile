@@ -6,7 +6,7 @@ GOLANGCI_LINT ?= golangci-lint
 
 .PHONY: help dev dev-debug build build-server web-install web-build web-dev \
         test lint compose-up compose-down proto-gen proto-lint proto-breaking \
-        tools clean firebase-emulator seed-wordlists
+        tools clean firebase-emulator seed-wordlists deploy deploy-staging
 
 help:
 	@echo "make targets:"
@@ -83,6 +83,16 @@ firebase-emulator:
 # Usage: DLEAGUE_MONGO_URI=mongodb://localhost:27017 make seed-wordlists
 seed-wordlists:
 	cd server && $(GO) run ./cmd/seed-wordlists
+
+deploy:
+	fly deploy --remote-only
+
+deploy-staging:
+	fly deploy --remote-only --app dleague-staging
+
+seed-wordlists-prod:
+	@echo "Set MONGO_URI to the production Atlas URI first."
+	MONGO_URI=$${MONGO_URI} cd server && $(GO) run ./cmd/seed-wordlists
 
 clean:
 	rm -rf bin/ web/dist/ web/.svelte-kit/

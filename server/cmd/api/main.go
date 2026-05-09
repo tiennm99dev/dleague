@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"log"
 	"net/http"
@@ -24,10 +25,44 @@ import (
 // roomTimeoutInterval is how often the rooms ticker checks match deadlines.
 const roomTimeoutInterval = time.Second
 
+// hasAtlasSRV reports whether the URI uses the Atlas SRV scheme.
+func hasAtlasSRV(uri string) bool {
+	return len(uri) > 14 && uri[:14] == "mongodb+srv://"
+}
+
+// decodeServiceAccount decodes FIREBASE_SERVICE_ACCOUNT_B64 (if set) to a temp
+// file and sets GOOGLE_APPLICATION_CREDENTIALS so the Firebase Admin SDK picks
+// it up via Application Default Credentials. No secret value is logged.
+func decodeServiceAccount() {
+	b64 := os.Getenv("FIREBASE_SERVICE_ACCOUNT_B64")
+	if b64 == "" {
+		return
+	}
+	data, err := base64.StdEncoding.DecodeString(b64)
+	if err != nil {
+		log.Fatalf("auth: base64 decode FIREBASE_SERVICE_ACCOUNT_B64: %v", err)
+	}
+	path := "/tmp/dleague-sa.json"
+	if err := os.WriteFile(path, data, 0600); err != nil {
+		log.Fatalf("auth: write service account to %s: %v", path, err)
+	}
+	if err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", path); err != nil {
+		log.Fatalf("auth: setenv GOOGLE_APPLICATION_CREDENTIALS: %v", err)
+	}
+	log.Printf("auth: using decoded service-account from env")
+}
+
 func main() {
+	decodeServiceAccount()
+
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("config: %v", err)
+	}
+
+	// Production safety checks.
+	if cfg.IsProduction() && !hasAtlasSRV(cfg.MongoURI) {
+		log.Printf("WARNING: MONGO_URI does not use mongodb+srv:// — plain mongodb:// is not recommended for Atlas")
 	}
 
 	// 15-second budget for Connect + Ping + EnsureIndexes + Firebase init.
@@ -144,19 +179,28 @@ func main() {
 	})
 
 	// Phase 09: rooms timeout ticker — checks every second for expired matches.
+	// Also piggybacks queue TTL eviction every 5 ticks. Phase 09 M6 fix.
 	go func() {
 		ticker := time.NewTicker(roomTimeoutInterval)
 		defer ticker.Stop()
+		var tick int
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
+				tick++
 				now := time.Now()
 				for _, room := range syncRooms.All() {
 					if !room.Deadline.IsZero() && now.After(room.Deadline) {
 						room.HandleTimeout(context.Background(), hub.GameDeps)
 					}
+				}
+				// Evict stale queue entries every 5 seconds.
+				if tick%5 == 0 {
+					syncQueue.EvictExpired(func(c *ws.Conn) {
+						c.EnqueueError("queue_timeout")
+					})
 				}
 			}
 		}

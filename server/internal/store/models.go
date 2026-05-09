@@ -23,9 +23,11 @@ type User struct {
 	ID            string    `bson:"_id"`
 	DisplayName   string    `bson:"display_name"`
 	AvatarURL     string    `bson:"avatar_url"`
+	Email         string    `bson:"email,omitempty"` // persisted when present in token (Phase 05 M4)
 	CreatedAt     time.Time `bson:"created_at"`
 	LastLogin     time.Time `bson:"last_login"`
 	Verified      bool      `bson:"verified"`
+	IsAnonymous   bool      `bson:"is_anonymous"`
 	Stats         UserStats `bson:"stats"`
 	SchemaVersion int       `bson:"schema_version"`
 }
