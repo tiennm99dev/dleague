@@ -1,6 +1,16 @@
 version: v2
 plugins:
+  # Go protobuf output — consumed by server + shared modules.
   - local: protoc-gen-go
     out: ../shared/pb
     opt:
       - paths=source_relative
+
+  # TypeScript protobuf output via @bufbuild/protoc-gen-es (installed in web/).
+  # Path is relative to the proto/ directory where buf generate runs.
+  # Requires `npm ci` (or `npm install`) in web/ before running buf generate.
+  # The .bin symlink is created by npm and points to the actual binary.
+  - local: ../web/node_modules/.bin/protoc-gen-es
+    out: ../web/src/lib/pb
+    opt:
+      - target=ts

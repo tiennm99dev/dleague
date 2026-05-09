@@ -60,11 +60,13 @@ func NewRouter(webRoot string, hub *ws.Hub, wsOpts ws.UpgradeOptions, st *store.
 	r.Get("/health", healthHandler(st))
 	r.Get("/ws", ws.UpgradeHandler(hub, wsOpts))
 
-	// Static file server: apply security headers scoped to this route group only.
+	// Static file server with SPA fallback: for any GET that isn't /ws, /health,
+	// or an existing static asset, serve index.html so SvelteKit client-side
+	// routing works (e.g. /match/<token>, /play).
 	fs := http.FileServer(http.Dir(abs))
 	r.Group(func(r chi.Router) {
 		r.Use(securityHeaders)
-		r.Handle("/*", fs)
+		r.Handle("/*", spaFallback(abs, fs))
 	})
 
 	return r, nil

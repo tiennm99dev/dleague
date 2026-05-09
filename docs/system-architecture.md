@@ -28,7 +28,54 @@ TODO Phase 10: Mermaid version + deployment topology.
 ## Components
 
 ### Client (SvelteKit + Phaser)
-TODO Phase 06.
+
+**Stack:** SvelteKit 2 + adapter-static → `web/dist/` (single-page app); Phaser 3.88 canvas component; `@bufbuild/protobuf` v2 for binary protobuf encode/decode; Firebase JS SDK v11 for auth.
+
+**Source layout:**
+```
+web/src/
+├── routes/
+│   ├── +layout.ts          — ssr:false, prerender:true (SPA mode)
+│   ├── +layout.svelte      — Firebase init + auth gate: shows SignIn or <slot/>
+│   └── +page.svelte        — mounts <PhaserGame/>; listens for title:start → goto('/play')
+└── lib/
+    ├── firebase.ts         — initializeApp, connectAuthEmulator (DEV), sign-in helpers
+    ├── auth-store.ts       — writable<User|null>, onAuthStateChanged subscription, idToken()
+    ├── ws.ts               — WS client (see below)
+    ├── pb/dleague/v1/      — generated TS protobuf (committed; from buf generate)
+    ├── phaser/
+    │   ├── event-bus.ts    — typed Map<string,Set<Handler>> pub/sub (~30 LOC, no mitt)
+    │   ├── phaser-game.svelte — Phaser.Game lifecycle (onMount create, onDestroy destroy)
+    │   └── scenes/
+    │       └── title-scene.ts  — "DLEAGUE" title + Start button → eventBus.emit('title:start')
+    └── components/
+        ├── sign-in.svelte          — email/password form + Google popup + anonymous
+        └── connection-status.svelte — top-right badge (green/yellow/red) from connectionState store
+```
+
+**WS client (`web/src/lib/ws.ts`):**
+- Native `WebSocket('/ws', ['dleague.v1', 'fb.<idToken>'])`, `binaryType='arraybuffer'`
+- Request/response correlation: `Map<requestId, PendingRequest>` + `crypto.randomUUID()`
+- Exponential-backoff reconnect: base 1s, max 30s, max 10 attempts
+- Token refresh at 50 min: sends `MESSAGE_TYPE_AUTH_REFRESH{id_token}` (Phase 05 contract)
+- Reactive `connectionState` Svelte store → `ConnectionStatus` badge
+
+**Build pipeline:**
+- Dev: `make web-dev` → Vite on `:5173`; proxies `/ws` (ws:true) and `/health` to `:8080`
+- Prod: `make web-build` → `web/dist/`; Go FileServer serves it at `/` with SPA fallback
+- Proto: `make proto-gen` (`buf generate`) emits both Go (`shared/pb/`) and TS (`web/src/lib/pb/`)
+
+**Bundle sizes (measured):**
+- Phaser chunk: 1,485 KB min / **341 KB gzip** (full Phaser 3.88 — over 400 KB budget)
+- Firebase chunk: ~177 KB min / **38 KB gzip**
+- Total gzip across all chunks: ~411 KB — slightly over 400 KB spec target
+- Mitigation (deferred): use Phaser custom build (audio/physics stripped) to reclaim ~100 KB gzip
+
+**SPA fallback (server-side):** `server/internal/http/spa_fallback.go` wraps the Go FileServer. Any GET for a non-existent path that is not `/ws`, `/health`, or a static asset extension (`.js`, `.css`, `.png`, etc.) returns `web/dist/index.html` with 200 so SvelteKit client-side routing handles it.
+
+**Security:** CSP `wasm-unsafe-eval` removed (no WASM). Firebase web config (`apiKey` etc.) is public and committed (`firebase.config.json`); restrict by Auth Domain in Firebase console. ID tokens live in JS memory only — never `localStorage`.
+
+**Reference:** `plans/reports/researcher-260508-2300-svelte-phaser-protobuf-client.md`
 
 ### Server (Go)
 TODO Phase 02–05.

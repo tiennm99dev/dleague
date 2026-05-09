@@ -140,6 +140,36 @@ dleague/
 | Protobuf messages | PascalCase | `Envelope`, `Ping`, `GameMove` |
 | Protobuf fields | snake_case | `message_type`, `request_id`, `payload` |
 
+## TypeScript / Svelte (web/)
+
+### File Naming
+- **kebab-case** for all `.ts` and `.svelte` files — e.g. `auth-store.ts`, `sign-in.svelte`, `phaser-game.svelte`
+- SvelteKit route files follow the framework convention: `+page.svelte`, `+layout.ts`, etc.
+- Phaser scene classes use PascalCase *class name* inside a kebab-case file: `title-scene.ts` exports `TitleScene`
+
+### TypeScript Rules
+- **No `any`** — use `unknown` + type guards or proper generated protobuf types
+- **ES2022 target** — `crypto.randomUUID()`, top-level await, and nullish coalescing are all available
+- **Strict mode on** — `noImplicitAny: true`; tsconfig extends `.svelte-kit/tsconfig.json`
+- **`@bufbuild/protobuf` v2 API** — use module functions `create(Schema, init)`, `toBinary(Schema, msg)`, `fromBinary(Schema, bytes)`. Do NOT use `new MessageClass()` (v1 class API)
+- **Generated protobuf** in `web/src/lib/pb/` is committed to git; run `make proto-gen` after any `.proto` change
+
+### Component Rules
+- Each Svelte component **<200 LOC**
+- No inline `<script>` logic >30 lines — extract to a `.ts` module
+- Use Svelte 5 runes (`$state`, `$derived`, `$props`) for reactive state; avoid legacy `$:` where practical
+
+### EventBus Conventions
+- Event names: `kebab-case` namespaced by scene — `'title:start'`, `'game:move'`, `'game:over'`
+- Single shared `eventBus` instance exported from `src/lib/phaser/event-bus.ts`
+- Phaser scenes emit; Svelte components listen (one-way: scene → Svelte)
+- Always `off()` listeners in Svelte `onMount` cleanup functions to prevent leaks
+
+### WS Client Conventions
+- All WS sends go through `sendRequest()` or fire-and-forget via the socket directly with a constructed `Envelope`
+- Payload bytes are `Uint8Array` at the `ws.ts` boundary; callers are responsible for encoding/decoding inner messages
+- Token refresh is handled internally in `ws.ts` — callers do not need to manage it
+
 ## Dependencies & Vendoring
 
 - **No Go vendoring** — use `go.mod` + `go.sum`. Lock file committed to git.

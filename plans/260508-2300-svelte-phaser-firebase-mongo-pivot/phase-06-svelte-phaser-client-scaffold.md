@@ -1,7 +1,8 @@
 ---
 phase: 6
 title: "Svelte+Phaser client scaffold (replaces Ebitengine)"
-status: pending
+status: completed
+completed_on: 2026-05-09
 priority: P1
 effort: 1.5w
 dependencies: [5]
@@ -178,30 +179,30 @@ ws.onmessage: Envelope.fromBinary(arraybuffer)
     - `npm run build` → `web/dist/index.html` exists → server `:8080/` serves it → SPA route `/match/foo` falls back to index.html.
 
 ## Todo List
-- [ ] Delete `client/` Ebitengine module
-- [ ] Delete `web/wasm_exec.js`, `web/index.html`
-- [ ] Update `go.work` (remove client)
-- [ ] Scaffold SvelteKit + adapter-static
-- [ ] Install phaser, firebase, @bufbuild/protobuf
-- [ ] Configure svelte.config.js + vite.config.ts
-- [ ] Extend `buf.gen.yaml` with TS plugin
-- [ ] Verify generated TS protobuf compiles
-- [ ] Firebase init + emulator detection
-- [ ] auth-store with onAuthStateChanged
-- [ ] WS client with req-resp correlation + reconnect
-- [ ] Token refresh at 50min via AuthRefresh
-- [ ] PhaserGame component + EventBus
-- [ ] Title scene Phaser implementation
-- [ ] +layout.svelte auth gating
-- [ ] Sign-in component (3 providers)
-- [ ] Connection status indicator
-- [ ] Server `spa_fallback.go`
-- [ ] Tighten CSP (drop wasm-unsafe-eval)
-- [ ] Makefile web-* targets
-- [ ] CI Node + npm build step
-- [ ] .gitignore web/dist + node_modules
-- [ ] Bundle size measurement
-- [ ] Manual smoke (sign-in → WS → ping)
+- [x] Delete `client/` Ebitengine module
+- [x] Delete `web/wasm_exec.js`, `web/index.html`
+- [x] Update `go.work` (remove client)
+- [x] Scaffold SvelteKit + adapter-static
+- [x] Install phaser, firebase, @bufbuild/protobuf
+- [x] Configure svelte.config.js + vite.config.ts
+- [x] Extend `buf.gen.yaml` with TS plugin
+- [x] Verify generated TS protobuf compiles
+- [x] Firebase init + emulator detection
+- [x] auth-store with onAuthStateChanged
+- [x] WS client with req-resp correlation + reconnect
+- [x] Token refresh at 50min via AuthRefresh
+- [x] PhaserGame component + EventBus
+- [x] Title scene Phaser implementation
+- [x] +layout.svelte auth gating
+- [x] Sign-in component (3 providers)
+- [x] Connection status indicator
+- [x] Server `spa_fallback.go`
+- [x] Tighten CSP (drop wasm-unsafe-eval)
+- [x] Makefile web-* targets
+- [x] CI Node + npm build step
+- [x] .gitignore web/dist + node_modules
+- [x] Bundle size measurement
+- [ ] Manual smoke (sign-in → WS → ping) — skipped: no Firebase emulator + Mongo running locally
 
 ## Success Criteria
 - [ ] `make web-build` produces `web/dist/index.html` + assets

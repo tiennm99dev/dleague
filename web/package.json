@@ -1,0 +1,28 @@
+{
+  "name": "dleague-web",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.5.2",
+    "firebase": "^11.7.1",
+    "phaser": "^3.88.2",
+    "svelte": "^5.28.2"
+  },
+  "devDependencies": {
+    "@bufbuild/protoc-gen-es": "^2.5.2",
+    "@sveltejs/adapter-static": "^3.0.8",
+    "@sveltejs/kit": "^2.20.5",
+    "@sveltejs/vite-plugin-svelte": "^5.0.3",
+    "@types/node": "^22.15.17",
+    "svelte-check": "^4.1.6",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.4"
+  }
+}

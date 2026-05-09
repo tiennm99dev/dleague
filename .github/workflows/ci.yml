@@ -26,6 +26,15 @@ jobs:
           go-version: "1.26"
           cache: true
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        run: npm ci --prefix web
+
       - name: Install buf + protoc-gen-go
         run: |
           go install github.com/bufbuild/buf/cmd/buf@latest
@@ -42,7 +51,7 @@ jobs:
       - name: proto generate (verify no diff)
         run: |
           cd proto && buf generate
-          cd .. && git diff --exit-code -- shared/pb || \
+          cd .. && git diff --exit-code -- shared/pb web/src/lib/pb || \
             { echo "::error::generated protobuf is stale; run 'make proto-gen' and commit"; exit 1; }
 
       - name: golangci-lint
@@ -58,13 +67,6 @@ jobs:
           version: latest
           args: --timeout=5m
           working-directory: shared
-
-      - name: golangci-lint client
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          args: --timeout=5m
-          working-directory: client
 
       - name: Install firebase-tools
         run: sudo npm install -g firebase-tools
@@ -96,14 +98,11 @@ jobs:
       - name: build server
         run: cd server && go build ./cmd/api
 
-      - name: build wasm (prod)
-        run: cd client && GOOS=js GOARCH=wasm go build -o ../web/main.wasm ./cmd/web
+      - name: build web
+        run: npm run --prefix web build
 
-      - name: build wasm (debug)
-        run: cd client && GOOS=js GOARCH=wasm go build -tags debug -o /tmp/main-debug.wasm ./cmd/web
-
-      - name: upload wasm artifact
+      - name: upload web artifact
         uses: actions/upload-artifact@v4
         with:
-          name: dleague-wasm
-          path: web/main.wasm
+          name: dleague-web
+          path: web/dist/

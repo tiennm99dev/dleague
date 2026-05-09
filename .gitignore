@@ -37,6 +37,11 @@ plans/visuals/cache/
 # Repomix snapshots (LLM context bundles; transient)
 repomix-output.xml
 
+# Web client build artifacts
+web/dist/
+web/node_modules/
+web/.svelte-kit/
+
 # Firebase
 firebase-debug.log
 firestore-debug.log
