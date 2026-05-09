@@ -34,6 +34,11 @@ type GameDeps struct {
 	// MongoClient is the raw client used to open transaction sessions.
 	// May be nil in unit tests that don't exercise transactional paths.
 	MongoClient *mongo.Client
+
+	// Phase 09: sync PvP — in-memory state.
+	Queue       *Queue         // matchmaking queue
+	Rooms       *RoomsRegistry // active match rooms
+	GraceTimers *GraceTimers   // disconnect grace timers
 }
 
 // wordleSession holds one user's in-progress Wordle game.

@@ -42,6 +42,15 @@ const (
 	MessageType_MESSAGE_TYPE_ATTEMPT_SUBMIT_ACK   MessageType = 13
 	MessageType_MESSAGE_TYPE_LEADERBOARD_QUERY    MessageType = 14
 	MessageType_MESSAGE_TYPE_LEADERBOARD_SNAPSHOT MessageType = 15
+	// Phase 09: sync PvP (16–23; 8–15 used by Phase 08 above).
+	MessageType_MESSAGE_TYPE_QUEUE_JOIN              MessageType = 16
+	MessageType_MESSAGE_TYPE_QUEUE_LEAVE             MessageType = 17
+	MessageType_MESSAGE_TYPE_QUEUE_MATCHED           MessageType = 18
+	MessageType_MESSAGE_TYPE_MATCH_MOVE              MessageType = 19
+	MessageType_MESSAGE_TYPE_MATCH_OPPONENT_PROGRESS MessageType = 20
+	MessageType_MESSAGE_TYPE_MATCH_RESOLVED          MessageType = 21
+	MessageType_MESSAGE_TYPE_MATCH_REJOIN            MessageType = 22
+	MessageType_MESSAGE_TYPE_MATCH_REJOIN_ACK        MessageType = 23
 )
 
 // Enum value maps for MessageType.
@@ -63,24 +72,40 @@ var (
 		13: "MESSAGE_TYPE_ATTEMPT_SUBMIT_ACK",
 		14: "MESSAGE_TYPE_LEADERBOARD_QUERY",
 		15: "MESSAGE_TYPE_LEADERBOARD_SNAPSHOT",
+		16: "MESSAGE_TYPE_QUEUE_JOIN",
+		17: "MESSAGE_TYPE_QUEUE_LEAVE",
+		18: "MESSAGE_TYPE_QUEUE_MATCHED",
+		19: "MESSAGE_TYPE_MATCH_MOVE",
+		20: "MESSAGE_TYPE_MATCH_OPPONENT_PROGRESS",
+		21: "MESSAGE_TYPE_MATCH_RESOLVED",
+		22: "MESSAGE_TYPE_MATCH_REJOIN",
+		23: "MESSAGE_TYPE_MATCH_REJOIN_ACK",
 	}
 	MessageType_value = map[string]int32{
-		"MESSAGE_TYPE_UNSPECIFIED":          0,
-		"MESSAGE_TYPE_PING":                 1,
-		"MESSAGE_TYPE_PONG":                 2,
-		"MESSAGE_TYPE_ERROR":                3,
-		"MESSAGE_TYPE_AUTH_REFRESH":         4,
-		"MESSAGE_TYPE_AUTH_REFRESH_ACK":     5,
-		"MESSAGE_TYPE_GAME_MOVE":            6,
-		"MESSAGE_TYPE_GAME_STATE":           7,
-		"MESSAGE_TYPE_CHALLENGE_CREATE":     8,
-		"MESSAGE_TYPE_CHALLENGE_CREATE_ACK": 9,
-		"MESSAGE_TYPE_CHALLENGE_JOIN":       10,
-		"MESSAGE_TYPE_CHALLENGE_JOIN_ACK":   11,
-		"MESSAGE_TYPE_ATTEMPT_SUBMIT":       12,
-		"MESSAGE_TYPE_ATTEMPT_SUBMIT_ACK":   13,
-		"MESSAGE_TYPE_LEADERBOARD_QUERY":    14,
-		"MESSAGE_TYPE_LEADERBOARD_SNAPSHOT": 15,
+		"MESSAGE_TYPE_UNSPECIFIED":             0,
+		"MESSAGE_TYPE_PING":                    1,
+		"MESSAGE_TYPE_PONG":                    2,
+		"MESSAGE_TYPE_ERROR":                   3,
+		"MESSAGE_TYPE_AUTH_REFRESH":            4,
+		"MESSAGE_TYPE_AUTH_REFRESH_ACK":        5,
+		"MESSAGE_TYPE_GAME_MOVE":               6,
+		"MESSAGE_TYPE_GAME_STATE":              7,
+		"MESSAGE_TYPE_CHALLENGE_CREATE":        8,
+		"MESSAGE_TYPE_CHALLENGE_CREATE_ACK":    9,
+		"MESSAGE_TYPE_CHALLENGE_JOIN":          10,
+		"MESSAGE_TYPE_CHALLENGE_JOIN_ACK":      11,
+		"MESSAGE_TYPE_ATTEMPT_SUBMIT":          12,
+		"MESSAGE_TYPE_ATTEMPT_SUBMIT_ACK":      13,
+		"MESSAGE_TYPE_LEADERBOARD_QUERY":       14,
+		"MESSAGE_TYPE_LEADERBOARD_SNAPSHOT":    15,
+		"MESSAGE_TYPE_QUEUE_JOIN":              16,
+		"MESSAGE_TYPE_QUEUE_LEAVE":             17,
+		"MESSAGE_TYPE_QUEUE_MATCHED":           18,
+		"MESSAGE_TYPE_MATCH_MOVE":              19,
+		"MESSAGE_TYPE_MATCH_OPPONENT_PROGRESS": 20,
+		"MESSAGE_TYPE_MATCH_RESOLVED":          21,
+		"MESSAGE_TYPE_MATCH_REJOIN":            22,
+		"MESSAGE_TYPE_MATCH_REJOIN_ACK":        23,
 	}
 )
 
@@ -436,7 +461,7 @@ const file_dleague_v1_envelope_proto_rawDesc = "" +
 	"\vAuthRefresh\x12\x19\n" +
 	"\bid_token\x18\x01 \x01(\tR\aidToken\"8\n" +
 	"\x0eAuthRefreshAck\x12&\n" +
-	"\x0fexpires_at_unix\x18\x01 \x01(\x03R\rexpiresAtUnix*\x8d\x04\n" +
+	"\x0fexpires_at_unix\x18\x01 \x01(\x03R\rexpiresAtUnix*\x92\x06\n" +
 	"\vMessageType\x12\x1c\n" +
 	"\x18MESSAGE_TYPE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11MESSAGE_TYPE_PING\x10\x01\x12\x15\n" +
@@ -454,7 +479,15 @@ const file_dleague_v1_envelope_proto_rawDesc = "" +
 	"\x1bMESSAGE_TYPE_ATTEMPT_SUBMIT\x10\f\x12#\n" +
 	"\x1fMESSAGE_TYPE_ATTEMPT_SUBMIT_ACK\x10\r\x12\"\n" +
 	"\x1eMESSAGE_TYPE_LEADERBOARD_QUERY\x10\x0e\x12%\n" +
-	"!MESSAGE_TYPE_LEADERBOARD_SNAPSHOT\x10\x0fB<Z:github.com/tiennm99/dleague/shared/pb/dleague/v1;dleaguev1b\x06proto3"
+	"!MESSAGE_TYPE_LEADERBOARD_SNAPSHOT\x10\x0f\x12\x1b\n" +
+	"\x17MESSAGE_TYPE_QUEUE_JOIN\x10\x10\x12\x1c\n" +
+	"\x18MESSAGE_TYPE_QUEUE_LEAVE\x10\x11\x12\x1e\n" +
+	"\x1aMESSAGE_TYPE_QUEUE_MATCHED\x10\x12\x12\x1b\n" +
+	"\x17MESSAGE_TYPE_MATCH_MOVE\x10\x13\x12(\n" +
+	"$MESSAGE_TYPE_MATCH_OPPONENT_PROGRESS\x10\x14\x12\x1f\n" +
+	"\x1bMESSAGE_TYPE_MATCH_RESOLVED\x10\x15\x12\x1d\n" +
+	"\x19MESSAGE_TYPE_MATCH_REJOIN\x10\x16\x12!\n" +
+	"\x1dMESSAGE_TYPE_MATCH_REJOIN_ACK\x10\x17B<Z:github.com/tiennm99/dleague/shared/pb/dleague/v1;dleaguev1b\x06proto3"
 
 var (
 	file_dleague_v1_envelope_proto_rawDescOnce sync.Once

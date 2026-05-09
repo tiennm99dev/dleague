@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package dleague.v1;
 
+import "dleague/v1/wordle.proto";
+
 option go_package = "github.com/tiennm99/dleague/shared/pb/dleague/v1;dleaguev1";
 
 // ChallengeCreate is sent by a player after finishing a game to create
@@ -66,4 +68,60 @@ message LeaderboardEntry {
 // LeaderboardSnapshot is the server's response to LeaderboardQuery.
 message LeaderboardSnapshot {
   repeated LeaderboardEntry rankings = 1;
+}
+
+// ── Phase 09: sync PvP messages ───────────────────────────────────────────────
+
+// QueueJoin is sent by a client to enter the matchmaking queue.
+message QueueJoin {
+  string game_id = 1;
+}
+
+// QueueAck is the server's immediate acknowledgement of a QueueJoin.
+// queue_id is a server-assigned token; no body is needed for QueueLeave.
+message QueueAck {
+  string queue_id = 1;
+}
+
+// QueueMatched is pushed by the server when two players are paired.
+message QueueMatched {
+  string match_id               = 1;
+  int64  seed                   = 2;
+  string opponent_display_name  = 3;
+}
+
+// MatchMove is sent by a client to submit a sync-match guess.
+message MatchMove {
+  string match_id = 1;
+  string guess    = 2;
+}
+
+// MatchOpponentProgress is pushed by the server after an opponent's move.
+// It contains only the color hints — NEVER the guess letters.
+message MatchOpponentProgress {
+  string          match_id   = 1;
+  int32           attempt_num = 2;
+  repeated Color  colors     = 3;
+}
+
+// MatchResolved is pushed by the server when a match ends.
+// winner_uid is empty when both players lose (tie-exhaustion or timeout).
+// reason is one of: "solved", "exhausted", "forfeit", "timeout".
+message MatchResolved {
+  string match_id   = 1;
+  string winner_uid = 2;
+  string reason     = 3;
+}
+
+// MatchRejoin is sent by a client to reclaim an interrupted match session.
+message MatchRejoin {
+  string match_id = 1;
+}
+
+// MatchRejoinAck is the server's response to MatchRejoin, restoring state.
+message MatchRejoinAck {
+  string                    match_id         = 1;
+  WordleState               own_state        = 2;
+  int32                     opponent_attempts = 3;
+  repeated WordleHint       opponent_hints   = 4;
 }

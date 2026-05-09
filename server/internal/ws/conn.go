@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/coder/websocket"
@@ -33,6 +34,28 @@ type Conn struct {
 	userID         string    // Firebase UID; empty means unauthenticated
 	isAnonymous    bool      // true when sign_in_provider == "anonymous"
 	tokenExpiresAt time.Time // when the current ID token expires
+
+	// Phase 09: sync PvP fields. activeMatchID is read from the disconnect
+	// defer (any goroutine) and written from sync_match_handler / match_room
+	// (room.mu held in the latter, no lock in the former). Use mu to gate it.
+	mu            sync.Mutex
+	activeMatchID string       // non-empty while the conn is bound to a live sync match
+	rateLimiter   *RateLimiter // per-conn token bucket; never nil after UpgradeHandler
+}
+
+// setActiveMatchID atomically updates the active match binding.
+// Empty string clears the binding (e.g. on natural resolution).
+func (c *Conn) setActiveMatchID(id string) {
+	c.mu.Lock()
+	c.activeMatchID = id
+	c.mu.Unlock()
+}
+
+// getActiveMatchID returns the current active match ID under lock.
+func (c *Conn) getActiveMatchID() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.activeMatchID
 }
 
 // UpgradeOptions controls WebSocket Accept behaviour. Zero value enforces the
@@ -121,6 +144,7 @@ func UpgradeHandler(hub *Hub, opts UpgradeOptions) http.HandlerFunc {
 			userID:         connUserID,
 			isAnonymous:    connAnonymous,
 			tokenExpiresAt: connTokenExp,
+			rateLimiter:    NewRateLimiter(),
 		}
 
 		if err := hub.register(conn); err != nil {
@@ -129,7 +153,16 @@ func UpgradeHandler(hub *Hub, opts UpgradeOptions) http.HandlerFunc {
 			_ = c.Close(websocket.StatusTryAgainLater, "at capacity")
 			return
 		}
-		defer hub.unregister(conn)
+		defer func() {
+			// Disconnect grace: if the conn was in an active match, schedule a
+			// 30-second forfeit timer so the opponent wins if the player doesn't
+			// reconnect in time. Read under lock to avoid the race with
+			// match-room resolution clearing the field.
+			if conn.getActiveMatchID() != "" && hub.GameDeps != nil && hub.GameDeps.GraceTimers != nil {
+				hub.GameDeps.GraceTimers.Schedule(conn, hub.GameDeps)
+			}
+			hub.unregister(conn)
+		}()
 		defer func() { _ = c.CloseNow() }()
 
 		// writeLoop runs in a separate goroutine; it owns all ws.Write calls and
@@ -204,6 +237,13 @@ func (c *Conn) readLoop(ctx context.Context) {
 // handleFrame processes one inbound binary frame. It enqueues any response to
 // c.send; on send-channel overflow it cancels the connection.
 func (c *Conn) handleFrame(ctx context.Context, data []byte) {
+	// Rate-limit gate: 10 tokens burst, refills at 10/sec.
+	// On overflow enqueue a 429 error and drop this frame (do NOT close conn).
+	if c.rateLimiter != nil && !c.rateLimiter.Allow() {
+		c.enqueue(errorEnvelope("", 429, "rate limit exceeded"))
+		return
+	}
+
 	var env dleaguev1.Envelope
 	if err := proto.Unmarshal(data, &env); err != nil {
 		log.Printf("ws unmarshal: %v", err)

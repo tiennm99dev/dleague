@@ -62,7 +62,7 @@ Pivot Dleague off Ebitengine/WASM + MySQL HeatWave + cookie-sessions to Svelte+P
 | 06 | [Svelte+Phaser client scaffold](phase-06-svelte-phaser-client-scaffold.md) | 1.5w | completed |
 | 07 | [Game core pluggable + Wordle](phase-07-game-core-pluggable.md)        | 2w     | completed |
 | 08 | [Async PvP](phase-08-async-pvp.md)                                     | 1w     | completed |
-| 09 | [Sync PvP](phase-09-sync-pvp-websocket.md)                             | 1.5w   | pending |
+| 09 | [Sync PvP](phase-09-sync-pvp-websocket.md)                             | 1.5w   | completed |
 | 10 | [Deploy + polish](phase-10-deploy-and-polish.md)                       | 1w     | pending |
 
 ## Key Decisions

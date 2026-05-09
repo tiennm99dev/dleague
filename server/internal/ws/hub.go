@@ -41,11 +41,29 @@ type Hub struct {
 
 // NewHub creates a Hub with the given verifier and user repo.
 // Both may be nil — tests that do not exercise auth paths pass nil for both.
+// The sync PvP in-memory state (Queue, Rooms, GraceTimers) is initialised here.
 func NewHub(verifier *auth.Verifier, userRepo *store.UserRepo) *Hub {
 	return &Hub{
 		conns:    map[*Conn]struct{}{},
 		verifier: verifier,
 		userRepo: userRepo,
+	}
+}
+
+// CloseAll sends a 503 error to every connected client and closes all
+// connections. Called from main on SIGTERM before http.Server.Shutdown so
+// active WS clients receive a clean error frame before the socket is torn down.
+func (h *Hub) CloseAll(reason string) {
+	h.mu.RLock()
+	conns := make([]*Conn, 0, len(h.conns))
+	for c := range h.conns {
+		conns = append(conns, c)
+	}
+	h.mu.RUnlock()
+
+	for _, c := range conns {
+		c.enqueue(errorEnvelope("", 503, reason))
+		c.cancelRead()
 	}
 }
 
@@ -118,6 +136,28 @@ func (h *Hub) dispatch(ctx context.Context, env *dleaguev1.Envelope, c *Conn, se
 			return errorEnvelope(env.GetRequestId(), 503, "game service unavailable"), nil
 		}
 		return handleLeaderboardQuery(ctx, c, env, h.GameDeps)
+
+	// Phase 09: sync PvP.
+	case dleaguev1.MessageType_MESSAGE_TYPE_QUEUE_JOIN:
+		if h.GameDeps == nil {
+			return errorEnvelope(env.GetRequestId(), 503, "game service unavailable"), nil
+		}
+		return handleQueueJoin(ctx, c, env, h.GameDeps)
+	case dleaguev1.MessageType_MESSAGE_TYPE_QUEUE_LEAVE:
+		if h.GameDeps == nil {
+			return nil, nil
+		}
+		return handleQueueLeave(ctx, c, env, h.GameDeps)
+	case dleaguev1.MessageType_MESSAGE_TYPE_MATCH_MOVE:
+		if h.GameDeps == nil {
+			return errorEnvelope(env.GetRequestId(), 503, "game service unavailable"), nil
+		}
+		return handleMatchMove(ctx, c, env, h.GameDeps)
+	case dleaguev1.MessageType_MESSAGE_TYPE_MATCH_REJOIN:
+		if h.GameDeps == nil {
+			return errorEnvelope(env.GetRequestId(), 503, "game service unavailable"), nil
+		}
+		return handleMatchRejoin(ctx, c, env, h.GameDeps)
 
 	default:
 		log.Printf("ws dispatch: unhandled type=%v request_id=%q", env.GetType(), env.GetRequestId())

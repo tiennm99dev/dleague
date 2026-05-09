@@ -23,6 +23,15 @@ enum MessageType {
   MESSAGE_TYPE_ATTEMPT_SUBMIT_ACK    = 13;
   MESSAGE_TYPE_LEADERBOARD_QUERY     = 14;
   MESSAGE_TYPE_LEADERBOARD_SNAPSHOT  = 15;
+  // Phase 09: sync PvP (16–23; 8–15 used by Phase 08 above).
+  MESSAGE_TYPE_QUEUE_JOIN             = 16;
+  MESSAGE_TYPE_QUEUE_LEAVE            = 17;
+  MESSAGE_TYPE_QUEUE_MATCHED          = 18;
+  MESSAGE_TYPE_MATCH_MOVE             = 19;
+  MESSAGE_TYPE_MATCH_OPPONENT_PROGRESS = 20;
+  MESSAGE_TYPE_MATCH_RESOLVED         = 21;
+  MESSAGE_TYPE_MATCH_REJOIN           = 22;
+  MESSAGE_TYPE_MATCH_REJOIN_ACK       = 23;
 }
 
 // Envelope is the wire frame for every WebSocket message.

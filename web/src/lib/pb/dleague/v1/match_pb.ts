@@ -4,13 +4,15 @@
 
 import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { Color, WordleHint, WordleState } from "./wordle_pb";
+import { file_dleague_v1_wordle } from "./wordle_pb";
 import type { Message } from "@bufbuild/protobuf";
 
 /**
  * Describes the file dleague/v1/match.proto.
  */
 export const file_dleague_v1_match: GenFile = /*@__PURE__*/
-  fileDesc("ChZkbGVhZ3VlL3YxL21hdGNoLnByb3RvEgpkbGVhZ3VlLnYxIjkKD0NoYWxsZW5nZUNyZWF0ZRIPCgdnYW1lX2lkGAEgASgJEhUKDXNlZWRfb3ZlcnJpZGUYAiABKAMiSQoSQ2hhbGxlbmdlQ3JlYXRlQWNrEhAKCG1hdGNoX2lkGAEgASgJEhMKC3NoYXJlX3Rva2VuGAIgASgJEgwKBHNlZWQYAyABKAMiJAoNQ2hhbGxlbmdlSm9pbhITCgtzaGFyZV90b2tlbhgBIAEoCSJDChBDaGFsbGVuZ2VKb2luQWNrEhAKCG1hdGNoX2lkGAEgASgJEgwKBHNlZWQYAiABKAMSDwoHZ2FtZV9pZBgDIAEoCSJQCg1BdHRlbXB0U3VibWl0EhAKCG1hdGNoX2lkGAEgASgJEg8KB2d1ZXNzZXMYAiADKAkSDwoHdGltZV9tcxgDIAEoBRILCgN3b24YBCABKAgiNgoQQXR0ZW1wdFN1Ym1pdEFjaxISCgp3aW5uZXJfdWlkGAEgASgJEg4KBnN0YXR1cxgCIAEoCSIzChBMZWFkZXJib2FyZFF1ZXJ5Eg8KB2dhbWVfaWQYASABKAkSDgoGcGVyaW9kGAIgASgJImYKEExlYWRlcmJvYXJkRW50cnkSCwoDdWlkGAEgASgJEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRIQCghhdHRlbXB0cxgDIAEoBRIPCgd0aW1lX21zGAQgASgFEgwKBHJhbmsYBSABKAUiRQoTTGVhZGVyYm9hcmRTbmFwc2hvdBIuCghyYW5raW5ncxgBIAMoCzIcLmRsZWFndWUudjEuTGVhZGVyYm9hcmRFbnRyeUI8WjpnaXRodWIuY29tL3RpZW5ubTk5L2RsZWFndWUvc2hhcmVkL3BiL2RsZWFndWUvdjE7ZGxlYWd1ZXYxYgZwcm90bzM");
+  fileDesc("ChZkbGVhZ3VlL3YxL21hdGNoLnByb3RvEgpkbGVhZ3VlLnYxIjkKD0NoYWxsZW5nZUNyZWF0ZRIPCgdnYW1lX2lkGAEgASgJEhUKDXNlZWRfb3ZlcnJpZGUYAiABKAMiSQoSQ2hhbGxlbmdlQ3JlYXRlQWNrEhAKCG1hdGNoX2lkGAEgASgJEhMKC3NoYXJlX3Rva2VuGAIgASgJEgwKBHNlZWQYAyABKAMiJAoNQ2hhbGxlbmdlSm9pbhITCgtzaGFyZV90b2tlbhgBIAEoCSJDChBDaGFsbGVuZ2VKb2luQWNrEhAKCG1hdGNoX2lkGAEgASgJEgwKBHNlZWQYAiABKAMSDwoHZ2FtZV9pZBgDIAEoCSJQCg1BdHRlbXB0U3VibWl0EhAKCG1hdGNoX2lkGAEgASgJEg8KB2d1ZXNzZXMYAiADKAkSDwoHdGltZV9tcxgDIAEoBRILCgN3b24YBCABKAgiNgoQQXR0ZW1wdFN1Ym1pdEFjaxISCgp3aW5uZXJfdWlkGAEgASgJEg4KBnN0YXR1cxgCIAEoCSIzChBMZWFkZXJib2FyZFF1ZXJ5Eg8KB2dhbWVfaWQYASABKAkSDgoGcGVyaW9kGAIgASgJImYKEExlYWRlcmJvYXJkRW50cnkSCwoDdWlkGAEgASgJEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRIQCghhdHRlbXB0cxgDIAEoBRIPCgd0aW1lX21zGAQgASgFEgwKBHJhbmsYBSABKAUiRQoTTGVhZGVyYm9hcmRTbmFwc2hvdBIuCghyYW5raW5ncxgBIAMoCzIcLmRsZWFndWUudjEuTGVhZGVyYm9hcmRFbnRyeSIcCglRdWV1ZUpvaW4SDwoHZ2FtZV9pZBgBIAEoCSIcCghRdWV1ZUFjaxIQCghxdWV1ZV9pZBgBIAEoCSJNCgxRdWV1ZU1hdGNoZWQSEAoIbWF0Y2hfaWQYASABKAkSDAoEc2VlZBgCIAEoAxIdChVvcHBvbmVudF9kaXNwbGF5X25hbWUYAyABKAkiLAoJTWF0Y2hNb3ZlEhAKCG1hdGNoX2lkGAEgASgJEg0KBWd1ZXNzGAIgASgJImEKFU1hdGNoT3Bwb25lbnRQcm9ncmVzcxIQCghtYXRjaF9pZBgBIAEoCRITCgthdHRlbXB0X251bRgCIAEoBRIhCgZjb2xvcnMYAyADKA4yES5kbGVhZ3VlLnYxLkNvbG9yIkUKDU1hdGNoUmVzb2x2ZWQSEAoIbWF0Y2hfaWQYASABKAkSEgoKd2lubmVyX3VpZBgCIAEoCRIOCgZyZWFzb24YAyABKAkiHwoLTWF0Y2hSZWpvaW4SEAoIbWF0Y2hfaWQYASABKAkimQEKDk1hdGNoUmVqb2luQWNrEhAKCG1hdGNoX2lkGAEgASgJEioKCW93bl9zdGF0ZRgCIAEoCzIXLmRsZWFndWUudjEuV29yZGxlU3RhdGUSGQoRb3Bwb25lbnRfYXR0ZW1wdHMYAyABKAUSLgoOb3Bwb25lbnRfaGludHMYBCADKAsyFi5kbGVhZ3VlLnYxLldvcmRsZUhpbnRCPFo6Z2l0aHViLmNvbS90aWVubm05OS9kbGVhZ3VlL3NoYXJlZC9wYi9kbGVhZ3VlL3YxO2RsZWFndWV2MWIGcHJvdG8z", [file_dleague_v1_wordle]);
 
 /**
  * ChallengeCreate is sent by a player after finishing a game to create
@@ -265,4 +267,210 @@ export type LeaderboardSnapshot = Message<"dleague.v1.LeaderboardSnapshot"> & {
  */
 export const LeaderboardSnapshotSchema: GenMessage<LeaderboardSnapshot> = /*@__PURE__*/
   messageDesc(file_dleague_v1_match, 8);
+
+/**
+ * QueueJoin is sent by a client to enter the matchmaking queue.
+ *
+ * @generated from message dleague.v1.QueueJoin
+ */
+export type QueueJoin = Message<"dleague.v1.QueueJoin"> & {
+  /**
+   * @generated from field: string game_id = 1;
+   */
+  gameId: string;
+};
+
+/**
+ * Describes the message dleague.v1.QueueJoin.
+ * Use `create(QueueJoinSchema)` to create a new message.
+ */
+export const QueueJoinSchema: GenMessage<QueueJoin> = /*@__PURE__*/
+  messageDesc(file_dleague_v1_match, 9);
+
+/**
+ * QueueAck is the server's immediate acknowledgement of a QueueJoin.
+ * queue_id is a server-assigned token; no body is needed for QueueLeave.
+ *
+ * @generated from message dleague.v1.QueueAck
+ */
+export type QueueAck = Message<"dleague.v1.QueueAck"> & {
+  /**
+   * @generated from field: string queue_id = 1;
+   */
+  queueId: string;
+};
+
+/**
+ * Describes the message dleague.v1.QueueAck.
+ * Use `create(QueueAckSchema)` to create a new message.
+ */
+export const QueueAckSchema: GenMessage<QueueAck> = /*@__PURE__*/
+  messageDesc(file_dleague_v1_match, 10);
+
+/**
+ * QueueMatched is pushed by the server when two players are paired.
+ *
+ * @generated from message dleague.v1.QueueMatched
+ */
+export type QueueMatched = Message<"dleague.v1.QueueMatched"> & {
+  /**
+   * @generated from field: string match_id = 1;
+   */
+  matchId: string;
+
+  /**
+   * @generated from field: int64 seed = 2;
+   */
+  seed: bigint;
+
+  /**
+   * @generated from field: string opponent_display_name = 3;
+   */
+  opponentDisplayName: string;
+};
+
+/**
+ * Describes the message dleague.v1.QueueMatched.
+ * Use `create(QueueMatchedSchema)` to create a new message.
+ */
+export const QueueMatchedSchema: GenMessage<QueueMatched> = /*@__PURE__*/
+  messageDesc(file_dleague_v1_match, 11);
+
+/**
+ * MatchMove is sent by a client to submit a sync-match guess.
+ *
+ * @generated from message dleague.v1.MatchMove
+ */
+export type MatchMove = Message<"dleague.v1.MatchMove"> & {
+  /**
+   * @generated from field: string match_id = 1;
+   */
+  matchId: string;
+
+  /**
+   * @generated from field: string guess = 2;
+   */
+  guess: string;
+};
+
+/**
+ * Describes the message dleague.v1.MatchMove.
+ * Use `create(MatchMoveSchema)` to create a new message.
+ */
+export const MatchMoveSchema: GenMessage<MatchMove> = /*@__PURE__*/
+  messageDesc(file_dleague_v1_match, 12);
+
+/**
+ * MatchOpponentProgress is pushed by the server after an opponent's move.
+ * It contains only the color hints — NEVER the guess letters.
+ *
+ * @generated from message dleague.v1.MatchOpponentProgress
+ */
+export type MatchOpponentProgress = Message<"dleague.v1.MatchOpponentProgress"> & {
+  /**
+   * @generated from field: string match_id = 1;
+   */
+  matchId: string;
+
+  /**
+   * @generated from field: int32 attempt_num = 2;
+   */
+  attemptNum: number;
+
+  /**
+   * @generated from field: repeated dleague.v1.Color colors = 3;
+   */
+  colors: Color[];
+};
+
+/**
+ * Describes the message dleague.v1.MatchOpponentProgress.
+ * Use `create(MatchOpponentProgressSchema)` to create a new message.
+ */
+export const MatchOpponentProgressSchema: GenMessage<MatchOpponentProgress> = /*@__PURE__*/
+  messageDesc(file_dleague_v1_match, 13);
+
+/**
+ * MatchResolved is pushed by the server when a match ends.
+ * winner_uid is empty when both players lose (tie-exhaustion or timeout).
+ * reason is one of: "solved", "exhausted", "forfeit", "timeout".
+ *
+ * @generated from message dleague.v1.MatchResolved
+ */
+export type MatchResolved = Message<"dleague.v1.MatchResolved"> & {
+  /**
+   * @generated from field: string match_id = 1;
+   */
+  matchId: string;
+
+  /**
+   * @generated from field: string winner_uid = 2;
+   */
+  winnerUid: string;
+
+  /**
+   * @generated from field: string reason = 3;
+   */
+  reason: string;
+};
+
+/**
+ * Describes the message dleague.v1.MatchResolved.
+ * Use `create(MatchResolvedSchema)` to create a new message.
+ */
+export const MatchResolvedSchema: GenMessage<MatchResolved> = /*@__PURE__*/
+  messageDesc(file_dleague_v1_match, 14);
+
+/**
+ * MatchRejoin is sent by a client to reclaim an interrupted match session.
+ *
+ * @generated from message dleague.v1.MatchRejoin
+ */
+export type MatchRejoin = Message<"dleague.v1.MatchRejoin"> & {
+  /**
+   * @generated from field: string match_id = 1;
+   */
+  matchId: string;
+};
+
+/**
+ * Describes the message dleague.v1.MatchRejoin.
+ * Use `create(MatchRejoinSchema)` to create a new message.
+ */
+export const MatchRejoinSchema: GenMessage<MatchRejoin> = /*@__PURE__*/
+  messageDesc(file_dleague_v1_match, 15);
+
+/**
+ * MatchRejoinAck is the server's response to MatchRejoin, restoring state.
+ *
+ * @generated from message dleague.v1.MatchRejoinAck
+ */
+export type MatchRejoinAck = Message<"dleague.v1.MatchRejoinAck"> & {
+  /**
+   * @generated from field: string match_id = 1;
+   */
+  matchId: string;
+
+  /**
+   * @generated from field: dleague.v1.WordleState own_state = 2;
+   */
+  ownState?: WordleState | undefined;
+
+  /**
+   * @generated from field: int32 opponent_attempts = 3;
+   */
+  opponentAttempts: number;
+
+  /**
+   * @generated from field: repeated dleague.v1.WordleHint opponent_hints = 4;
+   */
+  opponentHints: WordleHint[];
+};
+
+/**
+ * Describes the message dleague.v1.MatchRejoinAck.
+ * Use `create(MatchRejoinAckSchema)` to create a new message.
+ */
+export const MatchRejoinAckSchema: GenMessage<MatchRejoinAck> = /*@__PURE__*/
+  messageDesc(file_dleague_v1_match, 16);
 

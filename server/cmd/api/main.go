@@ -21,6 +21,9 @@ import (
 	"github.com/tiennm99/dleague/server/internal/ws"
 )
 
+// roomTimeoutInterval is how often the rooms ticker checks match deadlines.
+const roomTimeoutInterval = time.Second
+
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
@@ -93,6 +96,11 @@ func main() {
 		log.Fatalf("DLEAGUE_WS_ORIGINS must be non-empty in production")
 	}
 
+	// Phase 09: in-memory sync PvP state — created once, shared via GameDeps.
+	syncQueue := ws.NewQueue()
+	syncRooms := ws.NewRoomsRegistry()
+	graceTimers := ws.NewGraceTimers()
+
 	hub := ws.NewHub(verifier, userRepo)
 	hub.MaxConns = cfg.MaxConns
 	hub.GameDeps = &ws.GameDeps{
@@ -104,6 +112,9 @@ func main() {
 		LeaderboardRepo: leaderboardRepo,
 		UserRepo:        userRepo,
 		MongoClient:     client.Inner(),
+		Queue:           syncQueue,
+		Rooms:           syncRooms,
+		GraceTimers:     graceTimers,
 	}
 	wsOpts := ws.UpgradeOptions{AllowedOrigins: cfg.AllowedOrigins}
 
@@ -132,6 +143,25 @@ func main() {
 		Match:       matchRepo,
 	})
 
+	// Phase 09: rooms timeout ticker — checks every second for expired matches.
+	go func() {
+		ticker := time.NewTicker(roomTimeoutInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				now := time.Now()
+				for _, room := range syncRooms.All() {
+					if !room.Deadline.IsZero() && now.After(room.Deadline) {
+						room.HandleTimeout(context.Background(), hub.GameDeps)
+					}
+				}
+			}
+		}
+	}()
+
 	go func() {
 		log.Printf("dleague server listening on %s (web=%s)", cfg.Addr, cfg.WebRoot)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -141,6 +171,10 @@ func main() {
 
 	<-ctx.Done()
 	log.Printf("shutting down")
+
+	// Signal active WS clients before closing the HTTP server so they receive
+	// a clean error frame rather than a bare TCP close.
+	hub.CloseAll("server shutting down")
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

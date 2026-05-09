@@ -140,6 +140,75 @@ func (r *MatchRepo) Complete(ctx context.Context, matchID, winnerUID string) err
 	return nil
 }
 
+// CreateSync inserts a new synchronous match document and returns its hex ID.
+// mode is set to "sync", state to "active", started_at to now.
+func (r *MatchRepo) CreateSync(ctx context.Context, p1UID, p2UID string, seed int64, gameID string) (matchID string, err error) {
+	oid := bson.NewObjectID()
+	if err := r.CreateSyncWithID(ctx, oid, p1UID, p2UID, seed, gameID); err != nil {
+		return "", err
+	}
+	return oid.Hex(), nil
+}
+
+// CreateSyncWithID inserts a sync match document using a caller-provided
+// ObjectID. The handler reserves the ID upfront so both conns can claim
+// activeMatchID before the Mongo round-trip — see Phase 09 H2 fix.
+func (r *MatchRepo) CreateSyncWithID(ctx context.Context, oid bson.ObjectID, p1UID, p2UID string, seed int64, gameID string) error {
+	now := time.Now().UTC()
+	m := Match{
+		ID:            oid,
+		GameID:        gameID,
+		Players:       []string{p1UID, p2UID},
+		Mode:          "sync",
+		State:         "active",
+		Seed:          seed,
+		CreatedAt:     now,
+		SchemaVersion: currentSchemaVersion,
+	}
+	if _, err := r.coll.InsertOne(ctx, m); err != nil {
+		return fmt.Errorf("store: CreateSyncWithID: %w", err)
+	}
+	return nil
+}
+
+// CompleteSync atomically updates a sync match to "complete" and records the
+// reason via a Mongo transaction.
+// winnerUID may be empty when both players lose (tie-exhaustion or timeout).
+// reason is one of: "solved", "exhausted", "forfeit", "timeout".
+func (r *MatchRepo) CompleteSync(
+	ctx context.Context,
+	mongoClient *mongo.Client,
+	matchID, winnerUID, reason string,
+) error {
+	oid, err := bson.ObjectIDFromHex(matchID)
+	if err != nil {
+		return fmt.Errorf("store: CompleteSync: invalid ObjectID %q: %w", matchID, err)
+	}
+
+	session, sErr := mongoClient.StartSession()
+	if sErr != nil {
+		return fmt.Errorf("store: CompleteSync: StartSession: %w", sErr)
+	}
+	defer session.EndSession(ctx)
+
+	_, txErr := session.WithTransaction(ctx, func(sc context.Context) (any, error) {
+		now := time.Now().UTC()
+		update := bson.M{
+			"$set": bson.M{
+				"state":        "complete",
+				"winner_uid":   winnerUID,
+				"completed_at": now,
+				"reason":       reason,
+			},
+		}
+		if _, uErr := r.coll.UpdateOne(sc, bson.M{"_id": oid}, update); uErr != nil {
+			return nil, fmt.Errorf("store: CompleteSync update match: %w", uErr)
+		}
+		return nil, nil
+	})
+	return txErr
+}
+
 // SweepExpired deletes pending matches whose expires_at is in the past.
 // Best-effort cleanup; safe to call outside a transaction.
 func (r *MatchRepo) SweepExpired(ctx context.Context) error {

@@ -247,10 +247,77 @@ Server startup: `wordle.LoadAnswers(ctx, wordlistRepo)` → Mongo `wordlists` co
 - **Game move:** `MESSAGE_TYPE_GAME_MOVE` (6) carries `WordleMove{guess}`.
 - **Game state:** `MESSAGE_TYPE_GAME_STATE` (7) carries `WordleState{guesses,hints,attemptsRemaining,won,lost,solution?}`.
 
+## Sync PvP flow (Phase 09)
+
+### Matchmaking
+```
+client A  →  QUEUE_JOIN(wordle)  →  server pushes conn onto Queue
+client B  →  QUEUE_JOIN(wordle)  →  Queue.PopPair() returns (A, B)
+                                   MatchRepo.CreateSync(A.uid, B.uid, seed, gameID)
+                                   RoomsRegistry.Add(matchID, Room{A, B, wordle1, wordle2})
+client A  ←  QUEUE_MATCHED{matchID, seed, opponentName=B.name}
+client B  ←  QUEUE_MATCHED{matchID, seed, opponentName=A.name}
+```
+
+### Live race
+```
+client A  →  MATCH_MOVE{matchID, guess="CRANE"}
+              Room.HandleMove(A, "CRANE"):
+                wordle[A].Apply("CRANE") → hint colors
+                A.send ← GAME_STATE{guesses, hints, won, lost}         (own full state)
+                B.send ← MATCH_OPPONENT_PROGRESS{attemptNum, colors}   (colors only, NO letters)
+                if terminal → CompleteSync + broadcast MATCH_RESOLVED
+```
+
+### Letters-never-leak invariant
+- `MatchOpponentProgress` proto has no string field for guesses.
+- Server only reads `w.hints[last].colors` — the guess word is never placed in this message.
+- Verified by `TestMatchRoom_LettersNeverLeakToOpponent` (byte-level scan for "CRANE" in wire payload).
+
+### Disconnect grace
+```
+Conn close while activeMatchID != "":
+  GraceTimers.Schedule(conn, deps)   → 30s timer
+  on timer fire  → Room.HandleForfeit(loserUID) → MATCH_RESOLVED{winnerUID, reason="forfeit"}
+  on MATCH_REJOIN within 30s → GraceTimers.Cancel → rebind conn → MATCH_REJOIN_ACK
+```
+
+### Match timeout (5 min hard cap)
+- `main.go` spawns a 1s ticker iterating `RoomsRegistry.All()`.
+- If `room.Deadline < now && !room.resolved` → `room.HandleTimeout(deps)`.
+- Both players receive `MATCH_RESOLVED{winnerUID="", reason="timeout"}` when neither solved.
+
+### Per-conn rate limiting
+- Token bucket: 10 tokens burst, refill 10/sec.
+- Gate at top of `Conn.handleFrame` before any proto parsing.
+- On denial: enqueue `ERROR{429, "rate limit exceeded"}`; frame dropped; conn stays open.
+
+### Atomic match-end
+- `MatchRepo.CompleteSync` opens a Mongo session and calls `session.WithTransaction`:
+  1. `matches.UpdateOne` → state="complete", winner_uid, completed_at, reason.
+- `UserRepo.IncrementStats` (win/loss counters) called best-effort outside the transaction.
+- Anonymous users are skipped by `IncrementStats` (filter `is_anonymous: {$ne: true}`).
+
+### New envelope types (Phase 09)
+| Value | Name                         | Direction       |
+|-------|------------------------------|-----------------|
+| 16    | QUEUE_JOIN                   | client → server |
+| 17    | QUEUE_LEAVE                  | client → server |
+| 18    | QUEUE_MATCHED                | server → client |
+| 19    | MATCH_MOVE                   | client → server |
+| 20    | MATCH_OPPONENT_PROGRESS      | server → client |
+| 21    | MATCH_RESOLVED               | server → client |
+| 22    | MATCH_REJOIN                 | client → server |
+| 23    | MATCH_REJOIN_ACK             | server → client |
+
 ## Concurrency model
 - One goroutine per WS connection for reads.
 - One writer goroutine per connection drains a bounded `send` channel (Phase 02).
 - Hub fans out broadcasts to per-conn channels with non-blocking sends (drop on slow client).
+- Sync match rooms: `sync.Mutex` per room; single lock protects `HandleMove`, `HandleForfeit`, `HandleTimeout` and the `resolved` flag.
+- `Queue`: `sync.Mutex`; `Push`/`PopPair`/`Remove` atomic.
+- `RoomsRegistry`: `sync.RWMutex`; reads parallel, writes serialised.
+- `GraceTimers`: `sync.Mutex`; `time.AfterFunc` goroutines hold no locks when firing.
 
 ## Failure domains
 TODO Phase 10. Atlas pause, Firebase outage, Fly region failure, etc.

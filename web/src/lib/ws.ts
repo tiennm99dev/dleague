@@ -11,6 +11,21 @@ import {
 	MessageType
 } from './pb/dleague/v1/envelope_pb';
 import type { Envelope } from './pb/dleague/v1/envelope_pb';
+import {
+	QueueJoinSchema,
+	QueueMatchedSchema,
+	MatchMoveSchema,
+	MatchOpponentProgressSchema,
+	MatchResolvedSchema,
+	MatchRejoinSchema,
+	MatchRejoinAckSchema
+} from './pb/dleague/v1/match_pb';
+import type {
+	QueueMatched,
+	MatchOpponentProgress,
+	MatchResolved,
+	MatchRejoinAck
+} from './pb/dleague/v1/match_pb';
 import { idToken } from './auth-store';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -197,6 +212,101 @@ export function onMessage(type: MessageType, handler: MessageHandler): void {
 /** removeHandler deregisters a previously registered handler. */
 export function removeHandler(type: MessageType): void {
 	handlers.delete(type);
+}
+
+// ── Phase 09: sync PvP helpers ────────────────────────────────────────────────
+
+/**
+ * sendQueueJoin sends a QUEUE_JOIN message to enter the matchmaking queue.
+ * Fire-and-forget: server pushes QUEUE_MATCHED when a pair is found.
+ */
+export function sendQueueJoin(gameId: string): void {
+	if (!socket || socket.readyState !== WebSocket.OPEN) return;
+	const payload = toBinary(QueueJoinSchema, create(QueueJoinSchema, { gameId }));
+	const env = create(EnvelopeSchema, {
+		type: MessageType.QUEUE_JOIN,
+		requestId: '',
+		payload
+	});
+	socket.send(toBinary(EnvelopeSchema, env));
+}
+
+/**
+ * sendQueueLeave sends a QUEUE_LEAVE message to exit the matchmaking queue.
+ * Fire-and-forget: no response expected.
+ */
+export function sendQueueLeave(): void {
+	if (!socket || socket.readyState !== WebSocket.OPEN) return;
+	const env = create(EnvelopeSchema, {
+		type: MessageType.QUEUE_LEAVE,
+		requestId: '',
+		payload: new Uint8Array(0)
+	});
+	socket.send(toBinary(EnvelopeSchema, env));
+}
+
+/**
+ * sendMatchMove sends a MATCH_MOVE message with the player's guess.
+ * The server will push back a GAME_STATE envelope for own state, and
+ * MATCH_OPPONENT_PROGRESS to the opponent.
+ */
+export function sendMatchMove(matchId: string, guess: string): void {
+	if (!socket || socket.readyState !== WebSocket.OPEN) return;
+	const payload = toBinary(MatchMoveSchema, create(MatchMoveSchema, { matchId, guess }));
+	const env = create(EnvelopeSchema, {
+		type: MessageType.MATCH_MOVE,
+		requestId: crypto.randomUUID(),
+		payload
+	});
+	socket.send(toBinary(EnvelopeSchema, env));
+}
+
+/**
+ * sendMatchRejoin sends a MATCH_REJOIN to reclaim an interrupted session.
+ * Returns a Promise that resolves with the MatchRejoinAck payload bytes.
+ */
+export function sendMatchRejoin(matchId: string): Promise<MatchRejoinAck> {
+	const payload = toBinary(MatchRejoinSchema, create(MatchRejoinSchema, { matchId }));
+	return sendRequest(MessageType.MATCH_REJOIN, payload).then((bytes) =>
+		fromBinary(MatchRejoinAckSchema, bytes)
+	);
+}
+
+/**
+ * onQueueMatched registers a handler for the server-pushed QUEUE_MATCHED message.
+ */
+export function onQueueMatched(handler: (msg: QueueMatched) => void): void {
+	onMessage(MessageType.QUEUE_MATCHED, (payload) => {
+		handler(fromBinary(QueueMatchedSchema, payload));
+	});
+}
+
+/**
+ * onMatchOpponentProgress registers a handler for opponent progress pushes.
+ */
+export function onMatchOpponentProgress(handler: (msg: MatchOpponentProgress) => void): void {
+	onMessage(MessageType.MATCH_OPPONENT_PROGRESS, (payload) => {
+		handler(fromBinary(MatchOpponentProgressSchema, payload));
+	});
+}
+
+/**
+ * onMatchResolved registers a handler for match resolution pushes.
+ */
+export function onMatchResolved(handler: (msg: MatchResolved) => void): void {
+	onMessage(MessageType.MATCH_RESOLVED, (payload) => {
+		handler(fromBinary(MatchResolvedSchema, payload));
+	});
+}
+
+/**
+ * onMatchRejoinAck registers a handler for MATCH_REJOIN_ACK server pushes.
+ * (Also handled via sendMatchRejoin's Promise; register here for layout-level handling.)
+ */
+export function onMatchRejoinAck(handler: (msg: MatchRejoinAck) => void): void {
+	onMessage(MessageType.MATCH_REJOIN_ACK, (payload) => {
+		handler(fromBinary(MatchRejoinAckSchema, payload));
+	});
 }
 
 // ── Token refresh ─────────────────────────────────────────────────────────────

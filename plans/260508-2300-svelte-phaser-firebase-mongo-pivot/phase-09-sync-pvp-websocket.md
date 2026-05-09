@@ -1,7 +1,7 @@
 ---
 phase: 9
 title: "Sync PvP (live race over WebSocket)"
-status: pending
+status: completed
 priority: P2
 effort: 1.5w
 dependencies: [8]

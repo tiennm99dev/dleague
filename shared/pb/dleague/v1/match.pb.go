@@ -543,12 +543,456 @@ func (x *LeaderboardSnapshot) GetRankings() []*LeaderboardEntry {
 	return nil
 }
 
+// QueueJoin is sent by a client to enter the matchmaking queue.
+type QueueJoin struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	GameId        string                 `protobuf:"bytes,1,opt,name=game_id,json=gameId,proto3" json:"game_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueueJoin) Reset() {
+	*x = QueueJoin{}
+	mi := &file_dleague_v1_match_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueueJoin) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueueJoin) ProtoMessage() {}
+
+func (x *QueueJoin) ProtoReflect() protoreflect.Message {
+	mi := &file_dleague_v1_match_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueueJoin.ProtoReflect.Descriptor instead.
+func (*QueueJoin) Descriptor() ([]byte, []int) {
+	return file_dleague_v1_match_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *QueueJoin) GetGameId() string {
+	if x != nil {
+		return x.GameId
+	}
+	return ""
+}
+
+// QueueAck is the server's immediate acknowledgement of a QueueJoin.
+// queue_id is a server-assigned token; no body is needed for QueueLeave.
+type QueueAck struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	QueueId       string                 `protobuf:"bytes,1,opt,name=queue_id,json=queueId,proto3" json:"queue_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QueueAck) Reset() {
+	*x = QueueAck{}
+	mi := &file_dleague_v1_match_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueueAck) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueueAck) ProtoMessage() {}
+
+func (x *QueueAck) ProtoReflect() protoreflect.Message {
+	mi := &file_dleague_v1_match_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueueAck.ProtoReflect.Descriptor instead.
+func (*QueueAck) Descriptor() ([]byte, []int) {
+	return file_dleague_v1_match_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *QueueAck) GetQueueId() string {
+	if x != nil {
+		return x.QueueId
+	}
+	return ""
+}
+
+// QueueMatched is pushed by the server when two players are paired.
+type QueueMatched struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	MatchId             string                 `protobuf:"bytes,1,opt,name=match_id,json=matchId,proto3" json:"match_id,omitempty"`
+	Seed                int64                  `protobuf:"varint,2,opt,name=seed,proto3" json:"seed,omitempty"`
+	OpponentDisplayName string                 `protobuf:"bytes,3,opt,name=opponent_display_name,json=opponentDisplayName,proto3" json:"opponent_display_name,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *QueueMatched) Reset() {
+	*x = QueueMatched{}
+	mi := &file_dleague_v1_match_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QueueMatched) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueueMatched) ProtoMessage() {}
+
+func (x *QueueMatched) ProtoReflect() protoreflect.Message {
+	mi := &file_dleague_v1_match_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QueueMatched.ProtoReflect.Descriptor instead.
+func (*QueueMatched) Descriptor() ([]byte, []int) {
+	return file_dleague_v1_match_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *QueueMatched) GetMatchId() string {
+	if x != nil {
+		return x.MatchId
+	}
+	return ""
+}
+
+func (x *QueueMatched) GetSeed() int64 {
+	if x != nil {
+		return x.Seed
+	}
+	return 0
+}
+
+func (x *QueueMatched) GetOpponentDisplayName() string {
+	if x != nil {
+		return x.OpponentDisplayName
+	}
+	return ""
+}
+
+// MatchMove is sent by a client to submit a sync-match guess.
+type MatchMove struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MatchId       string                 `protobuf:"bytes,1,opt,name=match_id,json=matchId,proto3" json:"match_id,omitempty"`
+	Guess         string                 `protobuf:"bytes,2,opt,name=guess,proto3" json:"guess,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MatchMove) Reset() {
+	*x = MatchMove{}
+	mi := &file_dleague_v1_match_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MatchMove) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MatchMove) ProtoMessage() {}
+
+func (x *MatchMove) ProtoReflect() protoreflect.Message {
+	mi := &file_dleague_v1_match_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MatchMove.ProtoReflect.Descriptor instead.
+func (*MatchMove) Descriptor() ([]byte, []int) {
+	return file_dleague_v1_match_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *MatchMove) GetMatchId() string {
+	if x != nil {
+		return x.MatchId
+	}
+	return ""
+}
+
+func (x *MatchMove) GetGuess() string {
+	if x != nil {
+		return x.Guess
+	}
+	return ""
+}
+
+// MatchOpponentProgress is pushed by the server after an opponent's move.
+// It contains only the color hints — NEVER the guess letters.
+type MatchOpponentProgress struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MatchId       string                 `protobuf:"bytes,1,opt,name=match_id,json=matchId,proto3" json:"match_id,omitempty"`
+	AttemptNum    int32                  `protobuf:"varint,2,opt,name=attempt_num,json=attemptNum,proto3" json:"attempt_num,omitempty"`
+	Colors        []Color                `protobuf:"varint,3,rep,packed,name=colors,proto3,enum=dleague.v1.Color" json:"colors,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MatchOpponentProgress) Reset() {
+	*x = MatchOpponentProgress{}
+	mi := &file_dleague_v1_match_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MatchOpponentProgress) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MatchOpponentProgress) ProtoMessage() {}
+
+func (x *MatchOpponentProgress) ProtoReflect() protoreflect.Message {
+	mi := &file_dleague_v1_match_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MatchOpponentProgress.ProtoReflect.Descriptor instead.
+func (*MatchOpponentProgress) Descriptor() ([]byte, []int) {
+	return file_dleague_v1_match_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *MatchOpponentProgress) GetMatchId() string {
+	if x != nil {
+		return x.MatchId
+	}
+	return ""
+}
+
+func (x *MatchOpponentProgress) GetAttemptNum() int32 {
+	if x != nil {
+		return x.AttemptNum
+	}
+	return 0
+}
+
+func (x *MatchOpponentProgress) GetColors() []Color {
+	if x != nil {
+		return x.Colors
+	}
+	return nil
+}
+
+// MatchResolved is pushed by the server when a match ends.
+// winner_uid is empty when both players lose (tie-exhaustion or timeout).
+// reason is one of: "solved", "exhausted", "forfeit", "timeout".
+type MatchResolved struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MatchId       string                 `protobuf:"bytes,1,opt,name=match_id,json=matchId,proto3" json:"match_id,omitempty"`
+	WinnerUid     string                 `protobuf:"bytes,2,opt,name=winner_uid,json=winnerUid,proto3" json:"winner_uid,omitempty"`
+	Reason        string                 `protobuf:"bytes,3,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MatchResolved) Reset() {
+	*x = MatchResolved{}
+	mi := &file_dleague_v1_match_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MatchResolved) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MatchResolved) ProtoMessage() {}
+
+func (x *MatchResolved) ProtoReflect() protoreflect.Message {
+	mi := &file_dleague_v1_match_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MatchResolved.ProtoReflect.Descriptor instead.
+func (*MatchResolved) Descriptor() ([]byte, []int) {
+	return file_dleague_v1_match_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *MatchResolved) GetMatchId() string {
+	if x != nil {
+		return x.MatchId
+	}
+	return ""
+}
+
+func (x *MatchResolved) GetWinnerUid() string {
+	if x != nil {
+		return x.WinnerUid
+	}
+	return ""
+}
+
+func (x *MatchResolved) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+// MatchRejoin is sent by a client to reclaim an interrupted match session.
+type MatchRejoin struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MatchId       string                 `protobuf:"bytes,1,opt,name=match_id,json=matchId,proto3" json:"match_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MatchRejoin) Reset() {
+	*x = MatchRejoin{}
+	mi := &file_dleague_v1_match_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MatchRejoin) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MatchRejoin) ProtoMessage() {}
+
+func (x *MatchRejoin) ProtoReflect() protoreflect.Message {
+	mi := &file_dleague_v1_match_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MatchRejoin.ProtoReflect.Descriptor instead.
+func (*MatchRejoin) Descriptor() ([]byte, []int) {
+	return file_dleague_v1_match_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *MatchRejoin) GetMatchId() string {
+	if x != nil {
+		return x.MatchId
+	}
+	return ""
+}
+
+// MatchRejoinAck is the server's response to MatchRejoin, restoring state.
+type MatchRejoinAck struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	MatchId          string                 `protobuf:"bytes,1,opt,name=match_id,json=matchId,proto3" json:"match_id,omitempty"`
+	OwnState         *WordleState           `protobuf:"bytes,2,opt,name=own_state,json=ownState,proto3" json:"own_state,omitempty"`
+	OpponentAttempts int32                  `protobuf:"varint,3,opt,name=opponent_attempts,json=opponentAttempts,proto3" json:"opponent_attempts,omitempty"`
+	OpponentHints    []*WordleHint          `protobuf:"bytes,4,rep,name=opponent_hints,json=opponentHints,proto3" json:"opponent_hints,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *MatchRejoinAck) Reset() {
+	*x = MatchRejoinAck{}
+	mi := &file_dleague_v1_match_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MatchRejoinAck) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MatchRejoinAck) ProtoMessage() {}
+
+func (x *MatchRejoinAck) ProtoReflect() protoreflect.Message {
+	mi := &file_dleague_v1_match_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MatchRejoinAck.ProtoReflect.Descriptor instead.
+func (*MatchRejoinAck) Descriptor() ([]byte, []int) {
+	return file_dleague_v1_match_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *MatchRejoinAck) GetMatchId() string {
+	if x != nil {
+		return x.MatchId
+	}
+	return ""
+}
+
+func (x *MatchRejoinAck) GetOwnState() *WordleState {
+	if x != nil {
+		return x.OwnState
+	}
+	return nil
+}
+
+func (x *MatchRejoinAck) GetOpponentAttempts() int32 {
+	if x != nil {
+		return x.OpponentAttempts
+	}
+	return 0
+}
+
+func (x *MatchRejoinAck) GetOpponentHints() []*WordleHint {
+	if x != nil {
+		return x.OpponentHints
+	}
+	return nil
+}
+
 var File_dleague_v1_match_proto protoreflect.FileDescriptor
 
 const file_dleague_v1_match_proto_rawDesc = "" +
 	"\n" +
 	"\x16dleague/v1/match.proto\x12\n" +
-	"dleague.v1\"O\n" +
+	"dleague.v1\x1a\x17dleague/v1/wordle.proto\"O\n" +
 	"\x0fChallengeCreate\x12\x17\n" +
 	"\agame_id\x18\x01 \x01(\tR\x06gameId\x12#\n" +
 	"\rseed_override\x18\x02 \x01(\x03R\fseedOverride\"d\n" +
@@ -583,7 +1027,35 @@ const file_dleague_v1_match_proto_rawDesc = "" +
 	"\atime_ms\x18\x04 \x01(\x05R\x06timeMs\x12\x12\n" +
 	"\x04rank\x18\x05 \x01(\x05R\x04rank\"O\n" +
 	"\x13LeaderboardSnapshot\x128\n" +
-	"\brankings\x18\x01 \x03(\v2\x1c.dleague.v1.LeaderboardEntryR\brankingsB<Z:github.com/tiennm99/dleague/shared/pb/dleague/v1;dleaguev1b\x06proto3"
+	"\brankings\x18\x01 \x03(\v2\x1c.dleague.v1.LeaderboardEntryR\brankings\"$\n" +
+	"\tQueueJoin\x12\x17\n" +
+	"\agame_id\x18\x01 \x01(\tR\x06gameId\"%\n" +
+	"\bQueueAck\x12\x19\n" +
+	"\bqueue_id\x18\x01 \x01(\tR\aqueueId\"q\n" +
+	"\fQueueMatched\x12\x19\n" +
+	"\bmatch_id\x18\x01 \x01(\tR\amatchId\x12\x12\n" +
+	"\x04seed\x18\x02 \x01(\x03R\x04seed\x122\n" +
+	"\x15opponent_display_name\x18\x03 \x01(\tR\x13opponentDisplayName\"<\n" +
+	"\tMatchMove\x12\x19\n" +
+	"\bmatch_id\x18\x01 \x01(\tR\amatchId\x12\x14\n" +
+	"\x05guess\x18\x02 \x01(\tR\x05guess\"~\n" +
+	"\x15MatchOpponentProgress\x12\x19\n" +
+	"\bmatch_id\x18\x01 \x01(\tR\amatchId\x12\x1f\n" +
+	"\vattempt_num\x18\x02 \x01(\x05R\n" +
+	"attemptNum\x12)\n" +
+	"\x06colors\x18\x03 \x03(\x0e2\x11.dleague.v1.ColorR\x06colors\"a\n" +
+	"\rMatchResolved\x12\x19\n" +
+	"\bmatch_id\x18\x01 \x01(\tR\amatchId\x12\x1d\n" +
+	"\n" +
+	"winner_uid\x18\x02 \x01(\tR\twinnerUid\x12\x16\n" +
+	"\x06reason\x18\x03 \x01(\tR\x06reason\"(\n" +
+	"\vMatchRejoin\x12\x19\n" +
+	"\bmatch_id\x18\x01 \x01(\tR\amatchId\"\xcd\x01\n" +
+	"\x0eMatchRejoinAck\x12\x19\n" +
+	"\bmatch_id\x18\x01 \x01(\tR\amatchId\x124\n" +
+	"\town_state\x18\x02 \x01(\v2\x17.dleague.v1.WordleStateR\bownState\x12+\n" +
+	"\x11opponent_attempts\x18\x03 \x01(\x05R\x10opponentAttempts\x12=\n" +
+	"\x0eopponent_hints\x18\x04 \x03(\v2\x16.dleague.v1.WordleHintR\ropponentHintsB<Z:github.com/tiennm99/dleague/shared/pb/dleague/v1;dleaguev1b\x06proto3"
 
 var (
 	file_dleague_v1_match_proto_rawDescOnce sync.Once
@@ -597,25 +1069,39 @@ func file_dleague_v1_match_proto_rawDescGZIP() []byte {
 	return file_dleague_v1_match_proto_rawDescData
 }
 
-var file_dleague_v1_match_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_dleague_v1_match_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_dleague_v1_match_proto_goTypes = []any{
-	(*ChallengeCreate)(nil),     // 0: dleague.v1.ChallengeCreate
-	(*ChallengeCreateAck)(nil),  // 1: dleague.v1.ChallengeCreateAck
-	(*ChallengeJoin)(nil),       // 2: dleague.v1.ChallengeJoin
-	(*ChallengeJoinAck)(nil),    // 3: dleague.v1.ChallengeJoinAck
-	(*AttemptSubmit)(nil),       // 4: dleague.v1.AttemptSubmit
-	(*AttemptSubmitAck)(nil),    // 5: dleague.v1.AttemptSubmitAck
-	(*LeaderboardQuery)(nil),    // 6: dleague.v1.LeaderboardQuery
-	(*LeaderboardEntry)(nil),    // 7: dleague.v1.LeaderboardEntry
-	(*LeaderboardSnapshot)(nil), // 8: dleague.v1.LeaderboardSnapshot
+	(*ChallengeCreate)(nil),       // 0: dleague.v1.ChallengeCreate
+	(*ChallengeCreateAck)(nil),    // 1: dleague.v1.ChallengeCreateAck
+	(*ChallengeJoin)(nil),         // 2: dleague.v1.ChallengeJoin
+	(*ChallengeJoinAck)(nil),      // 3: dleague.v1.ChallengeJoinAck
+	(*AttemptSubmit)(nil),         // 4: dleague.v1.AttemptSubmit
+	(*AttemptSubmitAck)(nil),      // 5: dleague.v1.AttemptSubmitAck
+	(*LeaderboardQuery)(nil),      // 6: dleague.v1.LeaderboardQuery
+	(*LeaderboardEntry)(nil),      // 7: dleague.v1.LeaderboardEntry
+	(*LeaderboardSnapshot)(nil),   // 8: dleague.v1.LeaderboardSnapshot
+	(*QueueJoin)(nil),             // 9: dleague.v1.QueueJoin
+	(*QueueAck)(nil),              // 10: dleague.v1.QueueAck
+	(*QueueMatched)(nil),          // 11: dleague.v1.QueueMatched
+	(*MatchMove)(nil),             // 12: dleague.v1.MatchMove
+	(*MatchOpponentProgress)(nil), // 13: dleague.v1.MatchOpponentProgress
+	(*MatchResolved)(nil),         // 14: dleague.v1.MatchResolved
+	(*MatchRejoin)(nil),           // 15: dleague.v1.MatchRejoin
+	(*MatchRejoinAck)(nil),        // 16: dleague.v1.MatchRejoinAck
+	(Color)(0),                    // 17: dleague.v1.Color
+	(*WordleState)(nil),           // 18: dleague.v1.WordleState
+	(*WordleHint)(nil),            // 19: dleague.v1.WordleHint
 }
 var file_dleague_v1_match_proto_depIdxs = []int32{
-	7, // 0: dleague.v1.LeaderboardSnapshot.rankings:type_name -> dleague.v1.LeaderboardEntry
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	7,  // 0: dleague.v1.LeaderboardSnapshot.rankings:type_name -> dleague.v1.LeaderboardEntry
+	17, // 1: dleague.v1.MatchOpponentProgress.colors:type_name -> dleague.v1.Color
+	18, // 2: dleague.v1.MatchRejoinAck.own_state:type_name -> dleague.v1.WordleState
+	19, // 3: dleague.v1.MatchRejoinAck.opponent_hints:type_name -> dleague.v1.WordleHint
+	4,  // [4:4] is the sub-list for method output_type
+	4,  // [4:4] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_dleague_v1_match_proto_init() }
@@ -623,13 +1109,14 @@ func file_dleague_v1_match_proto_init() {
 	if File_dleague_v1_match_proto != nil {
 		return
 	}
+	file_dleague_v1_wordle_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_dleague_v1_match_proto_rawDesc), len(file_dleague_v1_match_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
