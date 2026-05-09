@@ -1,3 +1,5 @@
+// Package main is the dleague server entry point.
+// It connects to MongoDB, ensures indexes, and serves HTTP + WebSocket traffic.
 package main
 
 import (
@@ -22,23 +24,39 @@ func main() {
 		log.Fatalf("config: %v", err)
 	}
 
+	// 15-second budget for Connect + Ping + EnsureIndexes.
 	bootCtx, cancelBoot := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancelBoot()
 
-	st, err := store.New(bootCtx, cfg.DatabaseURL)
+	client, err := store.Connect(bootCtx, cfg.MongoURI)
 	if err != nil {
-		log.Fatalf("store: %v", err)
+		log.Fatalf("store: connect: %v", err)
 	}
 	defer func() {
-		if err := st.Close(); err != nil {
-			log.Printf("store close: %v", err)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := client.Disconnect(ctx); err != nil {
+			log.Printf("store: disconnect: %v", err)
 		}
 	}()
 
-	if err := store.Migrate(bootCtx, st.DB()); err != nil {
-		log.Fatalf("migrate: %v", err)
+	if err := client.Ping(bootCtx); err != nil {
+		log.Fatalf("store: ping: %v", err)
 	}
-	log.Printf("migrations applied")
+
+	db := client.Database()
+
+	if err := store.EnsureIndexes(bootCtx, db); err != nil {
+		log.Fatalf("store: ensure indexes: %v", err)
+	}
+
+	// Construct repos. They are not used by hub yet; later phases wire them in.
+	_ = store.NewUserRepo(db)
+	_ = store.NewGameRepo(db)
+	_ = store.NewMatchRepo(db)
+	_ = store.NewAttemptRepo(db)
+	_ = store.NewDailyPuzzleRepo(db)
+	_ = store.NewLeaderboardRepo(db)
 
 	// In production, an empty origin allowlist means the WS endpoint accepts
 	// any origin — a cross-site WebSocket hijacking risk. Fail fast.
@@ -51,7 +69,7 @@ func main() {
 	wsOpts := ws.UpgradeOptions{AllowedOrigins: cfg.AllowedOrigins}
 
 	rOpts := srvhttp.RouterOptions{TrustedProxies: cfg.TrustedProxies}
-	r, err := srvhttp.NewRouter(cfg.WebRoot, hub, wsOpts, st, rOpts)
+	r, err := srvhttp.NewRouter(cfg.WebRoot, hub, wsOpts, client, rOpts)
 	if err != nil {
 		log.Fatalf("router: %v", err)
 	}

@@ -34,7 +34,36 @@ TODO Phase 06.
 TODO Phase 02–05.
 
 ### Persistence (MongoDB Atlas M0)
-TODO Phase 04. Collections: `users`, `games`, `matches`, `attempts`, `daily_puzzles`, `wordlists`, `leaderboards`. ERD Phase 10.
+
+Driver: `go.mongodb.org/mongo-driver/v2` (v2.6.0+). One `*store.Client` per process; pool max 100. Atlas TLS is implicit via `mongodb+srv://`. Transactions are supported on M0's 3-node replica set.
+
+#### Collections
+
+| Collection | `_id` type | Purpose |
+|---|---|---|
+| `users` | Firebase UID string | Player profile + embedded stats |
+| `games` | slug string ("wordle") | Game-type registry |
+| `matches` | ObjectID | One PvP or solo match instance |
+| `attempts` | ObjectID | Per-player guess log within a match |
+| `daily_puzzles` | "YYYY-MM-DD" string | Daily puzzle seed + solution hash |
+| `leaderboards` | "{game}_{period}_{date}" string | Pre-computed ranking snapshots |
+
+All documents carry `schema_version: 1` for lazy in-place migration (Option A).
+
+#### Indexes (8 explicit, created by `store.EnsureIndexes` at boot)
+
+| Collection | Keys | Options |
+|---|---|---|
+| `users` | `display_name ASC` | unique |
+| `matches` | `players ASC` | — |
+| `matches` | `created_at DESC` | — |
+| `matches` | `state ASC, created_at DESC` | — (ESR compound) |
+| `attempts` | `match_id ASC` | — |
+| `attempts` | `match_id ASC, player_uid ASC` | — |
+| `daily_puzzles` | `_id DESC` | — |
+| `leaderboards` | `game_id ASC, period_end DESC` | — |
+
+`EnsureIndexes` is idempotent — re-runnable on every boot without error.
 
 ### Auth (Firebase Auth)
 TODO Phase 05. Providers: Email/Password, Google, Anonymous.

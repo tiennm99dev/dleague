@@ -23,9 +23,9 @@ Thumbs.db
 .env.local
 *.local
 
-# Postgres / docker
-postgres-data/
+# Docker volumes
 data/
+mongo_data/
 
 # Test
 coverage.out
@@ -33,3 +33,6 @@ coverage.out
 
 # Plan transient artifacts
 plans/visuals/cache/
+
+# Repomix snapshots (LLM context bundles; transient)
+repomix-output.xml

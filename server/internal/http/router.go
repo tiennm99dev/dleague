@@ -35,7 +35,7 @@ type RouterOptions struct {
 // st may be nil — /health then skips the DB ping and reports plain "ok".
 // In production main() wires a real Store; tests pass nil to keep setup
 // minimal until they explicitly cover the DB-degraded path.
-func NewRouter(webRoot string, hub *ws.Hub, wsOpts ws.UpgradeOptions, st *store.Store, rOpts RouterOptions) (http.Handler, error) {
+func NewRouter(webRoot string, hub *ws.Hub, wsOpts ws.UpgradeOptions, st *store.Client, rOpts RouterOptions) (http.Handler, error) {
 	abs, err := filepath.Abs(webRoot)
 	if err != nil {
 		return nil, fmt.Errorf("resolve webRoot: %w", err)

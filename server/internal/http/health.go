@@ -15,7 +15,7 @@ const healthPingTimeout = 2 * time.Second
 //
 // st may be nil (e.g. in tests where no DB is wired up); the handler then
 // degrades to a plain "ok" without a DB check.
-func healthHandler(st *store.Store) http.HandlerFunc {
+func healthHandler(st *store.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
@@ -29,7 +29,7 @@ func healthHandler(st *store.Store) http.HandlerFunc {
 		defer cancel()
 
 		if err := st.Ping(ctx); err != nil {
-			log.Printf("health: db ping: %v", err)
+			log.Printf("health: mongo ping: %v", err)
 			w.WriteHeader(http.StatusServiceUnavailable)
 			return
 		}

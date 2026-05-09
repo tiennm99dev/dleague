@@ -8,6 +8,16 @@ on:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "echo 'db.runCommand(\"ping\").ok' | mongosh --quiet localhost:27017/test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
 
@@ -60,6 +70,8 @@ jobs:
         run: cd shared && go test -race ./...
 
       - name: test server (prod)
+        env:
+          MONGO_TEST_URI: mongodb://mongo:27017/dleague_test
         run: cd server && go test -race ./...
 
       - name: test server (debug build)

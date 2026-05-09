@@ -8,7 +8,7 @@ WEB_OUT := web/main.wasm
 WASM_EXEC_SRC := $(shell $(GO) env GOROOT)/lib/wasm/wasm_exec.js
 WASM_EXEC_DST := web/wasm_exec.js
 
-.PHONY: help dev dev-debug build build-wasm build-wasm-debug build-server test lint db-up db-down proto-gen proto-lint proto-breaking tools clean
+.PHONY: help dev dev-debug build build-wasm build-wasm-debug build-server test lint compose-up compose-down proto-gen proto-lint proto-breaking tools clean
 
 help:
 	@echo "make targets:"
@@ -23,7 +23,7 @@ help:
 	@echo "  proto-gen        regenerate shared/pb from proto/"
 	@echo "  proto-lint       buf lint"
 	@echo "  proto-breaking   buf breaking against main branch"
-	@echo "  db-up / db-down  docker-compose Postgres"
+	@echo "  compose-up / compose-down  docker-compose (MongoDB + mongo-express)"
 	@echo "  tools            install buf + protoc-gen-go locally"
 
 dev: build-wasm
@@ -56,10 +56,10 @@ lint:
 	cd server && $(GOLANGCI_LINT) run
 	cd client && $(GOLANGCI_LINT) run
 
-db-up:
-	docker compose up -d postgres
+compose-up:
+	docker compose up -d
 
-db-down:
+compose-down:
 	docker compose down
 
 proto-gen:

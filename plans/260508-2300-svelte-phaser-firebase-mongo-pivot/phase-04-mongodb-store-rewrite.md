@@ -1,7 +1,8 @@
 ---
 phase: 4
 title: "MongoDB store rewrite (drop MySQL)"
-status: pending
+status: completed
+completed_on: 2026-05-09
 priority: P1
 effort: 1w
 dependencies: [3]
@@ -125,22 +126,22 @@ Indexes — see research report §4 (8 indexes total).
 17. Update `docs/system-architecture.md` collection diagram + index list.
 
 ## Todo List
-- [ ] Add mongo-driver/v2; drop MySQL driver
-- [ ] Delete old SQL store + migrations
-- [ ] Write `mongo.go` Client wrapper
-- [ ] Write `models.go` with `schema_version` per struct
-- [ ] Write `indexes.go` with 8 indexes
-- [ ] Write `users.go` (UserRepo: Upsert + Get)
-- [ ] Write 4 skeleton repos with TODO markers
-- [ ] Update `config.go` MONGO_URI
-- [ ] Update `main.go` boot path
-- [ ] Update `health.go` ping
-- [ ] Replace docker-compose with mongo:7 + mongo-express
-- [ ] `.env.example`
-- [ ] Tests: mongo_test, users_test
-- [ ] CI Mongo service container
-- [ ] Verify `go mod tidy` clean
-- [ ] Update system-architecture.md
+- [x] Add mongo-driver/v2; drop MySQL driver
+- [x] Delete old SQL store + migrations
+- [x] Write `mongo.go` Client wrapper
+- [x] Write `models.go` with `schema_version` per struct
+- [x] Write `indexes.go` with 8 indexes
+- [x] Write `users.go` (UserRepo: Upsert + Get)
+- [x] Write 4 skeleton repos with TODO markers
+- [x] Update `config.go` MONGO_URI
+- [x] Update `main.go` boot path
+- [x] Update `health.go` ping
+- [x] Replace docker-compose with mongo:7 + mongo-express
+- [x] `.env.example`
+- [x] Tests: mongo_test, users_test
+- [x] CI Mongo service container
+- [x] Verify `go mod tidy` clean
+- [x] Update system-architecture.md
 
 ## Success Criteria
 - [ ] `make compose-up && make dev` boots; mongo-express shows `dleague` DB created

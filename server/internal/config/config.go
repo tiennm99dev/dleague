@@ -25,9 +25,10 @@ type Config struct {
 	// Empty slice means same-origin only.
 	AllowedOrigins []string
 
-	// DatabaseURL is the MySQL driver DSN. Required.
-	// Format: user:pass@tcp(host:port)/dbname?tls=true&parseTime=true&loc=UTC
-	DatabaseURL string
+	// MongoURI is the MongoDB connection string. Required.
+	// Local:  mongodb://user:pass@localhost:27017/?authSource=admin
+	// Atlas:  mongodb+srv://user:pass@cluster.mongodb.net/?retryWrites=true&w=majority
+	MongoURI string
 
 	// MaxConns is the maximum number of concurrent WebSocket connections.
 	// Sourced from DLEAGUE_MAX_CONNS. Defaults to 1000.
@@ -56,8 +57,8 @@ func (c Config) IsProduction() bool {
 	return false
 }
 
-// ErrMissingDatabaseURL signals that DATABASE_URL is unset or empty.
-var ErrMissingDatabaseURL = errors.New("DATABASE_URL is required")
+// ErrMissingMongoURI signals that MONGO_URI is unset or empty.
+var ErrMissingMongoURI = errors.New("MONGO_URI is required")
 
 // Load reads configuration from the process environment.
 func Load() (Config, error) {
@@ -70,14 +71,14 @@ func Load() (Config, error) {
 		Addr:           envOr("DLEAGUE_ADDR", ":8080"),
 		WebRoot:        envOr("DLEAGUE_WEB", "./web"),
 		AllowedOrigins: splitCSV(os.Getenv("DLEAGUE_WS_ORIGINS")),
-		DatabaseURL:    os.Getenv("DATABASE_URL"),
+		MongoURI:       os.Getenv("MONGO_URI"),
 		MaxConns:       maxConns,
 		TrustedProxies: splitCSV(os.Getenv("DLEAGUE_TRUSTED_PROXIES")),
 		Env:            envOr("DLEAGUE_ENV", "development"),
 	}
 
-	if cfg.DatabaseURL == "" {
-		return Config{}, ErrMissingDatabaseURL
+	if cfg.MongoURI == "" {
+		return Config{}, ErrMissingMongoURI
 	}
 	if cfg.Addr == "" {
 		return Config{}, fmt.Errorf("DLEAGUE_ADDR must not be empty")
