@@ -1,5 +1,5 @@
 // Package main is the dleague server entry point.
-// It connects to MongoDB, ensures indexes, and serves HTTP + WebSocket traffic.
+// It connects to MongoDB, initialises Firebase Auth, and serves HTTP + WebSocket traffic.
 package main
 
 import (
@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/tiennm99/dleague/server/internal/auth"
 	"github.com/tiennm99/dleague/server/internal/config"
 	srvhttp "github.com/tiennm99/dleague/server/internal/http"
 	"github.com/tiennm99/dleague/server/internal/store"
@@ -24,7 +25,7 @@ func main() {
 		log.Fatalf("config: %v", err)
 	}
 
-	// 15-second budget for Connect + Ping + EnsureIndexes.
+	// 15-second budget for Connect + Ping + EnsureIndexes + Firebase init.
 	bootCtx, cancelBoot := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancelBoot()
 
@@ -50,13 +51,21 @@ func main() {
 		log.Fatalf("store: ensure indexes: %v", err)
 	}
 
-	// Construct repos. They are not used by hub yet; later phases wire them in.
-	_ = store.NewUserRepo(db)
+	userRepo := store.NewUserRepo(db)
 	_ = store.NewGameRepo(db)
 	_ = store.NewMatchRepo(db)
 	_ = store.NewAttemptRepo(db)
 	_ = store.NewDailyPuzzleRepo(db)
 	_ = store.NewLeaderboardRepo(db)
+
+	// Initialise Firebase Auth verifier. Boot fails fast on misconfiguration.
+	if cfg.FirebaseEmulatorHost != "" {
+		log.Printf("firebase: using emulator at %s", cfg.FirebaseEmulatorHost)
+	}
+	verifier, err := auth.New(bootCtx, cfg.FirebaseProjectID, cfg.FirebaseCredsPath)
+	if err != nil {
+		log.Fatalf("auth: %v", err)
+	}
 
 	// In production, an empty origin allowlist means the WS endpoint accepts
 	// any origin — a cross-site WebSocket hijacking risk. Fail fast.
@@ -64,7 +73,7 @@ func main() {
 		log.Fatalf("DLEAGUE_WS_ORIGINS must be non-empty in production")
 	}
 
-	hub := ws.NewHub()
+	hub := ws.NewHub(verifier, userRepo)
 	hub.MaxConns = cfg.MaxConns
 	wsOpts := ws.UpgradeOptions{AllowedOrigins: cfg.AllowedOrigins}
 

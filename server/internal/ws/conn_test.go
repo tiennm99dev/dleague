@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"context"
 	"strings"
 	"sync"
 	"testing"
@@ -15,7 +16,7 @@ import (
 func newTestConn() *Conn {
 	_, cancel := nopCancel()
 	return &Conn{
-		hub:        NewHub(),
+		hub:        NewHub(nil, nil),
 		send:       make(chan []byte, sendBufSize),
 		cancelRead: cancel,
 	}
@@ -25,7 +26,7 @@ func nopCancel() (struct{}, func()) {
 	return struct{}{}, func() {}
 }
 
-// readErrorType drains the send channel and returns the MessageType of the
+// readFirstType drains the send channel and returns the MessageType of the
 // first envelope found (or MESSAGE_TYPE_UNSPECIFIED if channel is empty).
 func readFirstType(c *Conn) dleaguev1.MessageType {
 	select {
@@ -43,7 +44,7 @@ func readFirstType(c *Conn) dleaguev1.MessageType {
 // Malformed proto bytes → client receives MESSAGE_TYPE_ERROR, conn stays open.
 func TestHandleFrameMalformedProto(t *testing.T) {
 	c := newTestConn()
-	c.handleFrame([]byte{0xAA, 0xBB, 0xCC})
+	c.handleFrame(context.Background(), []byte{0xAA, 0xBB, 0xCC})
 
 	got := readFirstType(c)
 	if got != dleaguev1.MessageType_MESSAGE_TYPE_ERROR {
@@ -69,7 +70,7 @@ func TestHandleFrameOversizedRequestID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
-	c.handleFrame(data)
+	c.handleFrame(context.Background(), data)
 
 	got := readFirstType(c)
 	if got != dleaguev1.MessageType_MESSAGE_TYPE_ERROR {
@@ -86,7 +87,7 @@ func TestHandleFramePingReturnsPong(t *testing.T) {
 		RequestId: "req1",
 		Payload:   pingBody,
 	})
-	c.handleFrame(data)
+	c.handleFrame(context.Background(), data)
 
 	got := readFirstType(c)
 	if got != dleaguev1.MessageType_MESSAGE_TYPE_PONG {
@@ -100,11 +101,29 @@ func TestHandleFrameUnspecifiedTypeNoResponse(t *testing.T) {
 	data, _ := proto.Marshal(&dleaguev1.Envelope{
 		Type: dleaguev1.MessageType_MESSAGE_TYPE_UNSPECIFIED,
 	})
-	c.handleFrame(data)
+	c.handleFrame(context.Background(), data)
 
 	got := readFirstType(c)
 	if got != dleaguev1.MessageType_MESSAGE_TYPE_UNSPECIFIED {
 		t.Fatalf("expected nothing in send, got type %v", got)
+	}
+}
+
+// A message type requiring auth with empty userID produces ERROR{401}.
+func TestHandleFrameRequiresAuthUnauthenticated(t *testing.T) {
+	c := newTestConn()
+	c.userID = "" // unauthenticated
+
+	// MessageType 99 is unknown — requiresAuth defaults to true.
+	data, _ := proto.Marshal(&dleaguev1.Envelope{
+		Type:      dleaguev1.MessageType(99),
+		RequestId: "need-auth",
+	})
+	c.handleFrame(context.Background(), data)
+
+	got := readFirstType(c)
+	if got != dleaguev1.MessageType_MESSAGE_TYPE_ERROR {
+		t.Fatalf("expected MESSAGE_TYPE_ERROR for unauthenticated message, got %v", got)
 	}
 }
 
@@ -125,7 +144,7 @@ func TestConcurrentEnqueue(t *testing.T) {
 	for i := 0; i < goroutines; i++ {
 		go func() {
 			defer wg.Done()
-			c.handleFrame(data)
+			c.handleFrame(context.Background(), data)
 		}()
 	}
 	wg.Wait()
@@ -145,7 +164,7 @@ done:
 
 // Hub.register/unregister update Count under concurrent-safe locking.
 func TestHubRegisterUnregister(t *testing.T) {
-	h := NewHub()
+	h := NewHub(nil, nil)
 	if h.Count() != 0 {
 		t.Fatalf("initial count = %d, want 0", h.Count())
 	}
@@ -175,5 +194,70 @@ func TestHandlePingUnmarshalError(t *testing.T) {
 	}
 	if _, err := handlePing(env, 0); err == nil {
 		t.Fatal("expected error for invalid ping payload")
+	}
+}
+
+// --- extractFirebaseToken table-driven tests ---
+
+func TestExtractFirebaseToken(t *testing.T) {
+	cases := []struct {
+		name      string
+		header    string
+		wantToken string
+		wantErr   bool
+	}{
+		{
+			name:      "valid format",
+			header:    "dleague.v1, fb.abc.def.ghi",
+			wantToken: "abc.def.ghi",
+		},
+		{
+			name:      "no space around comma",
+			header:    "dleague.v1,fb.tok123",
+			wantToken: "tok123",
+		},
+		{
+			name:    "missing fb. entry",
+			header:  "dleague.v1, other.protocol",
+			wantErr: true,
+		},
+		{
+			name:    "empty header",
+			header:  "",
+			wantErr: true,
+		},
+		{
+			name:    "fb. prefix but empty token",
+			header:  "dleague.v1, fb.",
+			wantErr: true,
+		},
+		{
+			name:      "multiple entries — first fb. wins",
+			header:    "dleague.v1, fb.first.token, fb.second.token",
+			wantToken: "first.token",
+		},
+		{
+			name:      "only fb. entry",
+			header:    "fb.solo.token",
+			wantToken: "solo.token",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := extractFirebaseToken(tc.header)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("expected error, got token=%q", got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got != tc.wantToken {
+				t.Fatalf("token = %q, want %q", got, tc.wantToken)
+			}
+		})
 	}
 }

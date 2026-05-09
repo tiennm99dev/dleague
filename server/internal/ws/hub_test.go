@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"testing"
@@ -11,8 +12,14 @@ import (
 	dleaguev1 "github.com/tiennm99/dleague/shared/pb/dleague/v1"
 )
 
+// newTestHub creates a Hub with nil verifier and nil userRepo — safe for tests
+// that do not exercise auth paths.
+func newTestHub() *Hub {
+	return NewHub(nil, nil)
+}
+
 func TestDispatchPingProducesPong(t *testing.T) {
-	h := NewHub()
+	h := newTestHub()
 
 	clientNow := time.Now().UnixMilli()
 	pingBody, err := proto.Marshal(&dleaguev1.Ping{ClientUnixMs: clientNow})
@@ -26,7 +33,9 @@ func TestDispatchPingProducesPong(t *testing.T) {
 	}
 
 	serverNow := clientNow + 10
-	out, err := h.dispatch(in, serverNow)
+	// PING does not require auth — pass a conn with empty userID.
+	c := &Conn{hub: h}
+	out, err := h.dispatch(context.Background(), in, c, serverNow)
 	if err != nil {
 		t.Fatalf("dispatch: %v", err)
 	}
@@ -53,14 +62,51 @@ func TestDispatchPingProducesPong(t *testing.T) {
 }
 
 func TestDispatchUnknownTypeReturnsNil(t *testing.T) {
-	h := NewHub()
+	h := newTestHub()
+	c := &Conn{hub: h}
 	in := &dleaguev1.Envelope{Type: dleaguev1.MessageType_MESSAGE_TYPE_UNSPECIFIED}
-	out, err := h.dispatch(in, 0)
+	out, err := h.dispatch(context.Background(), in, c, 0)
 	if err != nil {
 		t.Fatalf("dispatch: %v", err)
 	}
 	if out != nil {
 		t.Fatalf("out = %v, want nil", out)
+	}
+}
+
+// TestDispatchRequiresAuthReturnsError401 verifies that a message type that
+// requires authentication is rejected with an ERROR{401} when userID is empty.
+func TestDispatchRequiresAuthReturnsError401(t *testing.T) {
+	// Use a message type that requiresAuth returns true for.
+	// MESSAGE_TYPE_UNSPECIFIED returns false, so pick a numeric value outside
+	// the known-unauth set. Use value 99 (unknown future type — requiresAuth
+	// default branch returns true).
+	h := newTestHub()
+	c := &Conn{hub: h, userID: ""} // unauthenticated
+	in := &dleaguev1.Envelope{
+		Type:      dleaguev1.MessageType(99),
+		RequestId: "authtest",
+	}
+	out, err := h.dispatch(context.Background(), in, c, 0)
+	if err != nil {
+		t.Fatalf("dispatch: %v", err)
+	}
+	if out == nil {
+		t.Fatal("expected ERROR envelope, got nil")
+	}
+	if out.GetType() != dleaguev1.MessageType_MESSAGE_TYPE_ERROR {
+		t.Fatalf("type = %v, want ERROR", out.GetType())
+	}
+	if out.GetRequestId() != "authtest" {
+		t.Fatalf("request_id = %q, want 'authtest'", out.GetRequestId())
+	}
+
+	var errMsg dleaguev1.Error
+	if err := proto.Unmarshal(out.GetPayload(), &errMsg); err != nil {
+		t.Fatalf("unmarshal error: %v", err)
+	}
+	if errMsg.GetCode() != 401 {
+		t.Fatalf("code = %d, want 401", errMsg.GetCode())
 	}
 }
 

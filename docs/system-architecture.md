@@ -66,7 +66,71 @@ All documents carry `schema_version: 1` for lazy in-place migration (Option A).
 `EnsureIndexes` is idempotent — re-runnable on every boot without error.
 
 ### Auth (Firebase Auth)
-TODO Phase 05. Providers: Email/Password, Google, Anonymous.
+
+Firebase Auth is the sole identity provider. The Go server verifies Firebase ID tokens using the Admin SDK (`firebase.google.com/go/v4/auth`). No session cookies; no server-side sessions.
+
+#### WebSocket upgrade flow (Pattern A)
+
+```
+Client                                          Server (UpgradeHandler)
+──────                                          ───────────────────────
+firebase JS SDK: user.getIdToken() → idToken
+WS open: ws://.../ws
+  Sec-WebSocket-Protocol: dleague.v1, fb.<idToken>
+                                    ──────────────►
+                                                  1. extractFirebaseToken(header)
+                                                     → reject 401 if missing/malformed
+                                                  2. verifier.VerifyIDToken(ctx, idToken)
+                                                     → reject 401 on exp/sig failure
+                                                  3. conn.userID = token.UID
+                                                     conn.isAnonymous (sign_in_provider)
+                                                     conn.tokenExpiresAt
+                                                  4. userRepo.UpsertByUID(uid, profile)
+                                                     (idempotent Mongo upsert — non-fatal)
+                                                  5. websocket.Accept → 101 Switching
+```
+
+#### Auth gate (every dispatch)
+
+```go
+if requiresAuth(env.GetType()) && c.userID == "" {
+    return errorEnvelope(req_id, 401, "unauthenticated"), nil
+}
+```
+
+Messages exempt from auth: `UNSPECIFIED`, `PING`, `PONG`, `AUTH_REFRESH`, `AUTH_REFRESH_ACK`, `ERROR`. All future game/match message types require auth by default.
+
+#### Token refresh (at ~50 min)
+
+Firebase ID tokens expire after 1 hour. Clients send `AuthRefresh{id_token}` before expiry:
+
+```
+Client                                          Server (hub.dispatch)
+──────                                          ─────────────────────
+AuthRefresh{id_token: newToken}  ─────────────►
+                                                verifier.VerifyIDToken(newToken)
+                                                → on error: ERROR{401} + close conn
+                                                → on ok: update conn.userID,
+                                                         conn.tokenExpiresAt
+                                                AuthRefreshAck{expires_at_unix}  ◄──
+```
+
+#### Anonymous users
+
+Firebase Anonymous Auth issues a UID with `firebase.sign_in_provider == "anonymous"`. The server sets `conn.isAnonymous = true` and creates a Mongo user doc with no email/displayName. Anonymous users are excluded from leaderboards (Phase 08).
+
+#### Credential management
+
+| Environment | Method |
+|---|---|
+| Local dev | `FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099` (no creds needed) |
+| CI | Same as local dev; emulator started in GH Actions before tests |
+| Production (Fly.io) | Workload Identity via ambient OIDC; no JSON file |
+| Dev/staging (non-Fly) | `GOOGLE_APPLICATION_CREDENTIALS=/path/to/serviceAccount.json` |
+
+Service-account JSON files are `.gitignore`d (`serviceAccount*.json`). Never committed.
+
+Revocation check (`VerifyIDTokenAndCheckRevoked`) deferred to Phase 10.
 
 ## Wire format
 - **Envelope:** see `proto/dleague/v1/envelope.proto` (single oneof payload + request_id correlation).

@@ -1,7 +1,8 @@
 ---
 phase: 5
 title: "Firebase Auth integration (server)"
-status: pending
+status: completed
+completed_on: 2026-05-09
 priority: P1
 effort: 1w
 dependencies: [4]
@@ -128,19 +129,19 @@ at 50min mark, client:
     - Without token: 401.
 
 ## Todo List
-- [ ] Proto: AUTH_REFRESH + ACK messages
-- [ ] Verifier wrapper
-- [ ] UpgradeHandler token extraction
-- [ ] Conn fields: userID, isAnonymous, tokenExpiresAt
-- [ ] UserRepo.UpsertByUID called on first auth
-- [ ] requiresAuth gate
-- [ ] AuthRefresh handler
-- [ ] Config: 3 new env vars
-- [ ] firebase.json + emulator scripts
-- [ ] CI emulator step
-- [ ] Tests: emulator-gated + unit
-- [ ] Manual smoke
-- [ ] Docs: system-architecture auth flow
+- [x] Proto: AUTH_REFRESH + ACK messages
+- [x] Verifier wrapper
+- [x] UpgradeHandler token extraction
+- [x] Conn fields: userID, isAnonymous, tokenExpiresAt
+- [x] UserRepo.UpsertByUID called on first auth
+- [x] requiresAuth gate
+- [x] AuthRefresh handler
+- [x] Config: 3 new env vars
+- [x] firebase.json + emulator scripts
+- [x] CI emulator step
+- [x] Tests: emulator-gated + unit
+- [x] Manual smoke
+- [x] Docs: system-architecture auth flow
 
 ## Success Criteria
 - [ ] WS upgrade w/ valid token → 101; `Conn.userID` set

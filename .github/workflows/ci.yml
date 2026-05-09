@@ -66,12 +66,28 @@ jobs:
           args: --timeout=5m
           working-directory: client
 
+      - name: Install firebase-tools
+        run: sudo npm install -g firebase-tools
+
+      - name: Start Firebase Auth emulator
+        run: |
+          firebase emulators:start --only auth --project dleague-dev &
+          # Wait up to 30 s for port 9099 to be open.
+          for i in $(seq 1 30); do
+            nc -z 127.0.0.1 9099 2>/dev/null && echo "emulator ready" && break
+            [ "$i" -eq 30 ] && echo "::error::Firebase emulator did not start in 30s" && exit 1
+            sleep 1
+          done
+        env:
+          FIREBASE_AUTH_EMULATOR_HOST: 127.0.0.1:9099
+
       - name: test shared
         run: cd shared && go test -race ./...
 
       - name: test server (prod)
         env:
           MONGO_TEST_URI: mongodb://mongo:27017/dleague_test
+          FIREBASE_AUTH_EMULATOR_HOST: 127.0.0.1:9099
         run: cd server && go test -race ./...
 
       - name: test server (debug build)

@@ -44,6 +44,23 @@ type Config struct {
 	// Sourced from DLEAGUE_ENV. Defaults to "development". Use IsProduction()
 	// for hardening checks rather than string comparisons.
 	Env string
+
+	// FirebaseProjectID is the Firebase project ID used for ID token audience
+	// validation. Required when FIREBASE_AUTH_EMULATOR_HOST is not set.
+	// Sourced from FIREBASE_PROJECT_ID.
+	FirebaseProjectID string
+
+	// FirebaseCredsPath is an optional path to a service-account JSON file.
+	// When empty, Application Default Credentials are used (Workload Identity
+	// on Fly.io, or GOOGLE_APPLICATION_CREDENTIALS env var for local dev).
+	// Sourced from GOOGLE_APPLICATION_CREDENTIALS.
+	FirebaseCredsPath string
+
+	// FirebaseEmulatorHost is informational: it mirrors FIREBASE_AUTH_EMULATOR_HOST
+	// so startup logs can print the active emulator address. The Firebase SDK
+	// picks up the env var directly; this field is read-only after Load().
+	// Sourced from FIREBASE_AUTH_EMULATOR_HOST.
+	FirebaseEmulatorHost string
 }
 
 // IsProduction reports whether Env names a production environment.
@@ -68,13 +85,16 @@ func Load() (Config, error) {
 	}
 
 	cfg := Config{
-		Addr:           envOr("DLEAGUE_ADDR", ":8080"),
-		WebRoot:        envOr("DLEAGUE_WEB", "./web"),
-		AllowedOrigins: splitCSV(os.Getenv("DLEAGUE_WS_ORIGINS")),
-		MongoURI:       os.Getenv("MONGO_URI"),
-		MaxConns:       maxConns,
-		TrustedProxies: splitCSV(os.Getenv("DLEAGUE_TRUSTED_PROXIES")),
-		Env:            envOr("DLEAGUE_ENV", "development"),
+		Addr:                 envOr("DLEAGUE_ADDR", ":8080"),
+		WebRoot:              envOr("DLEAGUE_WEB", "./web"),
+		AllowedOrigins:       splitCSV(os.Getenv("DLEAGUE_WS_ORIGINS")),
+		MongoURI:             os.Getenv("MONGO_URI"),
+		MaxConns:             maxConns,
+		TrustedProxies:       splitCSV(os.Getenv("DLEAGUE_TRUSTED_PROXIES")),
+		Env:                  envOr("DLEAGUE_ENV", "development"),
+		FirebaseProjectID:    os.Getenv("FIREBASE_PROJECT_ID"),
+		FirebaseCredsPath:    os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"),
+		FirebaseEmulatorHost: os.Getenv("FIREBASE_AUTH_EMULATOR_HOST"),
 	}
 
 	if cfg.MongoURI == "" {

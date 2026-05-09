@@ -2,14 +2,17 @@
 //
 // All gameplay messages travel through one /ws connection per client. The hub
 // owns connection lifecycle (register/unregister) and dispatches incoming
-// Envelope messages by MessageType. At Phase 1 only Ping is implemented.
+// Envelope messages by MessageType.
 package ws
 
 import (
+	"context"
 	"errors"
 	"log"
 	"sync"
 
+	"github.com/tiennm99/dleague/server/internal/auth"
+	"github.com/tiennm99/dleague/server/internal/store"
 	dleaguev1 "github.com/tiennm99/dleague/shared/pb/dleague/v1"
 )
 
@@ -24,12 +27,22 @@ type Hub struct {
 	// MaxConns is the maximum number of concurrent connections.
 	// Zero means unlimited (for tests / dev convenience).
 	MaxConns int
+
+	// verifier verifies Firebase ID tokens. May be nil in tests.
+	verifier *auth.Verifier
+
+	// userRepo persists user profiles on first auth. May be nil in tests.
+	userRepo *store.UserRepo
 }
 
-// NewHub creates a Hub with no connection limit. Set MaxConns before use in
-// production to cap concurrent connections.
-func NewHub() *Hub {
-	return &Hub{conns: map[*Conn]struct{}{}}
+// NewHub creates a Hub with the given verifier and user repo.
+// Both may be nil — tests that do not exercise auth paths pass nil for both.
+func NewHub(verifier *auth.Verifier, userRepo *store.UserRepo) *Hub {
+	return &Hub{
+		conns:    map[*Conn]struct{}{},
+		verifier: verifier,
+		userRepo: userRepo,
+	}
 }
 
 // register adds conn to the hub. Returns ErrAtCapacity if MaxConns > 0 and the
@@ -59,10 +72,21 @@ func (h *Hub) Count() int {
 
 // dispatch routes one inbound Envelope. Returns the response Envelope to send,
 // or nil if the message produces no response.
-func (h *Hub) dispatch(env *dleaguev1.Envelope, serverNowMS int64) (*dleaguev1.Envelope, error) {
+//
+// c is the originating connection; handlers may read c.userID and other auth
+// fields. The auth gate is enforced here before any handler is called.
+func (h *Hub) dispatch(ctx context.Context, env *dleaguev1.Envelope, c *Conn, serverNowMS int64) (*dleaguev1.Envelope, error) {
+	// Auth gate: reject messages that require authentication when the connection
+	// has no verified user identity.
+	if requiresAuth(env.GetType()) && c.userID == "" {
+		return errorEnvelope(env.GetRequestId(), 401, "unauthenticated"), nil
+	}
+
 	switch env.GetType() {
 	case dleaguev1.MessageType_MESSAGE_TYPE_PING:
 		return handlePing(env, serverNowMS)
+	case dleaguev1.MessageType_MESSAGE_TYPE_AUTH_REFRESH:
+		return handleAuthRefresh(ctx, c, env)
 	default:
 		log.Printf("ws dispatch: unhandled type=%v request_id=%q", env.GetType(), env.GetRequestId())
 		return nil, nil

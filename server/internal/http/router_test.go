@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/protobuf/proto"
 	"github.com/coder/websocket"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/tiennm99/dleague/server/internal/ws"
 	dleaguev1 "github.com/tiennm99/dleague/shared/pb/dleague/v1"
@@ -18,7 +18,7 @@ import (
 
 func mustRouter(t *testing.T) http.Handler {
 	t.Helper()
-	r, err := NewRouter(t.TempDir(), ws.NewHub(), ws.UpgradeOptions{}, nil, RouterOptions{})
+	r, err := NewRouter(t.TempDir(), ws.NewHub(nil, nil), ws.UpgradeOptions{}, nil, RouterOptions{})
 	if err != nil {
 		t.Fatalf("NewRouter: %v", err)
 	}

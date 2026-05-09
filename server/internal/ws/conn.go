@@ -3,13 +3,16 @@ package ws
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
-	"google.golang.org/protobuf/proto"
 	"github.com/coder/websocket"
+	"google.golang.org/protobuf/proto"
 
+	"github.com/tiennm99/dleague/server/internal/store"
 	dleaguev1 "github.com/tiennm99/dleague/shared/pb/dleague/v1"
 )
 
@@ -25,21 +28,35 @@ type Conn struct {
 	hub        *Hub
 	send       chan []byte        // outbound frames; cap sendBufSize
 	cancelRead context.CancelFunc // cancels the readLoop context
+
+	// Auth fields — populated during UpgradeHandler and updated by AuthRefresh.
+	userID         string    // Firebase UID; empty means unauthenticated
+	isAnonymous    bool      // true when sign_in_provider == "anonymous"
+	tokenExpiresAt time.Time // when the current ID token expires
 }
 
 // UpgradeOptions controls WebSocket Accept behaviour. Zero value enforces the
-// coder/websocket default same-origin policy. To allow cross-origin clients, populate
-// AllowedOrigins (host:port matched case-insensitively).
+// coder/websocket default same-origin policy. To allow cross-origin clients,
+// populate AllowedOrigins (host:port matched case-insensitively).
 type UpgradeOptions struct {
 	AllowedOrigins []string
 }
 
-// UpgradeHandler returns an http.HandlerFunc that upgrades to WebSocket and
-// drives the read/write loops until the client disconnects or an error occurs.
+// UpgradeHandler returns an http.HandlerFunc that upgrades to WebSocket,
+// verifies the Firebase ID token from the Sec-WebSocket-Protocol header,
+// and drives the read/write loops until the client disconnects.
+//
+// Expected header format:
+//
+//	Sec-WebSocket-Protocol: dleague.v1, fb.<idToken>
+//
+// A missing or malformed token causes a 401 response before any upgrade.
 func UpgradeHandler(hub *Hub, opts UpgradeOptions) http.HandlerFunc {
 	accept := websocket.AcceptOptions{
 		CompressionMode: websocket.CompressionDisabled,
 		OriginPatterns:  opts.AllowedOrigins,
+		// Echo the dleague.v1 subprotocol so the client sees a successful negotiation.
+		Subprotocols: []string{"dleague.v1"},
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Pre-accept cap check: avoids wasting the upgrade handshake.
@@ -53,6 +70,40 @@ func UpgradeHandler(hub *Hub, opts UpgradeOptions) http.HandlerFunc {
 			}
 		}
 
+		// Extract and verify the Firebase ID token from Sec-WebSocket-Protocol.
+		// When hub.verifier is nil (tests / dev without Firebase) auth is bypassed:
+		// the connection proceeds with an empty userID (unauthenticated guest mode).
+		var connUserID string
+		var connAnonymous bool
+		var connTokenExp time.Time
+
+		if hub.verifier != nil {
+			protoHeader := r.Header.Get("Sec-WebSocket-Protocol")
+			idToken, err := extractFirebaseToken(protoHeader)
+			if err != nil {
+				http.Error(w, "missing or malformed fb. token in Sec-WebSocket-Protocol", http.StatusUnauthorized)
+				return
+			}
+
+			token, err := hub.verifier.VerifyIDToken(r.Context(), idToken)
+			if err != nil {
+				http.Error(w, "invalid or expired Firebase ID token", http.StatusUnauthorized)
+				return
+			}
+			connUserID = token.UID
+			connAnonymous = isAnonymousToken(token)
+			connTokenExp = time.Unix(token.Expires, 0)
+
+			// Upsert the user document in Mongo on every connection (idempotent).
+			if hub.userRepo != nil {
+				profile := tokenToProfile(token.Claims)
+				if uErr := hub.userRepo.UpsertByUID(r.Context(), token.UID, profile); uErr != nil {
+					log.Printf("ws upsert user %q: %v", token.UID, uErr)
+					// Non-fatal: connection proceeds even when the DB write fails.
+				}
+			}
+		}
+
 		c, err := websocket.Accept(w, r, &accept)
 		if err != nil {
 			log.Printf("ws accept: %v", err)
@@ -62,10 +113,13 @@ func UpgradeHandler(hub *Hub, opts UpgradeOptions) http.HandlerFunc {
 
 		readCtx, cancelRead := context.WithCancel(r.Context())
 		conn := &Conn{
-			ws:         c,
-			hub:        hub,
-			send:       make(chan []byte, sendBufSize),
-			cancelRead: cancelRead,
+			ws:             c,
+			hub:            hub,
+			send:           make(chan []byte, sendBufSize),
+			cancelRead:     cancelRead,
+			userID:         connUserID,
+			isAnonymous:    connAnonymous,
+			tokenExpiresAt: connTokenExp,
 		}
 
 		if err := hub.register(conn); err != nil {
@@ -92,8 +146,43 @@ func UpgradeHandler(hub *Hub, opts UpgradeOptions) http.HandlerFunc {
 	}
 }
 
+// tokenToProfile maps Firebase ID token claims to a store.UserProfile.
+// Anonymous users produce an empty DisplayName (no email/name claim).
+func tokenToProfile(claims map[string]interface{}) store.UserProfile {
+	p := store.UserProfile{}
+	if name, ok := claims["name"].(string); ok {
+		p.DisplayName = name
+	}
+	// email_verified claim indicates a verified provider (Google, email+link, etc.).
+	if verified, ok := claims["email_verified"].(bool); ok {
+		p.Verified = verified
+	}
+	return p
+}
+
+// extractFirebaseToken parses the Sec-WebSocket-Protocol header and returns
+// the ID token from the first element prefixed with "fb.".
+//
+// Expected format: "dleague.v1, fb.<idToken>"
+// Returns an error when no "fb." element is found or the token part is empty.
+func extractFirebaseToken(protoHeader string) (string, error) {
+	if protoHeader == "" {
+		return "", fmt.Errorf("Sec-WebSocket-Protocol header is empty")
+	}
+	for _, part := range strings.Split(protoHeader, ",") {
+		trimmed := strings.TrimSpace(part)
+		if strings.HasPrefix(trimmed, "fb.") {
+			tok := strings.TrimPrefix(trimmed, "fb.")
+			if tok == "" {
+				return "", fmt.Errorf("fb. prefix present but token is empty")
+			}
+			return tok, nil
+		}
+	}
+	return "", fmt.Errorf("no fb.<token> entry in Sec-WebSocket-Protocol: %q", protoHeader)
+}
+
 // readLoop reads inbound frames until the context is cancelled or an error occurs.
-// It no longer writes to the WebSocket directly; responses are enqueued to send.
 func (c *Conn) readLoop(ctx context.Context) {
 	for {
 		mt, data, err := c.ws.Read(ctx)
@@ -107,13 +196,13 @@ func (c *Conn) readLoop(ctx context.Context) {
 			log.Printf("ws non-binary frame discarded (type=%d)", mt)
 			continue
 		}
-		c.handleFrame(data)
+		c.handleFrame(ctx, data)
 	}
 }
 
 // handleFrame processes one inbound binary frame. It enqueues any response to
 // c.send; on send-channel overflow it cancels the connection.
-func (c *Conn) handleFrame(data []byte) {
+func (c *Conn) handleFrame(ctx context.Context, data []byte) {
 	var env dleaguev1.Envelope
 	if err := proto.Unmarshal(data, &env); err != nil {
 		log.Printf("ws unmarshal: %v", err)
@@ -128,7 +217,7 @@ func (c *Conn) handleFrame(data []byte) {
 		return
 	}
 
-	resp, err := c.hub.dispatch(&env, time.Now().UnixMilli())
+	resp, err := c.hub.dispatch(ctx, &env, c, time.Now().UnixMilli())
 	if err != nil {
 		log.Printf("ws dispatch request_id=%q: %v", env.GetRequestId(), err)
 		c.enqueue(errorEnvelope(env.GetRequestId(), 500, "internal error"))

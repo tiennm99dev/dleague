@@ -36,3 +36,11 @@ plans/visuals/cache/
 
 # Repomix snapshots (LLM context bundles; transient)
 repomix-output.xml
+
+# Firebase
+firebase-debug.log
+firestore-debug.log
+*-emulator-data/
+# Service-account JSON files must never be committed.
+# Name them with this prefix to get automatic protection.
+serviceAccount*.json

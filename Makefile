@@ -8,7 +8,7 @@ WEB_OUT := web/main.wasm
 WASM_EXEC_SRC := $(shell $(GO) env GOROOT)/lib/wasm/wasm_exec.js
 WASM_EXEC_DST := web/wasm_exec.js
 
-.PHONY: help dev dev-debug build build-wasm build-wasm-debug build-server test lint compose-up compose-down proto-gen proto-lint proto-breaking tools clean
+.PHONY: help dev dev-debug build build-wasm build-wasm-debug build-server test lint compose-up compose-down proto-gen proto-lint proto-breaking tools clean firebase-emulator
 
 help:
 	@echo "make targets:"
@@ -25,6 +25,7 @@ help:
 	@echo "  proto-breaking   buf breaking against main branch"
 	@echo "  compose-up / compose-down  docker-compose (MongoDB + mongo-express)"
 	@echo "  tools            install buf + protoc-gen-go locally"
+	@echo "  firebase-emulator  start Firebase Auth emulator (127.0.0.1:9099)"
 
 dev: build-wasm
 	cd server && $(GO) run ./cmd/api
@@ -74,6 +75,9 @@ proto-breaking:
 tools:
 	$(GO) install github.com/bufbuild/buf/cmd/buf@latest
 	$(GO) install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+
+firebase-emulator:
+	bash scripts/start-firebase-emulator.sh
 
 clean:
 	rm -f $(WEB_OUT)

@@ -10,6 +10,8 @@ enum MessageType {
   MESSAGE_TYPE_PING = 1;
   MESSAGE_TYPE_PONG = 2;
   MESSAGE_TYPE_ERROR = 3;
+  MESSAGE_TYPE_AUTH_REFRESH = 4;
+  MESSAGE_TYPE_AUTH_REFRESH_ACK = 5;
 }
 
 // Envelope is the wire frame for every WebSocket message.
@@ -33,4 +35,16 @@ message Pong {
 message Error {
   int32 code = 1;
   string message = 2;
+}
+
+// AuthRefresh is sent by the client ~50 min into a connection to rotate the
+// Firebase ID token before the current one expires (tokens last 1 hour).
+message AuthRefresh {
+  string id_token = 1;
+}
+
+// AuthRefreshAck is the server's confirmation after successfully re-verifying
+// the supplied token. expires_at_unix is the new token's expiry as Unix epoch seconds.
+message AuthRefreshAck {
+  int64 expires_at_unix = 1;
 }
