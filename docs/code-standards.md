@@ -73,7 +73,7 @@ dleague/
 ## Game Architecture
 
 ### Game Interface (Phase 2)
-- **Define:** `shared/game/Game` interface with pluggable `-dle` types (Wordle, music, geography, etc.)
+- **Define:** `shared/game/Game` is a reserved scaffold for v2 multi-game support. Currently inactive — Wordle constructs `wordle.Wordle` directly without going through this interface. See `plans/260509-1331-improvement-plan/phase-04-pluggability-decision.md`.
 - **Registry:** Factory pattern in `shared/game/registry.go` — register games by ID, lookup at match start
 - **Constraint:** Single active game per match. Variants ship in separate releases, not runtime selection.
 

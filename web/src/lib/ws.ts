@@ -283,7 +283,7 @@ export function sendQueueLeave(): void {
 
 /**
  * sendMatchMove sends a MATCH_MOVE message with the player's guess.
- * The server will push back a GAME_STATE envelope for own state, and
+ * The server will push back a WORDLE_STATE envelope for own state, and
  * MATCH_OPPONENT_PROGRESS to the opponent.
  */
 export function sendMatchMove(matchId: string, guess: string): void {

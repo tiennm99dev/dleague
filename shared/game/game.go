@@ -1,9 +1,7 @@
-// Package game defines the pluggable -dle game contract.
-//
-// Each concrete -dle (Wordle-style, music, geography, image, ...) implements
-// the Game interface and registers itself with the Registry under a stable
-// game ID. The client and server consume Game implementations through this
-// interface only — never reach into a concrete game type.
+// Package game holds a reserved scaffold for future multi-game support.
+// The current release ships only Wordle, which constructs wordle.Wordle
+// directly without going through this interface or registry. See
+// plans/260509-1331-improvement-plan/phase-04-pluggability-decision.md.
 package game
 
 // Result captures the terminal outcome of one game session.
@@ -29,15 +27,6 @@ type State interface {
 // Move represents a single player action. Concrete games define their own
 // Move struct carrying the game-specific input (e.g. a guess word).
 type Move interface{}
-
-// Key represents a single user input event. Kept for compatibility with
-// interactive key-driven games; WS-based games use typed Move instead.
-type Key string
-
-const (
-	KeyEnter     Key = "Enter"
-	KeyBackspace Key = "Backspace"
-)
 
 // Game is the contract every -dle implementation fulfills.
 //

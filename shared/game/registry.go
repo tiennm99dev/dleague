@@ -1,3 +1,5 @@
+// Reserved scaffold; not currently used. See phase-04-pluggability-decision.md.
+//
 // Pattern adapted from ratel-online/server/state/state.go (MIT License).
 // See NOTICE for the full attribution.
 

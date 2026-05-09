@@ -9,7 +9,7 @@ Most -dle games are solo: solve the daily puzzle, share your score on Twitter, d
 - **Daily Leaderboard** — everyone plays the same puzzle; ranking by attempts then time
 - **Challenge a Friend** — share a link, opponent plays the same seed, results compared
 - **Quick Match** — matchmaking queue pairs you with a live opponent for a real-time race
-- **Pluggable game types** — Wordle-style at launch; music, geography, image variants planned
+- **Wordle at launch** — multi-game support is on the long-term roadmap, not in this release
 
 ## Status
 
@@ -59,7 +59,7 @@ Open http://localhost:5173 (web dev) or http://localhost:8080 (server only).
 dleague/
 ├── web/              # SvelteKit + Phaser client (vite dev server, static dist)
 ├── server/           # Go HTTP + WebSocket hub + Mongo store + Firebase verifier
-├── shared/           # Game interface, DTOs, pluggable -dle registry
+├── shared/           # Game interface scaffold (v2 reserved) + DTOs
 │   └── pb/           # Generated Go protobuf (committed)
 ├── proto/            # Protobuf schema + buf config (gen Go + TS)
 ├── docs/             # PDR, code standards, system architecture, deployment, roadmap, changelog

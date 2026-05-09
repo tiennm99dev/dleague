@@ -78,11 +78,11 @@ Rationale:
     ```
 
 ## Todo List
-- [ ] Doc edits: README + PDR + codebase-summary + roadmap (steps 1-4)
-- [ ] Proto rename + regen + Go/TS callsite updates (steps 5-9)
-- [ ] Delete `store/games.go` + drop `_ =` line (step 10)
-- [ ] Drop unused `KeyEnter/KeyBackspace` consts (step 11)
-- [ ] Scaffold-note comments on `shared/game/*` (step 12)
+- [x] Doc edits: README + PDR + codebase-summary + roadmap (steps 1-4)
+- [x] Proto rename + regen + Go/TS callsite updates (steps 5-9)
+- [x] Delete `store/games.go` + drop `_ =` line (step 10)
+- [x] Drop unused `KeyEnter/KeyBackspace` consts (step 11)
+- [x] Scaffold-note comments on `shared/game/*` (step 12)
 
 ## Success Criteria
 - `grep -rni "pluggable" README.md docs/` returns only roadmap/v2 contexts, never present-tense claim.
@@ -102,3 +102,20 @@ None.
 ## Next Steps
 - Phase 07 picks up `system-architecture.md` dispatch table (H4) which depends on the renamed enum values from this phase.
 - If team later commits to a 2nd game: separate plan to wire interface, add `oneof Payload` or `game_id` field, build the actual game. **Schema note (Phase 05 D-1):** `daily_puzzles._id` is currently date-only ("YYYY-MM-DD"). When adding the 2nd game, migrate to compound `_id` like `"<game>_<date>"` or add a new unique index on `(date, game_id)` to prevent collisions. See `phase-05-persistence-integrity.md` completion notes D-1.
+
+## Completion Notes (2026-05-09)
+
+**Status:** Completed. All 12 implementation steps done.
+
+**Summary:** Proto enums MESSAGE_TYPE_GAME_MOVE/STATE renamed to MESSAGE_TYPE_WORDLE_MOVE/STATE (numeric values 6/7 preserved); Go + TS regenerated. Callsite renames across server (hub, game_handler, match_room, match_room_test, sync_match_handler) + web (play, sync-game-scene, ws comment). Dead code: `server/internal/store/games.go` deleted; `_ = store.NewGameRepo(db)` removed; KeyEnter/KeyBackspace consts dropped. Scaffold comments added to `shared/game/game.go` and `registry.go`. Doc edits: README, PDR, codebase-summary, development-roadmap all updated to demote "pluggable" from present-tense claim to v2 scaffold.
+
+**Builds:** `go build/vet` clean; race-detector 6 packages OK; `svelte-check` 0/0; 9 web tests pass.
+
+**Reports:**
+- [code-reviewer-phase-04-diff-260509-1502.md](reports/code-reviewer-phase-04-diff-260509-1502.md) — detailed diff review of all changes
+- [tester-phase-04-260509-1502.md](reports/tester-phase-04-260509-1502.md) — build + test validation
+
+**Residual notes:**
+- 3 doc review fix-ups applied during code review: `docs/code-standards.md:76`, `docs/system-architecture.md:52`, `web/src/lib/game/game.ts` (rewrote pluggable claims to scaffold-reserved language).
+- Phase 07 should verify `system-architecture.md` dispatch table (H4) — confirm MESSAGE_TYPE_WORDLE_* references are correct or identify any remaining MESSAGE_TYPE_GAME_* stale refs.
+- `server/internal/game/wordle/wordlist.go:13` has TODO(phase-10) for wordlist replacement — consider renaming to TODO(v2) since phase-10 is closed. Deferred for phase 07 hygiene pass.

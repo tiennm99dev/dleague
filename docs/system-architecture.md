@@ -49,7 +49,7 @@ web/src/
     │   └── scenes/
     │       └── title-scene.ts  — "DLEAGUE" title + Start button → eventBus.emit('title:start')
     ├── game/
-    │   ├── game.ts                 — pluggable Game<S,M> interface + State/Move/Result types
+    │   ├── game.ts                 — local game state mirror (Wordle today; v2 scaffold)
     │   └── wordle/
     │       ├── colors.ts           — two-pass color scoring (optimistic preview only)
     │       ├── colors.test.ts      — Vitest: 9 canonical edge cases

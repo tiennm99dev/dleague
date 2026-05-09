@@ -31,8 +31,9 @@ const (
 	MessageType_MESSAGE_TYPE_ERROR            MessageType = 3
 	MessageType_MESSAGE_TYPE_AUTH_REFRESH     MessageType = 4
 	MessageType_MESSAGE_TYPE_AUTH_REFRESH_ACK MessageType = 5
-	MessageType_MESSAGE_TYPE_GAME_MOVE        MessageType = 6
-	MessageType_MESSAGE_TYPE_GAME_STATE       MessageType = 7
+	// Wordle-specific. Future games will introduce their own MESSAGE_TYPE_<GAME>_MOVE/STATE values.
+	MessageType_MESSAGE_TYPE_WORDLE_MOVE  MessageType = 6
+	MessageType_MESSAGE_TYPE_WORDLE_STATE MessageType = 7
 	// Phase 08: async PvP + leaderboard (8–15; 0–7 already used above).
 	MessageType_MESSAGE_TYPE_CHALLENGE_CREATE     MessageType = 8
 	MessageType_MESSAGE_TYPE_CHALLENGE_CREATE_ACK MessageType = 9
@@ -62,8 +63,8 @@ var (
 		3:  "MESSAGE_TYPE_ERROR",
 		4:  "MESSAGE_TYPE_AUTH_REFRESH",
 		5:  "MESSAGE_TYPE_AUTH_REFRESH_ACK",
-		6:  "MESSAGE_TYPE_GAME_MOVE",
-		7:  "MESSAGE_TYPE_GAME_STATE",
+		6:  "MESSAGE_TYPE_WORDLE_MOVE",
+		7:  "MESSAGE_TYPE_WORDLE_STATE",
 		8:  "MESSAGE_TYPE_CHALLENGE_CREATE",
 		9:  "MESSAGE_TYPE_CHALLENGE_CREATE_ACK",
 		10: "MESSAGE_TYPE_CHALLENGE_JOIN",
@@ -88,8 +89,8 @@ var (
 		"MESSAGE_TYPE_ERROR":                   3,
 		"MESSAGE_TYPE_AUTH_REFRESH":            4,
 		"MESSAGE_TYPE_AUTH_REFRESH_ACK":        5,
-		"MESSAGE_TYPE_GAME_MOVE":               6,
-		"MESSAGE_TYPE_GAME_STATE":              7,
+		"MESSAGE_TYPE_WORDLE_MOVE":             6,
+		"MESSAGE_TYPE_WORDLE_STATE":            7,
 		"MESSAGE_TYPE_CHALLENGE_CREATE":        8,
 		"MESSAGE_TYPE_CHALLENGE_CREATE_ACK":    9,
 		"MESSAGE_TYPE_CHALLENGE_JOIN":          10,
@@ -461,16 +462,16 @@ const file_dleague_v1_envelope_proto_rawDesc = "" +
 	"\vAuthRefresh\x12\x19\n" +
 	"\bid_token\x18\x01 \x01(\tR\aidToken\"8\n" +
 	"\x0eAuthRefreshAck\x12&\n" +
-	"\x0fexpires_at_unix\x18\x01 \x01(\x03R\rexpiresAtUnix*\x92\x06\n" +
+	"\x0fexpires_at_unix\x18\x01 \x01(\x03R\rexpiresAtUnix*\x96\x06\n" +
 	"\vMessageType\x12\x1c\n" +
 	"\x18MESSAGE_TYPE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11MESSAGE_TYPE_PING\x10\x01\x12\x15\n" +
 	"\x11MESSAGE_TYPE_PONG\x10\x02\x12\x16\n" +
 	"\x12MESSAGE_TYPE_ERROR\x10\x03\x12\x1d\n" +
 	"\x19MESSAGE_TYPE_AUTH_REFRESH\x10\x04\x12!\n" +
-	"\x1dMESSAGE_TYPE_AUTH_REFRESH_ACK\x10\x05\x12\x1a\n" +
-	"\x16MESSAGE_TYPE_GAME_MOVE\x10\x06\x12\x1b\n" +
-	"\x17MESSAGE_TYPE_GAME_STATE\x10\a\x12!\n" +
+	"\x1dMESSAGE_TYPE_AUTH_REFRESH_ACK\x10\x05\x12\x1c\n" +
+	"\x18MESSAGE_TYPE_WORDLE_MOVE\x10\x06\x12\x1d\n" +
+	"\x19MESSAGE_TYPE_WORDLE_STATE\x10\a\x12!\n" +
 	"\x1dMESSAGE_TYPE_CHALLENGE_CREATE\x10\b\x12%\n" +
 	"!MESSAGE_TYPE_CHALLENGE_CREATE_ACK\x10\t\x12\x1f\n" +
 	"\x1bMESSAGE_TYPE_CHALLENGE_JOIN\x10\n" +

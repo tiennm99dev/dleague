@@ -95,7 +95,7 @@ func (r *Room) HandleMove(ctx context.Context, c *Conn, guess string, deps *Game
 		return fmt.Errorf("match_room: marshal own state: %w", err)
 	}
 	c.enqueue(&dleaguev1.Envelope{
-		Type:    dleaguev1.MessageType_MESSAGE_TYPE_GAME_STATE,
+		Type:    dleaguev1.MessageType_MESSAGE_TYPE_WORDLE_STATE,
 		Payload: ownPayload,
 	})
 

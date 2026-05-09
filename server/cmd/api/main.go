@@ -93,7 +93,6 @@ func main() {
 	}
 
 	userRepo := store.NewUserRepo(db)
-	_ = store.NewGameRepo(db)
 	matchRepo := store.NewMatchRepo(db)
 	attemptRepo := store.NewAttemptRepo(db)
 	dailyRepo := store.NewDailyPuzzleRepo(db)

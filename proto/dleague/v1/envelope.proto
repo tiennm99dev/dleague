@@ -12,8 +12,9 @@ enum MessageType {
   MESSAGE_TYPE_ERROR = 3;
   MESSAGE_TYPE_AUTH_REFRESH = 4;
   MESSAGE_TYPE_AUTH_REFRESH_ACK = 5;
-  MESSAGE_TYPE_GAME_MOVE = 6;
-  MESSAGE_TYPE_GAME_STATE = 7;
+  // Wordle-specific. Future games will introduce their own MESSAGE_TYPE_<GAME>_MOVE/STATE values.
+  MESSAGE_TYPE_WORDLE_MOVE = 6;
+  MESSAGE_TYPE_WORDLE_STATE = 7;
   // Phase 08: async PvP + leaderboard (8–15; 0–7 already used above).
   MESSAGE_TYPE_CHALLENGE_CREATE      = 8;
   MESSAGE_TYPE_CHALLENGE_CREATE_ACK  = 9;

@@ -177,7 +177,7 @@
 		try {
 			const move = create(WordleMoveSchema, { guess: currentInput });
 			const respBytes = await sendRequest(
-				MessageType.GAME_MOVE,
+				MessageType.WORDLE_MOVE,
 				toBinary(WordleMoveSchema, move)
 			);
 			applyServerState(fromBinary(WordleStateSchema, respBytes));

@@ -64,9 +64,9 @@ func TestMatchRoom_CorrectHints(t *testing.T) {
 	}
 
 	frames := drainSend(a)
-	stateEnv := findEnvByType(frames, dleaguev1.MessageType_MESSAGE_TYPE_GAME_STATE)
+	stateEnv := findEnvByType(frames, dleaguev1.MessageType_MESSAGE_TYPE_WORDLE_STATE)
 	if stateEnv == nil {
-		t.Fatal("expected GAME_STATE envelope for moving player")
+		t.Fatal("expected WORDLE_STATE envelope for moving player")
 	}
 
 	var state dleaguev1.WordleState

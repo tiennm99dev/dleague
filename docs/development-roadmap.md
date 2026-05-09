@@ -13,7 +13,7 @@ Critical correctness, security, and UX bug fixes across 7 phases (Phase 01 compl
 | 01 | Critical correctness — races, DoS, duplicate writes | P1 | completed (2026-05-09) |
 | 02 | Security & abuse hardening | P1 | completed (2026-05-09) |
 | 03 | UX correctness — navigation, a11y, reconnect | P2 | completed (2026-05-09) |
-| 04 | Pluggability decision | P2 | pending |
+| 04 | Pluggability decision | P2 | completed (2026-05-09) |
 | 05 | Persistence & data integrity | P1 | completed (2026-05-09) |
 | 06 | Test coverage + local CI | P2 | pending |
 | 07 | Code/doc hygiene | P3 | pending |
@@ -73,8 +73,8 @@ Features deferred from MVP. Prioritized by impact:
 ### Lower priority / exploratory
 - **Native mobile (Capacitor):** Wrap SvelteKit app in Capacitor for iOS/Android
   distribution. Phaser canvas works in WebView.
-- **Additional -dle game types:** Music (hum the note), geography (map tile),
-  image (reveal by quadrant). Pluggable via `shared/game.Game` interface.
+- **Additional -dle game types (v2):** Music (hum the note), geography (map tile),
+  image (reveal by quadrant). The `shared/game` package has a reserved scaffold (`Game` interface + `Registry`) for this; wiring it up is out of scope for the current release.
 - **Custom-claims roles beyond admin:** Moderator, verified-creator, tournament-host.
 - **`VerifyIDTokenAndCheckRevoked` on WS upgrade:** Currently only on admin ops.
   Enable for all connections when revocation latency is acceptable (~1 s extra).

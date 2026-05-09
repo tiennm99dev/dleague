@@ -58,9 +58,9 @@ type wordleSession struct {
 // sync.Map chosen for concurrent access without a coarse hub-level lock.
 var sessions sync.Map //nolint:gochecknoglobals
 
-// handleGameMove processes a MESSAGE_TYPE_GAME_MOVE envelope.
+// handleGameMove processes a MESSAGE_TYPE_WORDLE_MOVE envelope.
 // It validates the guess, applies it to the player's session, and returns
-// a MESSAGE_TYPE_GAME_STATE envelope. The solution is omitted from the
+// a MESSAGE_TYPE_WORDLE_STATE envelope. The solution is omitted from the
 // response until the game reaches a terminal state.
 func handleGameMove(ctx context.Context, c *Conn, env *dleaguev1.Envelope, deps *GameDeps) (*dleaguev1.Envelope, error) {
 	// Defensive auth re-check (upstream requiresAuth already gate-keeps,
@@ -112,7 +112,7 @@ func handleGameMove(ctx context.Context, c *Conn, env *dleaguev1.Envelope, deps 
 	}
 
 	// Evict the session once the game reaches a terminal state so memory is
-	// reclaimed promptly. The next GAME_MOVE reloads today's puzzle via
+	// reclaimed promptly. The next WORDLE_MOVE reloads today's puzzle via
 	// EnsureToday — safe because the daily seed is deterministic. Phase 07 M3 fix.
 	// Trade-off: in-progress state is lost on disconnect, but for solo daily play
 	// the puzzle regenerates from the same seed, so no user-visible data is lost.
@@ -121,7 +121,7 @@ func handleGameMove(ctx context.Context, c *Conn, env *dleaguev1.Envelope, deps 
 	}
 
 	return &dleaguev1.Envelope{
-		Type:      dleaguev1.MessageType_MESSAGE_TYPE_GAME_STATE,
+		Type:      dleaguev1.MessageType_MESSAGE_TYPE_WORDLE_STATE,
 		RequestId: env.GetRequestId(),
 		Payload:   payload,
 	}, nil

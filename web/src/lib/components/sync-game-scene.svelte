@@ -93,8 +93,8 @@
 	}
 
 	onMount(() => {
-		// Subscribe to server-pushed own state (GAME_STATE carries own WordleState).
-		onMessage(MessageType.GAME_STATE, (payload) => {
+		// Subscribe to server-pushed own state (WORDLE_STATE carries own WordleState).
+		onMessage(MessageType.WORDLE_STATE, (payload) => {
 			const state = fromBinary(WordleStateSchema, payload);
 			ownGuesses = [...state.guesses];
 			ownHints = [...state.hints];
@@ -118,7 +118,7 @@
 			resolved = true;
 			winnerUid = msg.winnerUid;
 			resolveReason = msg.reason;
-			// Use solution captured from last GAME_STATE push (MatchResolved has no solution field).
+			// Use solution captured from last WORDLE_STATE push (MatchResolved has no solution field).
 			matchSolution = lastSolution;
 			// Derive result reason driven by reason field first (I2 fix).
 			const selfUid = get(authUser)?.uid ?? '';
@@ -148,7 +148,7 @@
 	});
 
 	onDestroy(() => {
-		removeHandler(MessageType.GAME_STATE);
+		removeHandler(MessageType.WORDLE_STATE);
 		removeHandler(MessageType.MATCH_OPPONENT_PROGRESS);
 		removeHandler(MessageType.MATCH_RESOLVED);
 	});

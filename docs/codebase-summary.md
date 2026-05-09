@@ -58,8 +58,10 @@ dleague/
 ## Module Roles
 
 ### `shared/` — exported interfaces
-- `game.Game` — pluggable game interface (`Validate`, `Apply`, `ToProto`, `Score`)
-- `game.Registry` — factory: `Register(id, factory)`, `New(id) Game`
+
+#### Reserved scaffold (v2)
+- `game.Game` — reserved game interface (`Init(seed)`, `Validate(move)`, `Apply(move)`, `IsTerminal()`, `Result()`). Not wired to any caller in the current release; Wordle constructs `wordle.Wordle` directly.
+- `game.Registry` — factory: `Register(id, factory)`, `New(id) Game`. No factories registered at runtime.
 - `pb/dleague/v1/` — generated Go protobuf types (Envelope, WordleMove, WordleState, etc.)
 
 ### `server/internal/auth/`

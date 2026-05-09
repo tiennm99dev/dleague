@@ -4,6 +4,17 @@ All notable changes to Dleague. Most recent first. Commits reference the main br
 
 ---
 
+## Post-MVP Hardening — Phase 04 Pluggability decision (2026-05-09)
+
+- **Proto enum rename:** `MESSAGE_TYPE_GAME_MOVE` → `MESSAGE_TYPE_WORDLE_MOVE`, `MESSAGE_TYPE_GAME_STATE` → `MESSAGE_TYPE_WORDLE_STATE`. Numeric values (6/7) preserved; comment added to proto documenting wordle-only semantics. Preempts future `buf breaking` violations.
+- **Dead code cleanup:** `server/internal/store/games.go` fully deleted (unused GameRepo); `_ = store.NewGameRepo(db)` line removed from `server/cmd/api/main.go:95`; unused `KeyEnter`/`KeyBackspace` consts dropped from `shared/game/game.go:38-40`.
+- **Scaffold documentation:** Top-of-file comments added to `shared/game/game.go` and `registry.go` explicitly reserving the interface for v2 multi-game support. Current release ships Wordle-only.
+- **Doc claims updated:** README, PDR, codebase-summary, and development-roadmap reworded to demote "pluggable game types" from present-tense feature to v2/exploratory roadmap item. `system-architecture.md` updated to remove Game interface diagram; retains wordle-specific dispatch table (refreshed in Phase 07).
+- **Callsite updates:** Proto regeneration (`make proto-gen`) updated Go references across hub, game_handler, match_room, match_room_test, sync_match_handler; TS references updated in play, sync-game-scene, ws.ts comment.
+- **Test results:** `go build/vet` clean; race-detector 6 packages; svelte-check 0/0; 9 web tests pass.
+
+---
+
 ## Post-MVP Hardening — Phase 05 Persistence & data integrity (2026-05-09)
 
 - **State-filter audit:** All state-mutating `UpdateOne`/`FindOneAndUpdate` operations across `store/` package now filter on source state. `JoinAsChallengee` adds `state:"pending"` guard; `Complete` and `CompleteSync` already filtered. Comments mark each: `// MUST: filter on source state to prevent double-resolve`.

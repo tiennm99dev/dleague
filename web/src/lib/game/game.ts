@@ -1,4 +1,6 @@
-// Pluggable game interface — TypeScript mirror of shared/game/game.go.
+// game.ts: local game-state mirror used by Wordle. Extension points exist for future games
+// but the v2 multi-game scaffold is not active in this release. See
+// plans/260509-1331-improvement-plan/phase-04-pluggability-decision.md.
 // Server is always authoritative; client implementations are for optimistic
 // UI preview only and must never be treated as ground truth.
 
@@ -17,7 +19,7 @@ export interface Result {
 }
 
 /**
- * Game is the client-side pluggable interface for optimistic preview.
+ * Game is the client-side interface for optimistic preview (v2 scaffold; currently only Wordle is active).
  * Type parameters:
  *   S — concrete State subtype
  *   M — concrete Move subtype

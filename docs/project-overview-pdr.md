@@ -14,7 +14,7 @@ compete directly rather than comparing grid emojis on social media.
 | **Daily Leaderboard** | Everyone plays the same puzzle each day. Rankings by attempts, then time. Anonymous users excluded. |
 | **Challenge a Friend** | Generate a share link; opponent plays the same seed; results compared side-by-side. Async — no live connection required. |
 | **Quick Match** | In-memory matchmaking queue pairs two players for a synchronous, real-time race over WebSocket. |
-| **Pluggable game types** | `shared/game.Game` interface supports Wordle at launch; music, geography, and image variants planned for v2. |
+| **Game** | Wordle is the only shipped game. The `shared/game` package contains a reserved (currently inactive) scaffold for future game types. |
 
 ## MVP Scope
 
@@ -66,7 +66,7 @@ compete directly rather than comparing grid emojis on social media.
 | WS library | coder/websocket | Maintained fork of archived nhooyr; minimal API |
 | Deploy | Fly.io | Simple Docker deploy; free hobby tier; `iad` ↔ Atlas us-east-1 |
 | Wire format | Binary protobuf | Type-safe; compact; `buf generate` for Go + TS |
-| Game interface | Go interface + Registry | Pluggable without modifying core protocol |
+| Game interface | Go interface + Registry | Reserved scaffold for future game types (v2); not wired in current release |
 | Session auth | ID token in Sec-WebSocket-Protocol | Token refresh without re-upgrading |
 
 ## References

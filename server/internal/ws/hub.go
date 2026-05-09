@@ -109,7 +109,7 @@ func (h *Hub) dispatch(ctx context.Context, env *dleaguev1.Envelope, c *Conn, se
 		return handlePing(env, serverNowMS)
 	case dleaguev1.MessageType_MESSAGE_TYPE_AUTH_REFRESH:
 		return handleAuthRefresh(ctx, c, env)
-	case dleaguev1.MessageType_MESSAGE_TYPE_GAME_MOVE:
+	case dleaguev1.MessageType_MESSAGE_TYPE_WORDLE_MOVE:
 		if h.GameDeps == nil {
 			return errorEnvelope(env.GetRequestId(), 503, "game service unavailable"), nil
 		}
