@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"time"
 
@@ -28,8 +29,8 @@ func healthHandler(st *store.Store) http.HandlerFunc {
 		defer cancel()
 
 		if err := st.Ping(ctx); err != nil {
+			log.Printf("health: db ping: %v", err)
 			w.WriteHeader(http.StatusServiceUnavailable)
-			_, _ = w.Write([]byte("degraded: db unreachable"))
 			return
 		}
 		w.WriteHeader(http.StatusOK)

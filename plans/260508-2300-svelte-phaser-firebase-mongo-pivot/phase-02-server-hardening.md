@@ -1,7 +1,8 @@
 ---
 phase: 2
 title: "Server hardening (concurrency + security)"
-status: pending
+status: completed
+completed_on: 2026-05-09
 priority: P1
 effort: 1w
 dependencies: [1]
@@ -105,20 +106,20 @@ Data: `Hub.dispatch` already returns `*Envelope`; new path enqueues to `conn.sen
 15. **Manual verify:** `wscat -c ws://localhost:8080/ws -H 'Origin: http://evil.com'` → 403.
 
 ## Todo List
-- [ ] Proto: `MESSAGE_TYPE_ERROR` + `Error` message
-- [ ] Hub `MaxConns` cap + 429
-- [ ] Per-conn `send` channel + writer goroutine
-- [ ] Ping ticker + pong deadline (replace 60s idle)
-- [ ] Unmarshal error → error envelope, no close
-- [ ] request_id length cap (128B)
-- [ ] WS origin allowlist asserted in prod
-- [ ] `RealIP` gated by `TrustedProxies`
-- [ ] Static security-headers middleware
-- [ ] `/health` body removed on 503
-- [ ] Migration applied-count log line
-- [ ] `go test -race` in Makefile
-- [ ] Tests for new failure paths
-- [ ] CSP allows wasm-unsafe-eval (drop in phase 06)
+- [x] Proto: `MESSAGE_TYPE_ERROR` + `Error` message
+- [x] Hub `MaxConns` cap + 429
+- [x] Per-conn `send` channel + writer goroutine
+- [x] Ping ticker + pong deadline (replace 60s idle)
+- [x] Unmarshal error → error envelope, no close
+- [x] request_id length cap (128B)
+- [x] WS origin allowlist asserted in prod
+- [x] `RealIP` gated by `TrustedProxies`
+- [x] Static security-headers middleware
+- [x] `/health` body removed on 503
+- [x] Migration applied-count log line
+- [x] `go test -race` in Makefile
+- [x] Tests for new failure paths
+- [x] CSP allows wasm-unsafe-eval (drop in phase 06)
 
 ## Success Criteria
 - [ ] `go test -race ./...` green

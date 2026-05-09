@@ -6,26 +6,42 @@
 package ws
 
 import (
+	"errors"
 	"log"
 	"sync"
 
 	dleaguev1 "github.com/tiennm99/dleague/shared/pb/dleague/v1"
 )
 
+// ErrAtCapacity is returned by register when the hub has reached MaxConns.
+var ErrAtCapacity = errors.New("ws: at connection capacity")
+
 // Hub tracks active WebSocket connections.
 type Hub struct {
 	mu    sync.RWMutex
 	conns map[*Conn]struct{}
+
+	// MaxConns is the maximum number of concurrent connections.
+	// Zero means unlimited (for tests / dev convenience).
+	MaxConns int
 }
 
+// NewHub creates a Hub with no connection limit. Set MaxConns before use in
+// production to cap concurrent connections.
 func NewHub() *Hub {
 	return &Hub{conns: map[*Conn]struct{}{}}
 }
 
-func (h *Hub) register(c *Conn) {
+// register adds conn to the hub. Returns ErrAtCapacity if MaxConns > 0 and the
+// limit has already been reached.
+func (h *Hub) register(c *Conn) error {
 	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.MaxConns > 0 && len(h.conns) >= h.MaxConns {
+		return ErrAtCapacity
+	}
 	h.conns[c] = struct{}{}
-	h.mu.Unlock()
+	return nil
 }
 
 func (h *Hub) unregister(c *Conn) {

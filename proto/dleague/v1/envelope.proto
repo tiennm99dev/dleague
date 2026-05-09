@@ -9,6 +9,7 @@ enum MessageType {
   MESSAGE_TYPE_UNSPECIFIED = 0;
   MESSAGE_TYPE_PING = 1;
   MESSAGE_TYPE_PONG = 2;
+  MESSAGE_TYPE_ERROR = 3;
 }
 
 // Envelope is the wire frame for every WebSocket message.
@@ -26,4 +27,10 @@ message Ping {
 message Pong {
   int64 client_unix_ms = 1;
   int64 server_unix_ms = 2;
+}
+
+// Error carries a structured error response back to the client.
+message Error {
+  int32 code = 1;
+  string message = 2;
 }

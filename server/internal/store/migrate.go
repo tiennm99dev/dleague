@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -57,9 +58,7 @@ func Migrate(ctx context.Context, db *sql.DB) error {
 		}
 		pending++
 	}
-	if pending == 0 {
-		return nil
-	}
+	log.Printf("migrate: applied %d migrations", pending)
 	return nil
 }
 

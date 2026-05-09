@@ -28,6 +28,7 @@ const (
 	MessageType_MESSAGE_TYPE_UNSPECIFIED MessageType = 0
 	MessageType_MESSAGE_TYPE_PING        MessageType = 1
 	MessageType_MESSAGE_TYPE_PONG        MessageType = 2
+	MessageType_MESSAGE_TYPE_ERROR       MessageType = 3
 )
 
 // Enum value maps for MessageType.
@@ -36,11 +37,13 @@ var (
 		0: "MESSAGE_TYPE_UNSPECIFIED",
 		1: "MESSAGE_TYPE_PING",
 		2: "MESSAGE_TYPE_PONG",
+		3: "MESSAGE_TYPE_ERROR",
 	}
 	MessageType_value = map[string]int32{
 		"MESSAGE_TYPE_UNSPECIFIED": 0,
 		"MESSAGE_TYPE_PING":        1,
 		"MESSAGE_TYPE_PONG":        2,
+		"MESSAGE_TYPE_ERROR":       3,
 	}
 )
 
@@ -229,6 +232,59 @@ func (x *Pong) GetServerUnixMs() int64 {
 	return 0
 }
 
+// Error carries a structured error response back to the client.
+type Error struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Code          int32                  `protobuf:"varint,1,opt,name=code,proto3" json:"code,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Error) Reset() {
+	*x = Error{}
+	mi := &file_dleague_v1_envelope_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Error) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Error) ProtoMessage() {}
+
+func (x *Error) ProtoReflect() protoreflect.Message {
+	mi := &file_dleague_v1_envelope_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Error.ProtoReflect.Descriptor instead.
+func (*Error) Descriptor() ([]byte, []int) {
+	return file_dleague_v1_envelope_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *Error) GetCode() int32 {
+	if x != nil {
+		return x.Code
+	}
+	return 0
+}
+
+func (x *Error) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
 var File_dleague_v1_envelope_proto protoreflect.FileDescriptor
 
 const file_dleague_v1_envelope_proto_rawDesc = "" +
@@ -244,11 +300,15 @@ const file_dleague_v1_envelope_proto_rawDesc = "" +
 	"\x0eclient_unix_ms\x18\x01 \x01(\x03R\fclientUnixMs\"R\n" +
 	"\x04Pong\x12$\n" +
 	"\x0eclient_unix_ms\x18\x01 \x01(\x03R\fclientUnixMs\x12$\n" +
-	"\x0eserver_unix_ms\x18\x02 \x01(\x03R\fserverUnixMs*Y\n" +
+	"\x0eserver_unix_ms\x18\x02 \x01(\x03R\fserverUnixMs\"5\n" +
+	"\x05Error\x12\x12\n" +
+	"\x04code\x18\x01 \x01(\x05R\x04code\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage*q\n" +
 	"\vMessageType\x12\x1c\n" +
 	"\x18MESSAGE_TYPE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11MESSAGE_TYPE_PING\x10\x01\x12\x15\n" +
-	"\x11MESSAGE_TYPE_PONG\x10\x02B<Z:github.com/tiennm99/dleague/shared/pb/dleague/v1;dleaguev1b\x06proto3"
+	"\x11MESSAGE_TYPE_PONG\x10\x02\x12\x16\n" +
+	"\x12MESSAGE_TYPE_ERROR\x10\x03B<Z:github.com/tiennm99/dleague/shared/pb/dleague/v1;dleaguev1b\x06proto3"
 
 var (
 	file_dleague_v1_envelope_proto_rawDescOnce sync.Once
@@ -263,12 +323,13 @@ func file_dleague_v1_envelope_proto_rawDescGZIP() []byte {
 }
 
 var file_dleague_v1_envelope_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_dleague_v1_envelope_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_dleague_v1_envelope_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_dleague_v1_envelope_proto_goTypes = []any{
 	(MessageType)(0), // 0: dleague.v1.MessageType
 	(*Envelope)(nil), // 1: dleague.v1.Envelope
 	(*Ping)(nil),     // 2: dleague.v1.Ping
 	(*Pong)(nil),     // 3: dleague.v1.Pong
+	(*Error)(nil),    // 4: dleague.v1.Error
 }
 var file_dleague_v1_envelope_proto_depIdxs = []int32{
 	0, // 0: dleague.v1.Envelope.type:type_name -> dleague.v1.MessageType
@@ -290,7 +351,7 @@ func file_dleague_v1_envelope_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_dleague_v1_envelope_proto_rawDesc), len(file_dleague_v1_envelope_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   3,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

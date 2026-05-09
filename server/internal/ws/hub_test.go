@@ -1,6 +1,8 @@
 package ws
 
 import (
+	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -59,5 +61,77 @@ func TestDispatchUnknownTypeReturnsNil(t *testing.T) {
 	}
 	if out != nil {
 		t.Fatalf("out = %v, want nil", out)
+	}
+}
+
+// Hub cap: 3rd register on a hub with MaxConns=2 must fail with ErrAtCapacity.
+func TestHubMaxConnsRejectsOverCap(t *testing.T) {
+	h := &Hub{conns: map[*Conn]struct{}{}, MaxConns: 2}
+
+	c1, c2, c3 := &Conn{}, &Conn{}, &Conn{}
+	if err := h.register(c1); err != nil {
+		t.Fatalf("register c1: %v", err)
+	}
+	if err := h.register(c2); err != nil {
+		t.Fatalf("register c2: %v", err)
+	}
+	err := h.register(c3)
+	if !errors.Is(err, ErrAtCapacity) {
+		t.Fatalf("expected ErrAtCapacity, got %v", err)
+	}
+	if h.Count() != 2 {
+		t.Fatalf("count = %d after rejected register, want 2", h.Count())
+	}
+}
+
+// Slot opens again after unregister clears a spot.
+func TestHubMaxConnsFreesSlotOnUnregister(t *testing.T) {
+	h := &Hub{conns: map[*Conn]struct{}{}, MaxConns: 2}
+
+	c1, c2, c3 := &Conn{}, &Conn{}, &Conn{}
+	_ = h.register(c1)
+	_ = h.register(c2)
+	h.unregister(c1)
+	if err := h.register(c3); err != nil {
+		t.Fatalf("register after unregister: %v", err)
+	}
+	if h.Count() != 2 {
+		t.Fatalf("count = %d, want 2", h.Count())
+	}
+}
+
+// Concurrent register/unregister under -race with a cap that allows some
+// registrations to succeed and others to be rejected.
+func TestHubConcurrentRegisterUnregisterRace(t *testing.T) {
+	h := &Hub{conns: map[*Conn]struct{}{}, MaxConns: 10}
+
+	const workers = 40
+	conns := make([]*Conn, workers)
+	for i := range conns {
+		conns[i] = &Conn{}
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(workers)
+	for i := 0; i < workers; i++ {
+		go func(idx int) {
+			defer wg.Done()
+			_ = h.register(conns[idx]) // may return ErrAtCapacity — that's fine
+		}(i)
+	}
+	wg.Wait()
+
+	// Drain all registered conns concurrently.
+	wg.Add(workers)
+	for i := 0; i < workers; i++ {
+		go func(idx int) {
+			defer wg.Done()
+			h.unregister(conns[idx])
+		}(i)
+	}
+	wg.Wait()
+
+	if h.Count() != 0 {
+		t.Fatalf("count = %d after full drain, want 0", h.Count())
 	}
 }

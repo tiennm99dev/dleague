@@ -40,10 +40,18 @@ func main() {
 	}
 	log.Printf("migrations applied")
 
+	// In production, an empty origin allowlist means the WS endpoint accepts
+	// any origin — a cross-site WebSocket hijacking risk. Fail fast.
+	if cfg.IsProduction() && len(cfg.AllowedOrigins) == 0 {
+		log.Fatalf("DLEAGUE_WS_ORIGINS must be non-empty in production")
+	}
+
 	hub := ws.NewHub()
+	hub.MaxConns = cfg.MaxConns
 	wsOpts := ws.UpgradeOptions{AllowedOrigins: cfg.AllowedOrigins}
 
-	r, err := srvhttp.NewRouter(cfg.WebRoot, hub, wsOpts, st)
+	rOpts := srvhttp.RouterOptions{TrustedProxies: cfg.TrustedProxies}
+	r, err := srvhttp.NewRouter(cfg.WebRoot, hub, wsOpts, st, rOpts)
 	if err != nil {
 		log.Fatalf("router: %v", err)
 	}

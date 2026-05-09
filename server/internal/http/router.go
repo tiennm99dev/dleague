@@ -16,6 +16,14 @@ import (
 	"github.com/tiennm99/dleague/server/internal/ws"
 )
 
+// RouterOptions holds optional cross-cutting settings for NewRouter.
+type RouterOptions struct {
+	// TrustedProxies enables middleware.RealIP when non-empty.
+	// Each entry is an IP or CIDR string. When empty, RealIP is skipped to
+	// prevent IP spoofing on direct-access deployments.
+	TrustedProxies []string
+}
+
 // NewRouter constructs the top-level chi.Router.
 //
 // webRoot must be an existing directory containing index.html. It is resolved
@@ -27,7 +35,7 @@ import (
 // st may be nil — /health then skips the DB ping and reports plain "ok".
 // In production main() wires a real Store; tests pass nil to keep setup
 // minimal until they explicitly cover the DB-degraded path.
-func NewRouter(webRoot string, hub *ws.Hub, wsOpts ws.UpgradeOptions, st *store.Store) (http.Handler, error) {
+func NewRouter(webRoot string, hub *ws.Hub, wsOpts ws.UpgradeOptions, st *store.Store, rOpts RouterOptions) (http.Handler, error) {
 	abs, err := filepath.Abs(webRoot)
 	if err != nil {
 		return nil, fmt.Errorf("resolve webRoot: %w", err)
@@ -42,14 +50,22 @@ func NewRouter(webRoot string, hub *ws.Hub, wsOpts ws.UpgradeOptions, st *store.
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
+	// RealIP is only safe when requests arrive via a trusted proxy. Without an
+	// allowlist any client could spoof X-Forwarded-For.
+	if len(rOpts.TrustedProxies) > 0 {
+		r.Use(middleware.RealIP)
+	}
 	r.Use(middleware.Recoverer)
 
 	r.Get("/health", healthHandler(st))
 	r.Get("/ws", ws.UpgradeHandler(hub, wsOpts))
 
+	// Static file server: apply security headers scoped to this route group only.
 	fs := http.FileServer(http.Dir(abs))
-	r.Handle("/*", fs)
+	r.Group(func(r chi.Router) {
+		r.Use(securityHeaders)
+		r.Handle("/*", fs)
+	})
 
 	return r, nil
 }
