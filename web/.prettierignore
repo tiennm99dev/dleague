@@ -1,0 +1,4 @@
+dist/
+.svelte-kit/
+src/lib/pb/
+node_modules/

@@ -113,6 +113,12 @@ dleague/
 - `auth-store.ts` — `idToken(force = false)` parameter for explicit refresh; supports force-refresh recovery (Phase 02)
 - `AuthErrorToast.svelte` — non-blocking alert mounted in layout; surfaces auth failures instead of degrading to anonymous (Phase 02)
 
+### Test Infrastructure (Phase 06)
+- **Server tests:** vitest-free; stdlib `testing.T` + `newTestHub()` helper. 32 new tests across 7 files: auth-refresh race, handler validation (match/game/leaderboard), queue concurrency, rate-limiting, UID redaction. WS handler coverage: 23% → 34.5%.
+- **Web tests:** vitest + @testing-library/svelte with happy-dom env. 50 new tests: ws reconnect/token-refresh, auth-store, board/keyboard/results-screen components, anonymous-warning, connection-status.
+- **Linting:** ESLint v10 flat config (web/eslint.config.js) + Prettier (web/.prettierrc) with svelte plugins. tsconfig.json: noUnusedLocals enforced.
+- **CI:** .github/workflows/ci.yml: web check + lint + format check + unit tests before build; proto-drift check preserved; no deploy steps.
+
 ## Build Commands
 
 ```bash

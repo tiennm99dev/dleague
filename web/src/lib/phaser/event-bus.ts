@@ -38,7 +38,8 @@ class EventBus {
 	emit<K extends keyof Events>(event: K, ...args: Events[K]): void {
 		const list = this.listeners.get(event);
 		if (!list) return;
-		for (const h of list) (h as (...a: unknown[]) => void)(...(args as unknown[]));
+		for (const h of list)
+			(h as (...a: unknown[]) => void)(...(args as unknown[]));
 	}
 }
 

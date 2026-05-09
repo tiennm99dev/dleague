@@ -4,6 +4,17 @@ All notable changes to Dleague. Most recent first. Commits reference the main br
 
 ---
 
+## Post-MVP Hardening — Phase 06 Test coverage + local CI (2026-05-09)
+
+- **Server tests (32 new tests, 7 files, race-clean):** `log_redact_test.go` (5: RedactUID determinism + hex format, TruncateToken), `rate_limiter_uid_test.go` (5: Allow, Eviction, Refill, Race), `auth_refresh_race_test.go` (4: Conn accessor race regression from Phase 01), `game_handler_test.go` (4: WORDLE_MOVE happy/invalid/wrong-len/unauth), `leaderboard_handler_test.go` (2: unauth + invalid payload), `match_handler_test.go` (5: ChallengeCreate/Join validation paths), `sync_match_handler_test.go` (7: Queue concurrency + isolation + validation). WS handler coverage: 23% → 34.5%.
+- **Web tests (50 new tests):** `format-time.test.ts`, `ws.test.ts` (6 cases: reconnect, rejectAllPending, token-refresh, MAX cap, force-refresh 1/min, handler-overwrite warn), `auth-store.test.ts` (idToken force), `board.test.ts`, `keyboard.test.ts`, `results-screen.test.ts` (5 reason variants), `anonymous-warning.test.ts`, `connection-status.test.ts`. All tests use vitest + @testing-library/svelte with happy-dom env.
+- **Lint + format infra:** ESLint v10 flat config (`web/eslint.config.js`) with @typescript-eslint + eslint-plugin-svelte; Prettier config (`web/.prettierrc`) with prettier-plugin-svelte; 22 files reformatted one-shot.
+- **tsconfig enforcement:** `noUnusedLocals: false → true`; 3 cascade fixes (resolveReason, _seed rename, matchStatus).
+- **CI pipeline:** `.github/workflows/ci.yml` — 4 new steps before "build web": web check (svelte-check), web lint, web format check, web unit tests. Existing proto-drift step preserved; no deploy steps added.
+- **Pragmatic deferrals (documented):** matches_concurrency_test.go (Mongo testcontainer), dispatch_fuzz_test.go (go test -fuzz), full happy-path handler tests (requires testability refactor), Playwright E2E (web/e2e/*.spec.ts). Code-reviewer agent hit rate limit; tester verification GREEN.
+
+---
+
 ## Post-MVP Hardening — Phase 07 Code/doc hygiene (2026-05-09)
 
 - **Doc fact-fix:** `system-architecture.md` dispatch table corrected (5 stale GAME_MOVE/STATE enum refs replaced with actual message types); Go version "1.23" → "1.26"; status header "skeleton" → "current" (diagrams complete as of Phase 04).

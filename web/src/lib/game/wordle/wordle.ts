@@ -54,7 +54,8 @@ export class WordleGame implements Game<WordleState, WordleMove> {
 	validate(state: WordleState, move: WordleMove): string | null {
 		if (state.isTerminal) return 'Game is already over';
 		const upper = move.guess.toUpperCase();
-		if (upper.length !== WORD_LEN) return `Guess must be exactly ${WORD_LEN} letters`;
+		if (upper.length !== WORD_LEN)
+			return `Guess must be exactly ${WORD_LEN} letters`;
 		if (!this.dictionary.has(upper)) return 'Not in word list';
 		return null;
 	}
@@ -63,7 +64,9 @@ export class WordleGame implements Game<WordleState, WordleMove> {
 		const upper = move.guess.toUpperCase();
 		// solution is '' for optimistic preview (unknown client-side); use empty
 		// string so hints are all gray — server reply will correct them.
-		const hint = state.solution ? score(upper, state.solution) : new Array<Color>(WORD_LEN).fill('gray');
+		const hint = state.solution
+			? score(upper, state.solution)
+			: new Array<Color>(WORD_LEN).fill('gray');
 		const newGuesses = [...state.guesses, upper];
 		const newHints = [...state.hints, hint];
 		const remaining = state.attemptsRemaining - 1;

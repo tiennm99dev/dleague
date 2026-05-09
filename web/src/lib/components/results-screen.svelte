@@ -7,7 +7,12 @@
 	import { goto } from '$app/navigation';
 	import ShareButton from './share-button.svelte';
 
-	type ResultReason = 'win' | 'loss' | 'tie' | 'opponent-left' | 'self-disconnect';
+	type ResultReason =
+		| 'win'
+		| 'loss'
+		| 'tie'
+		| 'opponent-left'
+		| 'self-disconnect';
 
 	type Props = {
 		won: boolean;
@@ -94,7 +99,11 @@
 			{#if shareToken}
 				<ShareButton {shareToken} />
 			{:else if onCreateChallenge}
-				<button class="btn btn--primary" onclick={onCreateChallenge} disabled={submitting}>
+				<button
+					class="btn btn--primary"
+					onclick={onCreateChallenge}
+					disabled={submitting}
+				>
 					Challenge a friend
 				</button>
 			{/if}
@@ -104,9 +113,7 @@
 			View leaderboard
 		</button>
 
-		<button class="btn btn--ghost" onclick={() => goto('/')}>
-			Home
-		</button>
+		<button class="btn btn--ghost" onclick={() => goto('/')}> Home </button>
 	</div>
 </div>
 
@@ -129,10 +136,18 @@
 		margin: 0;
 		letter-spacing: 0.05em;
 	}
-	.headline.win  { color: #538d4e; }
-	.headline.loss { color: #818384; }
-	.headline.warn { color: #ddcc44; }
-	.headline.draw { color: #aaaaaa; }
+	.headline.win {
+		color: #538d4e;
+	}
+	.headline.loss {
+		color: #818384;
+	}
+	.headline.warn {
+		color: #ddcc44;
+	}
+	.headline.draw {
+		color: #aaaaaa;
+	}
 
 	.solution {
 		margin: 0;
@@ -146,9 +161,18 @@
 		padding: 6px 14px;
 		border-radius: 4px;
 	}
-	.match-status.pending { background: #2a2a2c; color: #818384; }
-	.match-status.winner  { background: #1a3a1a; color: #538d4e; }
-	.match-status.loser   { background: #2a1a1a; color: #ff6b6b; }
+	.match-status.pending {
+		background: #2a2a2c;
+		color: #818384;
+	}
+	.match-status.winner {
+		background: #1a3a1a;
+		color: #538d4e;
+	}
+	.match-status.loser {
+		background: #2a1a1a;
+		color: #ff6b6b;
+	}
 
 	.cta-row {
 		display: flex;
@@ -170,10 +194,25 @@
 		max-width: 240px;
 		transition: opacity 0.15s;
 	}
-	.btn:disabled { opacity: 0.5; cursor: default; }
-	.btn:not(:disabled):hover { opacity: 0.85; }
+	.btn:disabled {
+		opacity: 0.5;
+		cursor: default;
+	}
+	.btn:not(:disabled):hover {
+		opacity: 0.85;
+	}
 
-	.btn--primary   { background: #538d4e; color: #fff; }
-	.btn--secondary { background: #3a3a3c; color: #fff; }
-	.btn--ghost     { background: transparent; color: #818384; border: 1px solid #3a3a3c; }
+	.btn--primary {
+		background: #538d4e;
+		color: #fff;
+	}
+	.btn--secondary {
+		background: #3a3a3c;
+		color: #fff;
+	}
+	.btn--ghost {
+		background: transparent;
+		color: #818384;
+		border: 1px solid #3a3a3c;
+	}
 </style>

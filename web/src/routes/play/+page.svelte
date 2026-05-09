@@ -24,9 +24,7 @@
 		ChallengeCreateAckSchema
 	} from '$lib/pb/dleague/v1/match_pb';
 	import { authUser } from '$lib/auth-store';
-	import {
-		sendRequest
-	} from '$lib/ws';
+	import { sendRequest } from '$lib/ws';
 	import { eventBus } from '$lib/phaser/event-bus';
 	import Board from '$lib/components/board.svelte';
 	import Keyboard from '$lib/components/keyboard.svelte';
@@ -54,10 +52,9 @@
 
 	// Challenge / share state
 	let attemptSubmitting = $state(false);
-	let creating = $state(false);  // guard against double-click on Challenge a friend
+	let creating = $state(false); // guard against double-click on Challenge a friend
 	let winnerUid = $state('');
-	let matchStatus = $state(''); // "pending" | "completed"
-	let shareToken = $state('');  // set after CHALLENGE_CREATE
+	let shareToken = $state(''); // set after CHALLENGE_CREATE
 
 	// Track game start time for time_ms calculation.
 	let gameStartMs = 0;
@@ -66,9 +63,12 @@
 
 	function protoColorToClient(c: ProtoColor): Color {
 		switch (c) {
-			case ProtoColor.GREEN:  return 'green';
-			case ProtoColor.YELLOW: return 'yellow';
-			default:                return 'gray';
+			case ProtoColor.GREEN:
+				return 'green';
+			case ProtoColor.YELLOW:
+				return 'yellow';
+			default:
+				return 'gray';
 		}
 	}
 
@@ -113,7 +113,6 @@
 			);
 			const ack = fromBinary(AttemptSubmitAckSchema, respBytes);
 			winnerUid = ack.winnerUid;
-			matchStatus = ack.status;
 		} catch (err) {
 			console.error('submitAttempt failed:', err);
 		} finally {
@@ -136,7 +135,8 @@
 			const ack = fromBinary(ChallengeCreateAckSchema, respBytes);
 			shareToken = ack.shareToken;
 		} catch (err) {
-			errorMsg = err instanceof Error ? err.message : 'Failed to create challenge';
+			errorMsg =
+				err instanceof Error ? err.message : 'Failed to create challenge';
 			setTimeout(() => (errorMsg = ''), 3000);
 		} finally {
 			creating = false;
@@ -157,7 +157,11 @@
 	}
 
 	function handlePhysicalKey(e: KeyboardEvent): void {
-		if (e.key === 'Enter' || e.key === 'Backspace' || (e.key.length === 1 && /[a-zA-Z]/.test(e.key))) {
+		if (
+			e.key === 'Enter' ||
+			e.key === 'Backspace' ||
+			(e.key.length === 1 && /[a-zA-Z]/.test(e.key))
+		) {
 			handleKey(e.key);
 		}
 	}
@@ -308,8 +312,14 @@
 	}
 
 	@keyframes fadeIn {
-		from { opacity: 0; transform: translateY(-4px); }
-		to   { opacity: 1; transform: translateY(0); }
+		from {
+			opacity: 0;
+			transform: translateY(-4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
 	}
 
 	.board-wrapper {

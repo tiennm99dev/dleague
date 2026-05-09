@@ -26,9 +26,12 @@
 		if (row >= guesses.length) return 'tile tile--empty';
 		const color: Color | undefined = hints[row]?.[col];
 		switch (color) {
-			case 'green':  return 'tile tile--green';
-			case 'yellow': return 'tile tile--yellow';
-			default:       return 'tile tile--gray';
+			case 'green':
+				return 'tile tile--green';
+			case 'yellow':
+				return 'tile tile--yellow';
+			default:
+				return 'tile tile--gray';
 		}
 	}
 </script>

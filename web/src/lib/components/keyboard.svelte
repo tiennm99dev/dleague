@@ -12,13 +12,17 @@
 	const { hints, guesses, onkey }: Props = $props();
 
 	const ROWS = [
-		['Q','W','E','R','T','Y','U','I','O','P'],
-		['A','S','D','F','G','H','J','K','L'],
-		['Enter','Z','X','C','V','B','N','M','Backspace']
+		['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+		['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+		['Enter', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'Backspace']
 	];
 
 	// Color priority: green > yellow > gray > undefined.
-	const colorPriority: Record<string, number> = { green: 3, yellow: 2, gray: 1 };
+	const colorPriority: Record<string, number> = {
+		green: 3,
+		yellow: 2,
+		gray: 1
+	};
 
 	/** Compute best-color-so-far for a single letter across all submitted hints. */
 	function letterColor(letter: string): Color | null {
@@ -45,10 +49,14 @@
 		if (key === 'Enter' || key === 'Backspace') return 'key key--wide';
 		const color = letterColor(key);
 		switch (color) {
-			case 'green':  return 'key key--green';
-			case 'yellow': return 'key key--yellow';
-			case 'gray':   return 'key key--gray';
-			default:       return 'key';
+			case 'green':
+				return 'key key--green';
+			case 'yellow':
+				return 'key key--yellow';
+			case 'gray':
+				return 'key key--gray';
+			default:
+				return 'key';
 		}
 	}
 
@@ -113,9 +121,15 @@
 		font-size: 0.75rem;
 	}
 
-	.key--green  { background: #538d4e; }
-	.key--yellow { background: #b59f3b; }
-	.key--gray   { background: #3a3a3c; }
+	.key--green {
+		background: #538d4e;
+	}
+	.key--yellow {
+		background: #b59f3b;
+	}
+	.key--gray {
+		background: #3a3a3c;
+	}
 
 	.key:hover {
 		filter: brightness(1.15);

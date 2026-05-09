@@ -32,7 +32,7 @@
 
 	let {
 		matchId,
-		seed,
+		seed: _seed,
 		opponentName,
 		initialState = null,
 		initialOpponentHints = []
@@ -57,10 +57,14 @@
 		return hints.map((h) =>
 			h.colors.map((c): GameColor => {
 				switch (c) {
-					case ProtoColor.GREEN:  return 'green';
-					case ProtoColor.YELLOW: return 'yellow';
-					case ProtoColor.GRAY:   return 'gray';
-					default:                return 'gray';
+					case ProtoColor.GREEN:
+						return 'green';
+					case ProtoColor.YELLOW:
+						return 'yellow';
+					case ProtoColor.GRAY:
+						return 'gray';
+					default:
+						return 'gray';
 				}
 			})
 		);
@@ -71,8 +75,9 @@
 	// Match result.
 	let resolved = $state(false);
 	let winnerUid = $state('');
-	let resolveReason = $state('');
-	let resultReason = $state<'win' | 'loss' | 'tie' | 'opponent-left' | 'self-disconnect'>('loss');
+	let resultReason = $state<
+		'win' | 'loss' | 'tie' | 'opponent-left' | 'self-disconnect'
+	>('loss');
 	let matchSolution = $state('');
 	// Tracks solution received from GAME_STATE pushes (populated when terminal).
 	let lastSolution = $state('');
@@ -87,7 +92,11 @@
 			}
 		} else if (key === 'Backspace') {
 			currentInput = currentInput.slice(0, -1);
-		} else if (key.length === 1 && /[a-zA-Z]/.test(key) && currentInput.length < 5) {
+		} else if (
+			key.length === 1 &&
+			/[a-zA-Z]/.test(key) &&
+			currentInput.length < 5
+		) {
 			currentInput += key.toUpperCase();
 		}
 	}
@@ -110,14 +119,16 @@
 			while (opponentRows.length < msg.attemptNum - 1) {
 				opponentRows.push([]);
 			}
-			opponentRows = [...opponentRows.slice(0, msg.attemptNum - 1), [...msg.colors]];
+			opponentRows = [
+				...opponentRows.slice(0, msg.attemptNum - 1),
+				[...msg.colors]
+			];
 		});
 
 		onMatchResolved((msg) => {
 			if (msg.matchId !== matchId) return;
 			resolved = true;
 			winnerUid = msg.winnerUid;
-			resolveReason = msg.reason;
 			// Use solution captured from last WORDLE_STATE push (MatchResolved has no solution field).
 			matchSolution = lastSolution;
 			// Derive result reason driven by reason field first (I2 fix).
@@ -126,7 +137,8 @@
 				// Both players ran out of guesses — a loss for self.
 				resultReason = 'loss';
 			} else if (msg.reason === 'forfeit' || msg.reason === 'timeout') {
-				resultReason = msg.winnerUid === selfUid ? 'opponent-left' : 'self-disconnect';
+				resultReason =
+					msg.winnerUid === selfUid ? 'opponent-left' : 'self-disconnect';
 			} else if (msg.reason === 'solved') {
 				resultReason = msg.winnerUid === selfUid ? 'win' : 'loss';
 			} else if (!msg.winnerUid) {
@@ -152,7 +164,6 @@
 		removeHandler(MessageType.MATCH_OPPONENT_PROGRESS);
 		removeHandler(MessageType.MATCH_RESOLVED);
 	});
-
 </script>
 
 <div class="sync-scene">
@@ -161,7 +172,7 @@
 			<ResultsScreen
 				won={resultReason === 'win'}
 				solution={matchSolution}
-				matchId={matchId}
+				{matchId}
 				winnerUid={winnerUid || undefined}
 				currentUid={get(authUser)?.uid}
 				reason={resultReason}
@@ -173,13 +184,17 @@
 		<!-- Left pane: own board -->
 		<div class="pane pane-self">
 			<h3>You</h3>
-			<Board guesses={ownGuesses} hints={boardHints} currentInput={currentInput} />
-			<Keyboard onkey={handleKeyPress} hints={boardHints} guesses={ownGuesses} />
+			<Board guesses={ownGuesses} hints={boardHints} {currentInput} />
+			<Keyboard
+				onkey={handleKeyPress}
+				hints={boardHints}
+				guesses={ownGuesses}
+			/>
 		</div>
 
 		<!-- Right pane: opponent colors only -->
 		<div class="pane pane-opponent">
-			<OpponentPanel rows={opponentRows} opponentName={opponentName} />
+			<OpponentPanel rows={opponentRows} {opponentName} />
 		</div>
 	</div>
 </div>
@@ -230,5 +245,4 @@
 		gap: 16px;
 		z-index: 10;
 	}
-
 </style>

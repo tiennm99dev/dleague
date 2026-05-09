@@ -98,6 +98,18 @@ jobs:
       - name: build server
         run: cd server && go build ./cmd/api
 
+      - name: web check (svelte-check)
+        run: npm run --prefix web check
+
+      - name: web lint
+        run: npm run --prefix web lint
+
+      - name: web format check
+        run: npm run --prefix web format:check
+
+      - name: web unit tests
+        run: npm run --prefix web test:unit
+
       - name: build web
         run: npm run --prefix web build
 

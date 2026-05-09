@@ -9,19 +9,19 @@ import type { Color } from '$lib/game/wordle/colors';
 // EventBus payload emitted by the play route after a server GAME_STATE reply.
 export interface FlipRowPayload {
 	row: number;
-	colors: Color[];  // length 5
+	colors: Color[]; // length 5
 }
 
-const TILE_SIZE    = 56;
-const TILE_GAP     = 6;
-const BOARD_PAD    = 12;
-const COLS         = 5;
+const TILE_SIZE = 56;
+const TILE_GAP = 6;
+const BOARD_PAD = 12;
+const COLS = 5;
 const FLIP_HALF_MS = 150; // half-flip duration in ms (total flip = 4 × half)
 
 const COLOR_MAP: Record<Color, number> = {
-	green:  0x538d4e,
+	green: 0x538d4e,
 	yellow: 0xb59f3b,
-	gray:   0x3a3a3c,
+	gray: 0x3a3a3c
 };
 
 export class WordleScene extends Phaser.Scene {

@@ -1,7 +1,13 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { sendQueueJoin, sendQueueLeave, onQueueMatched, removeHandler, connectionState } from '$lib/ws';
+	import {
+		sendQueueJoin,
+		sendQueueLeave,
+		onQueueMatched,
+		removeHandler,
+		connectionState
+	} from '$lib/ws';
 	import { MessageType } from '$lib/pb/dleague/v1/envelope_pb';
 
 	let searching = $state(true);
@@ -17,7 +23,9 @@
 			sessionStorage.setItem('activeSeed', msg.seed.toString());
 			sessionStorage.setItem('activeOpponent', msg.opponentDisplayName);
 			// Navigate to the sync game route.
-			goto(`/sync?matchId=${encodeURIComponent(msg.matchId)}&seed=${msg.seed.toString()}&opponent=${encodeURIComponent(msg.opponentDisplayName)}`);
+			goto(
+				`/sync?matchId=${encodeURIComponent(msg.matchId)}&seed=${msg.seed.toString()}&opponent=${encodeURIComponent(msg.opponentDisplayName)}`
+			);
 		});
 
 		// Guard: only join once; rapid disconnect+reconnect must not double-join.
@@ -100,7 +108,9 @@
 	}
 
 	@keyframes spin {
-		to { transform: rotate(360deg); }
+		to {
+			transform: rotate(360deg);
+		}
 	}
 
 	.btn-cancel {

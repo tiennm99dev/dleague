@@ -7,7 +7,8 @@
 
 {#if inline}
 	<small class="anon-warning">
-		Anonymous play — your daily leaderboard score won't be saved. Sign in to compete.
+		Anonymous play — your daily leaderboard score won't be saved. Sign in to
+		compete.
 	</small>
 {:else}
 	<div class="anon-banner" role="status">

@@ -15,7 +15,8 @@
 
 	// ── State ────────────────────────────────────────────────────────────────
 
-	let status: 'connecting' | 'joining' | 'error' | 'redirecting' = $state('connecting');
+	let status: 'connecting' | 'joining' | 'error' | 'redirecting' =
+		$state('connecting');
 	let errorMsg = $state('');
 
 	// ── Join logic ────────────────────────────────────────────────────────────
@@ -29,7 +30,11 @@
 		const payload = toBinary(ChallengeJoinSchema, joinMsg);
 
 		try {
-			const respBytes = await sendRequest(MessageType.CHALLENGE_JOIN, payload, 10_000);
+			const respBytes = await sendRequest(
+				MessageType.CHALLENGE_JOIN,
+				payload,
+				10_000
+			);
 			const ack = fromBinary(ChallengeJoinAckSchema, respBytes);
 			status = 'redirecting';
 			await goto(`/play?match=${ack.matchId}&seed=${ack.seed}`);
@@ -38,7 +43,10 @@
 			const msg = err instanceof Error ? err.message : String(err);
 			if (msg.includes('409') || msg.toLowerCase().includes('taken')) {
 				errorMsg = 'This challenge link has already been used.';
-			} else if (msg.includes('404') || msg.toLowerCase().includes('not found')) {
+			} else if (
+				msg.includes('404') ||
+				msg.toLowerCase().includes('not found')
+			) {
 				errorMsg = 'Challenge not found or expired.';
 			} else if (msg.toLowerCase().includes('own challenge')) {
 				errorMsg = "You can't join your own challenge.";
@@ -78,8 +86,6 @@
 
 		await joinChallenge(token);
 	});
-
-
 </script>
 
 <svelte:head>
@@ -125,7 +131,9 @@
 	}
 
 	@keyframes spin {
-		to { transform: rotate(360deg); }
+		to {
+			transform: rotate(360deg);
+		}
 	}
 
 	.status-text {

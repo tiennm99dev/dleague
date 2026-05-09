@@ -35,8 +35,8 @@
 		<button
 			class="reconnect-btn"
 			onclick={handleReconnect}
-			disabled={reconnecting}
-		>Reconnect</button>
+			disabled={reconnecting}>Reconnect</button
+		>
 	{/if}
 </div>
 

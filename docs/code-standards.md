@@ -201,6 +201,33 @@ dleague/
   - MIT: phaserjs/template-svelte patterns (e.g., `web/src/lib/game/EventBus.ts`)
 - **Update NOTICE** when adding new attributed dependencies
 
+## Test Infrastructure (Phase 06+)
+
+### Server Tests
+- **Framework:** stdlib `testing.T` (no third-party test framework)
+- **Fixtures:** Centralized test helpers in `server/internal/ws/testdeps_test.go` (shared across all test files)
+- **Race detection:** All tests run with `go test -race` in CI; must pass without race detector warnings
+- **Concurrency tests:** Use goroutines + channels to verify safe cross-goroutine access (e.g., auth field reads during connection teardown)
+
+### Web Tests
+- **Framework:** vitest (Jest-compatible, Vite-native)
+- **DOM:** @testing-library/svelte + happy-dom environment
+- **Snapshots:** Not used; prefer assertions over snapshots for maintainability
+- **Mocking:** Mock global `WebSocket` for reconnect + token-refresh tests; use simple `spyOn`-style tracking
+- **Plugins:** ESLint v10 flat config + Prettier auto-format on save (not enforced at test time)
+
+### CI Pipeline (web)
+- `npm run check` — svelte-check type-checking
+- `npm run lint` — ESLint v10 flat config (eslint.config.js)
+- `npm run format --check` — Prettier format validation
+- `npm run test:unit` — vitest unit tests
+- `npm run test:e2e` — Playwright (manual; not in CI)
+
+### Coverage
+- **Target:** >50% on security-critical paths (auth, dispatch, state transitions)
+- **Server WS handlers:** Minimum one happy path + two error paths per handler
+- **Web store subscriptions:** Test auth state transitions + token refresh lifecycle
+
 ## Process & Next Steps
 
 These standards apply to **Phase 2+** work. Phase 1 is scaffolding; Phase 2 introduces game core logic where these patterns become critical.
@@ -210,3 +237,9 @@ These standards apply to **Phase 2+** work. Phase 1 is scaffolding; Phase 2 intr
 2. Run `make lint && make test`
 3. No uncommitted generated code (`buf generate` should produce no diff)
 4. New exported funcs have doc comments
+
+**Before opening test PRs:**
+1. Run server tests: `go test -race ./...`
+2. Run web tests: `npm --prefix web run test:unit`
+3. Run linting: `npm --prefix web run lint`
+4. Ensure format passes: `npm --prefix web run format --check`

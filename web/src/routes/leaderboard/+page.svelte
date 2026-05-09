@@ -25,13 +25,21 @@
 		loading = true;
 		errorMsg = '';
 		try {
-			const query = create(LeaderboardQuerySchema, { gameId: 'wordle', period: 'daily' });
+			const query = create(LeaderboardQuerySchema, {
+				gameId: 'wordle',
+				period: 'daily'
+			});
 			const payload = toBinary(LeaderboardQuerySchema, query);
-			const respBytes = await sendRequest(MessageType.LEADERBOARD_QUERY, payload, 8_000);
+			const respBytes = await sendRequest(
+				MessageType.LEADERBOARD_QUERY,
+				payload,
+				8_000
+			);
 			const snapshot = fromBinary(LeaderboardSnapshotSchema, respBytes);
 			rankings = snapshot.rankings;
 		} catch (err) {
-			errorMsg = err instanceof Error ? err.message : 'Failed to load leaderboard';
+			errorMsg =
+				err instanceof Error ? err.message : 'Failed to load leaderboard';
 		} finally {
 			loading = false;
 		}
@@ -68,7 +76,11 @@
 	<header class="lb-header">
 		<button class="back-btn" onclick={() => goto('/')}>← Back</button>
 		<h1>Daily Leaderboard</h1>
-		<button class="refresh-btn" onclick={() => void fetchLeaderboard()} disabled={loading}>
+		<button
+			class="refresh-btn"
+			onclick={() => void fetchLeaderboard()}
+			disabled={loading}
+		>
 			{loading ? '…' : '↻'}
 		</button>
 	</header>
@@ -82,7 +94,7 @@
 			<div class="spinner" aria-label="Loading…"></div>
 		</div>
 	{:else}
-		<LeaderboardTable rankings={rankings} />
+		<LeaderboardTable {rankings} />
 	{/if}
 </main>
 
@@ -126,7 +138,10 @@
 		padding: 4px 8px;
 	}
 
-	.refresh-btn:disabled { opacity: 0.4; cursor: default; }
+	.refresh-btn:disabled {
+		opacity: 0.4;
+		cursor: default;
+	}
 
 	.toast-error {
 		background: #b00020;
@@ -150,7 +165,8 @@
 	}
 
 	@keyframes spin {
-		to { transform: rotate(360deg); }
+		to {
+			transform: rotate(360deg);
+		}
 	}
-
 </style>

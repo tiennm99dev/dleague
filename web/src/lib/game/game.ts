@@ -10,6 +10,7 @@ export interface State {
 }
 
 /** Base move interface; concrete games extend with their own payload. */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface Move {}
 
 /** Terminal game result. */

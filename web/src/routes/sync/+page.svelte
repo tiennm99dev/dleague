@@ -10,7 +10,9 @@
 	// Read match params from query string (set by /quick-match on QUEUE_MATCHED).
 	const matchId = $derived($page.url.searchParams.get('matchId') ?? '');
 	const seed = $derived(BigInt($page.url.searchParams.get('seed') ?? '0'));
-	const opponentName = $derived($page.url.searchParams.get('opponent') ?? 'Opponent');
+	const opponentName = $derived(
+		$page.url.searchParams.get('opponent') ?? 'Opponent'
+	);
 
 	// Rejoin state (set by layout before navigation on MATCH_REJOIN_ACK).
 	let initialState = $state<WordleState | undefined>(undefined);

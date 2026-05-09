@@ -63,7 +63,8 @@
 					const landingRoutes = ['/', '/play', '/leaderboard'];
 					if (landingRoutes.includes(currentPath)) {
 						const seed = sessionStorage.getItem('activeSeed') ?? '0';
-						const opponent = sessionStorage.getItem('activeOpponent') ?? 'Opponent';
+						const opponent =
+							sessionStorage.getItem('activeOpponent') ?? 'Opponent';
 						goto(
 							`/sync?matchId=${encodeURIComponent(ack.matchId)}&seed=${seed}&opponent=${encodeURIComponent(opponent)}`
 						);
@@ -75,7 +76,10 @@
 					sessionStorage.removeItem('activeSeed');
 					sessionStorage.removeItem('activeOpponent');
 					const currentPath = window.location.pathname;
-					if (currentPath.startsWith('/sync') || currentPath.startsWith('/quick-match')) {
+					if (
+						currentPath.startsWith('/sync') ||
+						currentPath.startsWith('/quick-match')
+					) {
 						goto('/');
 					}
 				});
@@ -94,7 +98,7 @@
 	{#if $authUser}
 		<ConnectionStatus />
 		<AuthErrorToast />
-		{#if $authUser.isAnonymous && ['/play', '/sync', '/quick-match'].some((p) => $page.url.pathname.startsWith(p))}
+		{#if $authUser.isAnonymous && ['/play', '/sync', '/quick-match'].some( (p) => $page.url.pathname.startsWith(p) )}
 			<AnonymousWarning />
 		{/if}
 		{@render children()}

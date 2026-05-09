@@ -23,12 +23,13 @@ import { setAuthUser } from './auth-store';
 const env = import.meta.env;
 
 export const firebaseConfig = {
-	apiKey:            env.VITE_FIREBASE_API_KEY            ?? jsonConfig.apiKey,
-	authDomain:        env.VITE_FIREBASE_AUTH_DOMAIN        ?? jsonConfig.authDomain,
-	projectId:         env.VITE_FIREBASE_PROJECT_ID         ?? jsonConfig.projectId,
-	storageBucket:     env.VITE_FIREBASE_STORAGE_BUCKET     ?? jsonConfig.storageBucket,
-	messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? jsonConfig.messagingSenderId,
-	appId:             env.VITE_FIREBASE_APP_ID             ?? jsonConfig.appId,
+	apiKey: env.VITE_FIREBASE_API_KEY ?? jsonConfig.apiKey,
+	authDomain: env.VITE_FIREBASE_AUTH_DOMAIN ?? jsonConfig.authDomain,
+	projectId: env.VITE_FIREBASE_PROJECT_ID ?? jsonConfig.projectId,
+	storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET ?? jsonConfig.storageBucket,
+	messagingSenderId:
+		env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? jsonConfig.messagingSenderId,
+	appId: env.VITE_FIREBASE_APP_ID ?? jsonConfig.appId
 };
 
 let app: FirebaseApp | null = null;
@@ -47,7 +48,9 @@ export function initFirebase(): () => void {
 		// Point at the local Auth emulator in dev so no real Firebase project is
 		// needed. VITE_-prefixed env vars are inlined at build time by Vite.
 		if (import.meta.env.DEV) {
-			connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: false });
+			connectAuthEmulator(auth, 'http://127.0.0.1:9099', {
+				disableWarnings: false
+			});
 		}
 	}
 
@@ -60,12 +63,16 @@ export function initFirebase(): () => void {
 
 /** Returns the Auth instance, throwing if initFirebase has not been called. */
 function requireAuth(): Auth {
-	if (!auth) throw new Error('Firebase not initialised — call initFirebase() first');
+	if (!auth)
+		throw new Error('Firebase not initialised — call initFirebase() first');
 	return auth;
 }
 
 /** Sign in with email and password. */
-export async function signInWithEmail(email: string, password: string): Promise<void> {
+export async function signInWithEmail(
+	email: string,
+	password: string
+): Promise<void> {
 	await signInWithEmailAndPassword(requireAuth(), email, password);
 }
 

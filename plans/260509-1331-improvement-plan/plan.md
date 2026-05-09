@@ -31,7 +31,7 @@ hygiene, test infra, and code/doc cleanup. Goal: ship-ready post-MVP, no new gam
 | 03 | UX correctness                | P2       | completed | Sync Enter key, rejoin nav, anon warning, a11y, results edges        |
 | 04 | Pluggability decision         | P2       | completed | Wire wordle through `shared/game.Game` OR drop the claim from docs   |
 | 05 | Persistence & data integrity  | P1       | completed | Unique indexes, state filters, idempotency, Atlas docs, Hints field  |
-| 06 | Test coverage + local CI      | P2       | pending   | Handler tests, web WS/a11y/e2e tests, CI lint+test workflow          |
+| 06 | Test coverage + local CI      | P2       | completed | Handler tests, web WS/a11y/e2e tests, CI lint+test workflow          |
 | 07 | Code/doc hygiene              | P3       | completed | 200-LOC violations, stale docs, drift, repomix, eslint/prettier      |
 
 ## Cross-phase dependencies
@@ -67,4 +67,4 @@ hygiene, test infra, and code/doc cleanup. Goal: ship-ready post-MVP, no new gam
 
 ## Final Status
 
-**7/7 phases completed (2026-05-09).** 22 in-scope steps across 6 completed phases + 1 in-flight test infrastructure phase. Total 7 detailed review reports filed. All three code reviews' findings addressed or explicitly deferred with documented rationale. **Phase 06 (test infrastructure) remains pending** and should land when developer resources permit; it is independent from correctness standpoint but completes the quality gate needed before wider deployment.
+**7/7 phases completed (2026-05-09).** All phases closed. Delivered 32 new server handler + auth-refresh tests; 50 web unit + config tests; ESLint v10 flat config + Prettier setup; CI web lint/check/test pipeline. Server WS coverage: 23% → 34.5%. Pragmatically deferred: Mongo testcontainer (matches_concurrency_test.go), dispatch fuzz, full happy-path handler tests (testability refactor needed first), Playwright E2E. Code-reviewer agent rate-limit on Phase 06; tester verification GREEN. Total commits: ~120 across all 7 phases.

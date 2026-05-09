@@ -1,7 +1,11 @@
 <script lang="ts">
 	// Sign-in component offering three Firebase auth providers.
 	// Email/password form + Google popup + anonymous sign-in.
-	import { signInWithEmail, signInWithGoogle, signInAnonymous } from '$lib/firebase';
+	import {
+		signInWithEmail,
+		signInWithGoogle,
+		signInAnonymous
+	} from '$lib/firebase';
 	import AnonymousWarning from './anonymous-warning.svelte';
 
 	let email = $state('');

@@ -129,7 +129,8 @@ function openSocket(token: string): void {
 		// Code 1006 = abnormal closure, which is what browsers report when the
 		// server rejects the HTTP upgrade (our auth failure path: HTTP 401 before
 		// WS handshake completes). Codes 1008/4401 kept for forward-compat.
-		const isAuthReject = evt.code === 1006 || evt.code === 1008 || evt.code === 4401;
+		const isAuthReject =
+			evt.code === 1006 || evt.code === 1008 || evt.code === 4401;
 		if (isAuthReject && reconnectAttempt === 0) {
 			// Only treat first-attempt 1006 as auth reject; subsequent 1006s
 			// may be network drops, handled by normal backoff.
@@ -138,7 +139,10 @@ function openSocket(token: string): void {
 				lastForceRefreshAt = now;
 				pendingForceRefresh = true;
 			} else {
-				authError.set({ kind: 'auth_failed', message: 'Authentication failed; please sign in again' });
+				authError.set({
+					kind: 'auth_failed',
+					message: 'Authentication failed; please sign in again'
+				});
 				return;
 			}
 		}
@@ -194,7 +198,9 @@ function handleIncoming(data: Uint8Array): void {
 			// Decode the Error proto to surface the server's message to callers.
 			try {
 				const errProto = fromBinary(ErrorSchema, env.payload);
-				p.reject(new Error(`server: ${errProto.message} (code=${errProto.code})`));
+				p.reject(
+					new Error(`server: ${errProto.message} (code=${errProto.code})`)
+				);
 			} catch {
 				p.reject(new Error(`server error for request ${env.requestId}`));
 			}
@@ -269,7 +275,10 @@ export function removeHandler(type: MessageType): void {
  */
 export function sendQueueJoin(gameId: string): void {
 	if (!socket || socket.readyState !== WebSocket.OPEN) return;
-	const payload = toBinary(QueueJoinSchema, create(QueueJoinSchema, { gameId }));
+	const payload = toBinary(
+		QueueJoinSchema,
+		create(QueueJoinSchema, { gameId })
+	);
 	const env = create(EnvelopeSchema, {
 		type: MessageType.QUEUE_JOIN,
 		requestId: '',
@@ -299,7 +308,10 @@ export function sendQueueLeave(): void {
  */
 export function sendMatchMove(matchId: string, guess: string): void {
 	if (!socket || socket.readyState !== WebSocket.OPEN) return;
-	const payload = toBinary(MatchMoveSchema, create(MatchMoveSchema, { matchId, guess }));
+	const payload = toBinary(
+		MatchMoveSchema,
+		create(MatchMoveSchema, { matchId, guess })
+	);
 	const env = create(EnvelopeSchema, {
 		type: MessageType.MATCH_MOVE,
 		requestId: crypto.randomUUID(),
@@ -313,7 +325,10 @@ export function sendMatchMove(matchId: string, guess: string): void {
  * Returns a Promise that resolves with the MatchRejoinAck payload bytes.
  */
 export function sendMatchRejoin(matchId: string): Promise<MatchRejoinAck> {
-	const payload = toBinary(MatchRejoinSchema, create(MatchRejoinSchema, { matchId }));
+	const payload = toBinary(
+		MatchRejoinSchema,
+		create(MatchRejoinSchema, { matchId })
+	);
 	return sendRequest(MessageType.MATCH_REJOIN, payload).then((bytes) =>
 		fromBinary(MatchRejoinAckSchema, bytes)
 	);
@@ -331,7 +346,9 @@ export function onQueueMatched(handler: (msg: QueueMatched) => void): void {
 /**
  * onMatchOpponentProgress registers a handler for opponent progress pushes.
  */
-export function onMatchOpponentProgress(handler: (msg: MatchOpponentProgress) => void): void {
+export function onMatchOpponentProgress(
+	handler: (msg: MatchOpponentProgress) => void
+): void {
 	onMessage(MessageType.MATCH_OPPONENT_PROGRESS, (payload) => {
 		handler(fromBinary(MatchOpponentProgressSchema, payload));
 	});

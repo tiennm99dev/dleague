@@ -11,7 +11,10 @@
 		try {
 			connect(await idToken(true));
 		} catch {
-			authError.set({ kind: 'connection_failed', message: 'Connection failed; try again' });
+			authError.set({
+				kind: 'connection_failed',
+				message: 'Connection failed; try again'
+			});
 		}
 	}
 </script>
