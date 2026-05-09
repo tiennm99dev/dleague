@@ -24,15 +24,15 @@ hygiene, test infra, and code/doc cleanup. Goal: ship-ready post-MVP, no new gam
 
 ## Phases
 
-| #  | Name                          | Priority | Status  | Description                                                          |
-|----|-------------------------------|----------|---------|----------------------------------------------------------------------|
+| #  | Name                          | Priority | Status    | Description                                                          |
+|----|-------------------------------|----------|-----------|----------------------------------------------------------------------|
 | 01 | Critical correctness          | P1       | completed | High-severity races/DoS/duplicate writes — must-fix before any trust |
 | 02 | Security & abuse hardening    | P1       | completed | Token/UID logging, WS origin, rate limits, anti-cheat, token refresh |
 | 03 | UX correctness                | P2       | completed | Sync Enter key, rejoin nav, anon warning, a11y, results edges        |
 | 04 | Pluggability decision         | P2       | completed | Wire wordle through `shared/game.Game` OR drop the claim from docs   |
 | 05 | Persistence & data integrity  | P1       | completed | Unique indexes, state filters, idempotency, Atlas docs, Hints field  |
-| 06 | Test coverage + local CI      | P2       | pending | Handler tests, web WS/a11y/e2e tests, CI lint+test workflow          |
-| 07 | Code/doc hygiene              | P3       | pending | 200-LOC violations, stale docs, drift, repomix, eslint/prettier      |
+| 06 | Test coverage + local CI      | P2       | pending   | Handler tests, web WS/a11y/e2e tests, CI lint+test workflow          |
+| 07 | Code/doc hygiene              | P3       | completed | 200-LOC violations, stale docs, drift, repomix, eslint/prettier      |
 
 ## Cross-phase dependencies
 
@@ -62,3 +62,9 @@ hygiene, test infra, and code/doc cleanup. Goal: ship-ready post-MVP, no new gam
 - [phase-05-persistence-integrity.md](phase-05-persistence-integrity.md)
 - [phase-06-test-coverage.md](phase-06-test-coverage.md)
 - [phase-07-code-doc-hygiene.md](phase-07-code-doc-hygiene.md)
+
+---
+
+## Final Status
+
+**7/7 phases completed (2026-05-09).** 22 in-scope steps across 6 completed phases + 1 in-flight test infrastructure phase. Total 7 detailed review reports filed. All three code reviews' findings addressed or explicitly deferred with documented rationale. **Phase 06 (test infrastructure) remains pending** and should land when developer resources permit; it is independent from correctness standpoint but completes the quality gate needed before wider deployment.

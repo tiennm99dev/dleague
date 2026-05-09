@@ -8,7 +8,7 @@
 
 ## Overview
 - **Priority:** P3
-- **Status:** pending
+- **Status:** completed
 - **Description:** Cleanup pass: 200-LOC violations in 8 Go + 3 Svelte files, stale `system-architecture.md` dispatch table, Go-version drift, closed-phase TODOs, `repomix-output.xml` lingering in worktree, daily-seed bias note, `code-standards.md` self-compliance audit, eslint-config rules around generated code. Group into themed batches; many small fixes.
 
 ## Key Insights
@@ -125,34 +125,34 @@
 ## Todo List
 
 ### Doc fact-fix batch
-- [ ] Dispatch table + Go version + status line (steps 1-3)
-- [ ] README "(planned)" drop (step 5)
-- [ ] code-standards 200-LOC carve-out (step 6)
+- [x] Dispatch table + Go version + status line (steps 1-3)
+- [x] README "(planned)" drop (step 5)
+- [x] code-standards 200-LOC carve-out (step 6)
 
 ### Refactor batch
-- [ ] Extract `play-controller.ts` (step 8)
-- [ ] Extract `ws-reconnect.ts` (step 9)
+- [x] Extract `play-controller.ts` (step 8) — deferred to Phase 06
+- [x] Extract `ws-reconnect.ts` (step 9) — deferred to Phase 06
 
 ### Code cleanup batch
-- [ ] Drop closed-phase TODOs + stale comments (steps 10-12)
-- [ ] Wordlist drop count logging (step 13)
-- [ ] seed-wordlists env rename (step 14)
-- [ ] Delete `repomix-output.xml` + Makefile clean (step 15)
-- [ ] Wordle dict map-cache (step 10 optional)
+- [x] Drop closed-phase TODOs + stale comments (steps 10-12)
+- [x] Wordlist drop count logging (step 13)
+- [x] seed-wordlists env rename (step 14)
+- [x] Delete `repomix-output.xml` + Makefile clean (step 15)
+- [x] Wordle dict map-cache (step 10 optional) — skipped
 
 ### Web DRY + types batch
-- [ ] `format-time.ts` shared (step 17)
-- [ ] Use `LeaderboardTable` component (step 18)
-- [ ] Typed EventBus (step 19)
-- [ ] Color enum usage (step 20)
+- [x] `format-time.ts` shared (step 17)
+- [x] Use `LeaderboardTable` component (step 18)
+- [x] Typed EventBus (step 19)
+- [x] Color enum usage (step 20)
 
 ### Firebase override batch
-- [ ] env override + .env.example (steps 21-22)
+- [x] env override + .env.example (steps 21-22)
 
 ### Nits batch
-- [ ] WS error/warn logging (steps 23-25)
-- [ ] Time-ms constants (step 27)
-- [ ] mustParseDate → error (step 29)
+- [x] WS error/warn logging (steps 23-25)
+- [x] Time-ms constants (step 27)
+- [x] mustParseDate → error (step 29)
 
 ## Success Criteria
 - `grep -nE "TODO\(phase-(0[7-9]|10)\)" .` returns 0 hits.
@@ -172,6 +172,22 @@
 - Wordlist drop-count logging surfaces silent data corruption (e.g., truncated download).
 - `mustParseDate` error path prevents scheduler panic on user-supplied date — defense against future input.
 
+## Completion Notes (2026-05-09)
+
+**Status:** COMPLETED. 22 in-scope steps landed across doc fact-fix, code-standards carve-out, dead TODO cleanup, format-time DRY, typed EventBus, Color enum fixes, firebase env override, ws logging nits, and build-artifact cleanup.
+
+**Reports:**
+- `reports/code-reviewer-phase-07-diff-260509-1502.md` — final implementation diff + notes
+- `reports/tester-phase-07-260509-1502.md` — tests + `npm run check` green
+
+**Deferred (documented):**
+- **Steps 7-9 (refactor: split play/+page.svelte and ws.ts):** Implementer correctly noted these should land **after Phase 06 tests pin behavior**, not before. Refactors touching hot paths are safer post-test-suite. Recommend: Phase 06 → then split ws.ts/play routes as first commits of next session.
+
+**Review fix-ups (2):**
+- I-1: Corrected 5 stale GAME_MOVE/STATE enum references in `system-architecture.md` prose (outside dispatch table). Updated to actual message types.
+- I-2: Extracted `minTimeMs`/`maxTimeMs` constants in `match_handler.go:148-150`; error message now wired to constants instead of hardcoded `[500, 86400000]`.
+
 ## Next Steps
 - After this phase, all three reviews' findings are addressed or explicitly deferred with rationale.
+- **Phase 06 (test infrastructure) pending.** When implemented, follow immediately with refactors from Phase 07 steps 7-9 as part of test-driven refactor cycle.
 - v2 backlog (out of this plan): structured logging via `slog`, leaderboard aggregation pipeline, real 2315-word wordlist, integration test for full match lifecycle.

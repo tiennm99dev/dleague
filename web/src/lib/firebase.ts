@@ -2,6 +2,8 @@
 // The web config (apiKey, projectId, etc.) is intentionally public — it only
 // identifies the Firebase project, not server credentials. Restrict usage via
 // Auth Domain allow-list in the Firebase console.
+//
+// Config priority: VITE_FIREBASE_* env vars (CI/prod) > firebase.config.json (local dev default).
 import { initializeApp, type FirebaseApp } from 'firebase/app';
 import {
 	getAuth,
@@ -15,8 +17,19 @@ import {
 	type Auth
 } from 'firebase/auth';
 
-import firebaseConfig from '../../firebase.config.json';
+import jsonConfig from '../../firebase.config.json';
 import { setAuthUser } from './auth-store';
+
+const env = import.meta.env;
+
+export const firebaseConfig = {
+	apiKey:            env.VITE_FIREBASE_API_KEY            ?? jsonConfig.apiKey,
+	authDomain:        env.VITE_FIREBASE_AUTH_DOMAIN        ?? jsonConfig.authDomain,
+	projectId:         env.VITE_FIREBASE_PROJECT_ID         ?? jsonConfig.projectId,
+	storageBucket:     env.VITE_FIREBASE_STORAGE_BUCKET     ?? jsonConfig.storageBucket,
+	messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID ?? jsonConfig.messagingSenderId,
+	appId:             env.VITE_FIREBASE_APP_ID             ?? jsonConfig.appId,
+};
 
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;

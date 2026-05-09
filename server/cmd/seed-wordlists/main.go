@@ -4,7 +4,7 @@
 //
 // Usage:
 //
-//	DLEAGUE_MONGO_URI=mongodb://localhost:27017 go run ./cmd/seed-wordlists
+//	MONGO_URI=mongodb://localhost:27017 go run ./cmd/seed-wordlists
 package main
 
 import (
@@ -21,7 +21,7 @@ import (
 )
 
 func main() {
-	mongoURI := os.Getenv("DLEAGUE_MONGO_URI")
+	mongoURI := os.Getenv("MONGO_URI")
 	if mongoURI == "" {
 		mongoURI = "mongodb://localhost:27017"
 	}

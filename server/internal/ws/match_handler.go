@@ -3,6 +3,7 @@ package ws
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -11,6 +12,11 @@ import (
 	"github.com/tiennm99/dleague/server/internal/game/wordle"
 	"github.com/tiennm99/dleague/server/internal/store"
 	dleaguev1 "github.com/tiennm99/dleague/shared/pb/dleague/v1"
+)
+
+const (
+	minTimeMs = 500         // Minimum plausible solve time in milliseconds.
+	maxTimeMs = 86_400_000  // 24h sanity bound — rejects replays older than one day.
 )
 
 // handleChallengeCreate processes MESSAGE_TYPE_CHALLENGE_CREATE.
@@ -152,10 +158,10 @@ func handleAttemptSubmit(ctx context.Context, c *Conn, env *dleaguev1.Envelope, 
 		return errorEnvelope(env.GetRequestId(), 422, "too many guesses: max 6"), nil
 	}
 
-	// Anti-cheat: reject impossibly fast (<500ms) or replay-attack (>24h) times.
+	// Anti-cheat: reject impossibly fast or replay-attack (>24h) times.
 	tms := msg.GetTimeMs()
-	if tms < 500 || tms > 86_400_000 {
-		return errorEnvelope(env.GetRequestId(), 422, "time_ms out of range [500, 86400000]"), nil
+	if tms < minTimeMs || tms > maxTimeMs {
+		return errorEnvelope(env.GetRequestId(), 422, fmt.Sprintf("time_ms out of range [%d, %d]", minTimeMs, maxTimeMs)), nil
 	}
 
 	matchID := msg.GetMatchId()

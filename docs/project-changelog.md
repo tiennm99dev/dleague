@@ -4,6 +4,25 @@ All notable changes to Dleague. Most recent first. Commits reference the main br
 
 ---
 
+## Post-MVP Hardening — Phase 07 Code/doc hygiene (2026-05-09)
+
+- **Doc fact-fix:** `system-architecture.md` dispatch table corrected (5 stale GAME_MOVE/STATE enum refs replaced with actual message types); Go version "1.23" → "1.26"; status header "skeleton" → "current" (diagrams complete as of Phase 04).
+- **code-standards.md self-compliance:** 200-LOC strict cap relaxed to soft guideline with documented carve-outs (WS handler files, test files, generated code); split trigger explicit at 250 LOC. Acknowledges switch-heavy dispatch patterns in handlers are artifactually large.
+- **Dead code cleanup:** "Phase 10 can optimise" comment removed from `wordle.go:122`; `TODO(phase-10)` block dropped from `wordlist.go:1-7` (backlog item now in `development-roadmap.md`); `daily.go:58` modulo bias annotated as acceptable (1 in 2^53 undetectable).
+- **Wordlist robustness:** `parseWordList` now logs dropped malformed-line count; signals silent truncation or corruption at download time.
+- **Build hygiene:** `Makefile` `clean` target extended with `rm -f repomix-output.xml` (518 KB artifact); `.PHONY += seed-wordlists-prod`.
+- **Seed CLI env rename:** `seed-wordlists/main.go` `DLEAGUE_MONGO_URI` → `MONGO_URI` (matches config.go:91).
+- **Match handler constants:** `minTimeMs`/`maxTimeMs` extracted (348-350 seconds per spec); error message wired to constants instead of hardcoded `[500, 86400000]`.
+- **Leaderboard error handling:** `leaderboards.go` `mustParseDate(panic)` → `parseDate(error)`; single callsite handles error gracefully.
+- **Web DRY:** `format-time.ts` shared util extracted; `leaderboard/+page.svelte` now uses `LeaderboardTable` component (inline impl deleted); `web/src/lib/components/leaderboard-table.svelte` deduplicated.
+- **Type safety:** `event-bus.ts` typed Events map; `emit<K extends keyof Events>` prevents event-key mismatches.
+- **Color enum:** `opponent-panel.svelte` + `sync-game-scene.svelte` now import + use `Color.GREEN`/`Color.YELLOW`/`Color.GRAY` instead of magic integers (case 3, case 1, etc).
+- **Firebase env override:** `firebase.ts` reads `import.meta.env.VITE_FIREBASE_*` with `firebase.config.json` fallback; `web/.env.example` documents all overridable keys.
+- **WS logging:** `ws.ts:113` `onerror` logs warn; `ws.ts:160` reject includes server error payload; `ws.ts:208` overwrite triggers console.warn.
+- **Test results:** `go build/vet` clean; `npm run check` 0 errors.
+
+---
+
 ## Post-MVP Hardening — Phase 04 Pluggability decision (2026-05-09)
 
 - **Proto enum rename:** `MESSAGE_TYPE_GAME_MOVE` → `MESSAGE_TYPE_WORDLE_MOVE`, `MESSAGE_TYPE_GAME_STATE` → `MESSAGE_TYPE_WORDLE_STATE`. Numeric values (6/7) preserved; comment added to proto documenting wordle-only semantics. Preempts future `buf breaking` violations.

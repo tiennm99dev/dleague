@@ -53,7 +53,7 @@ Open http://localhost:5173 (web dev) or http://localhost:8080 (server only).
 | Wire   | Binary protobuf over single WebSocket (`-tags debug` adds protojson logging)          |
 | Deploy | [Fly.io](https://fly.io/) for Go server; static `web/dist/` served by the same binary |
 
-## Repo layout (planned)
+## Repo layout
 
 ```
 dleague/

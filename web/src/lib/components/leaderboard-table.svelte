@@ -3,17 +3,10 @@
 	// rankings: array of LeaderboardEntry from the LeaderboardSnapshot proto.
 
 	import type { LeaderboardEntry } from '$lib/pb/dleague/v1/match_pb';
+	import { formatTime } from '$lib/format-time';
 
 	type Props = { rankings: LeaderboardEntry[] };
 	let { rankings }: Props = $props();
-
-	/** Formats milliseconds as mm:ss. */
-	function formatTime(ms: number): string {
-		const totalSec = Math.floor(ms / 1000);
-		const min = Math.floor(totalSec / 60);
-		const sec = totalSec % 60;
-		return `${min}:${sec.toString().padStart(2, '0')}`;
-	}
 </script>
 
 <div class="table-wrap">

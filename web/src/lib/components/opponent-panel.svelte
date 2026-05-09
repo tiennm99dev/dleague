@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Color } from '$lib/pb/dleague/v1/wordle_pb';
+	import { Color } from '$lib/pb/dleague/v1/wordle_pb';
 
 	// Each entry is the color array for one opponent attempt (colors only, no letters).
 	type ColorRow = Color[];
@@ -21,11 +21,11 @@
 	// Color enum values: GRAY=1, YELLOW=2, GREEN=3 (0=unspecified/empty).
 	function colorClass(c: Color): string {
 		switch (c) {
-			case 3:
+			case Color.GREEN:
 				return 'tile-green';
-			case 2:
+			case Color.YELLOW:
 				return 'tile-yellow';
-			case 1:
+			case Color.GRAY:
 				return 'tile-gray';
 			default:
 				return 'tile-empty';

@@ -5,16 +5,11 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
+	"log"
 	"strings"
 
 	"github.com/tiennm99/dleague/server/internal/store"
 )
-
-// TODO(phase-10): Replace placeholder word lists with the full public-domain
-// pre-NYT Wordle answer list (2315 words) and the ~10k valid-guess dictionary.
-// License: the original Wordle word lists were released to the public domain
-// by Josh Wardle. Source: https://www.nytimes.com/games/wordle/index.html
-// (pre-acquisition version). Verify license before embedding.
 
 //go:embed data/answers.txt
 var embeddedAnswers []byte
@@ -64,13 +59,25 @@ func EmbeddedDictionary() []string { return parseWordList(embeddedDictionary) }
 // parseWordList reads one upper-case word per line, skipping blank lines
 // and lines that are not exactly WordLen ASCII letters.
 func parseWordList(data []byte) []string {
+	return parseWordListNamed(data, "embedded")
+}
+
+// parseWordListNamed is the implementation used by parseWordList and tests.
+// path is used only for logging; it need not be a real file path.
+func parseWordListNamed(data []byte, path string) []string {
 	var out []string
+	dropped := 0
 	scanner := bufio.NewScanner(bytes.NewReader(data))
 	for scanner.Scan() {
 		w := strings.TrimSpace(strings.ToUpper(scanner.Text()))
 		if len(w) == WordLen {
 			out = append(out, w)
+		} else if len(w) > 0 {
+			dropped++
 		}
+	}
+	if dropped > 0 {
+		log.Printf("wordle: parseWordList dropped %d malformed lines from %s", dropped, path)
 	}
 	return out
 }

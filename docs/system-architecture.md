@@ -1,6 +1,6 @@
 # System Architecture
 
-**Status:** skeleton — diagrams + ERD landed by Phase 10.
+**Status:** current.
 
 ## High-level
 
@@ -87,7 +87,7 @@ web/src/
 
 ### Server (Go)
 
-**Stack:** Go 1.23, `chi` HTTP router, `coder/websocket` for WS, `firebase.google.com/go/v4` for Auth, `go.mongodb.org/mongo-driver/v2`.
+**Stack:** Go 1.26, `chi` HTTP router, `coder/websocket` for WS, `firebase.google.com/go/v4` for Auth, `go.mongodb.org/mongo-driver/v2`.
 
 **Boot flow:**
 ```
@@ -108,22 +108,24 @@ main()
   <signal> → hub.CloseAll() → srv.Shutdown(5s)
 ```
 
-**WS dispatch table:**
+**WS dispatch table** (source: `proto/dleague/v1/envelope.proto`; handlers in `server/internal/ws/`):
 
 | Message type | Handler | Auth required |
 |---|---|---|
-| PING | → PONG | no |
-| AUTH_REFRESH | update Conn.userID + tokenExpiresAt | no |
-| GAME_MOVE | handleGameMove | yes |
-| CREATE_MATCH | handleCreateMatch | yes |
-| JOIN_MATCH | handleJoinMatch | yes |
-| SUBMIT_ATTEMPT | handleSubmitAttempt | yes |
-| MATCH_RESULT | handleMatchResult | yes |
-| LEADERBOARD_QUERY | handleLeaderboardQuery | yes |
-| QUEUE_JOIN | handleQueueJoin | yes |
-| QUEUE_LEAVE | handleQueueLeave | yes |
-| MATCH_MOVE | handleMatchMove | yes |
-| MATCH_REJOIN | handleMatchRejoin | yes |
+| PING | → PONG (inline) | no |
+| PONG | no-op | no |
+| AUTH_REFRESH | `auth_refresh.go`: update Conn.userID + tokenExpiresAt | no |
+| WORDLE_MOVE | `game_handler.go`: handleGameMove | yes |
+| CHALLENGE_CREATE | `match_handler.go`: handleChallengeCreate | yes |
+| CHALLENGE_JOIN | `match_handler.go`: handleChallengeJoin | yes |
+| ATTEMPT_SUBMIT | `match_handler.go`: handleAttemptSubmit | yes |
+| LEADERBOARD_QUERY | `leaderboard_handler.go`: handleLeaderboardQuery | yes |
+| QUEUE_JOIN | `sync_match_handler.go`: handleQueueJoin | yes |
+| QUEUE_LEAVE | `sync_match_handler.go`: handleQueueLeave | yes |
+| MATCH_MOVE | `sync_match_handler.go`: handleMatchMove | yes |
+| MATCH_REJOIN | `sync_match_handler.go`: handleMatchRejoin | yes |
+| MATCH_FORFEIT | `sync_match_handler.go`: handleMatchForfeit | yes |
+| ERROR | server → client only (no handler) | — |
 
 ### Persistence (MongoDB Atlas)
 
@@ -249,7 +251,7 @@ Revocation check (`VerifyIDTokenAndCheckRevoked`) deferred to Phase 10.
 Client (SvelteKit)                             Server (Go)
 ──────────────────                             ───────────
 user types "CRANE" + Enter
-  ws.sendRequest(GAME_MOVE,
+  ws.sendRequest(WORDLE_MOVE,
     WordleMove{guess:"CRANE"})  ─────────────►
                                                hub.dispatch → handleGameMove:
                                                1. auth gate (userID required)
@@ -262,7 +264,7 @@ user types "CRANE" + Enter
                                                   → two-pass color Score(guess,solution)
                                                7. marshal WordleState{guesses,hints,attemptsRemaining,won,lost}
                                                   solution field: EMPTY until IsTerminal()
-  ◄─────────────────────────────────────────  GAME_STATE{WordleState}
+  ◄─────────────────────────────────────────  WORDLE_STATE{WordleState}
 applyServerState():
   update guesses/hints/attemptsRemaining
   eventBus.emit('wordle:flip-row', {row,colors})
@@ -299,8 +301,8 @@ Server startup: `wordle.LoadAnswers(ctx, wordlistRepo)` → Mongo `wordlists` co
 - **Auth:** ID token piped via `Sec-WebSocket-Protocol: dleague.v1, fb.<id_token>` at upgrade.
 - **Refresh:** client sends `AuthRefresh{id_token}` ~50 min into a connection.
 - **Errors:** server emits `MESSAGE_TYPE_ERROR` envelope on malformed input — does NOT close the connection.
-- **Game move:** `MESSAGE_TYPE_GAME_MOVE` (6) carries `WordleMove{guess}`.
-- **Game state:** `MESSAGE_TYPE_GAME_STATE` (7) carries `WordleState{guesses,hints,attemptsRemaining,won,lost,solution?}`.
+- **Game move:** `MESSAGE_TYPE_WORDLE_MOVE` (6) carries `WordleMove{guess}`.
+- **Game state:** `MESSAGE_TYPE_WORDLE_STATE` (7) carries `WordleState{guesses,hints,attemptsRemaining,won,lost,solution?}`.
 
 ## Sync PvP flow (Phase 09)
 
@@ -319,7 +321,7 @@ client B  ←  QUEUE_MATCHED{matchID, seed, opponentName=A.name}
 client A  →  MATCH_MOVE{matchID, guess="CRANE"}
               Room.HandleMove(A, "CRANE"):
                 wordle[A].Apply("CRANE") → hint colors
-                A.send ← GAME_STATE{guesses, hints, won, lost}         (own full state)
+                A.send ← WORDLE_STATE{guesses, hints, won, lost}        (own full state)
                 B.send ← MATCH_OPPONENT_PROGRESS{attemptNum, colors}   (colors only, NO letters)
                 if terminal → CompleteSync + broadcast MATCH_RESOLVED
 ```

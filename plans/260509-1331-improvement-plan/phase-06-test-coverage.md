@@ -139,4 +139,5 @@
 
 ## Next Steps
 - After this phase, all Phase 01 fixes are pinned by tests.
+- **Phase 07 refactors (steps 7-9: split ws.ts + play/+page.svelte) should land immediately after test suite passes.** Refactors touching hot paths are safer once behavior is pinned.
 - Performance/load tests (200-conn synthetic) deferred to v2 per arch review's roadmap-additions list.

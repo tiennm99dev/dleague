@@ -5,7 +5,12 @@ This document captures the patterns and constraints enforced in the dleague code
 ## File & Module Structure
 
 ### Go Files
-- **Max 200 LOC per file** — Split early if approaching limit. Prefer small, focused modules.
+- **Soft cap 200 LOC per file.** Carve-outs (no refactor required):
+  - WS handler files (`*_handler.go`) — switch-heavy dispatch makes splits artificial.
+  - Test files — fixture setup + multiple cases naturally exceed.
+  - Generated code (`shared/pb/`, `web/src/lib/pb/`) — never edited.
+  - Stateful infrastructure modules (`web/src/lib/ws.ts`, `server/internal/ws/conn.go`) — cohesive lifecycle is better kept together.
+- Files outside carve-outs **SHOULD split** when crossing 250 LOC.
 - **kebab-case directory names** (e.g., `internal/game-state/`, `internal/ws-hub/`)
 - **snake_case Go filenames** (e.g., `ws_client.go`, `debug_log.go`)
 - **Modules must compile independently** — each module has its own `go.mod` (workspace root uses `go.work`)

@@ -8,6 +8,7 @@ import { create, toBinary, fromBinary } from '@bufbuild/protobuf';
 import {
 	EnvelopeSchema,
 	AuthRefreshSchema,
+	ErrorSchema,
 	MessageType
 } from './pb/dleague/v1/envelope_pb';
 import type { Envelope } from './pb/dleague/v1/envelope_pb';
@@ -115,7 +116,8 @@ function openSocket(token: string): void {
 		handleIncoming(new Uint8Array(evt.data));
 	};
 
-	ws.onerror = () => {
+	ws.onerror = (e) => {
+		console.warn('ws onerror', e);
 		// onerror is always followed by onclose; reconnect logic lives in onclose.
 	};
 
@@ -189,7 +191,13 @@ function handleIncoming(data: Uint8Array): void {
 		clearTimeout(p.timeoutId);
 		pending.delete(env.requestId);
 		if (env.type === MessageType.ERROR) {
-			p.reject(new Error(`server error for request ${env.requestId}`));
+			// Decode the Error proto to surface the server's message to callers.
+			try {
+				const errProto = fromBinary(ErrorSchema, env.payload);
+				p.reject(new Error(`server: ${errProto.message} (code=${errProto.code})`));
+			} catch {
+				p.reject(new Error(`server error for request ${env.requestId}`));
+			}
 		} else {
 			p.resolve(env.payload);
 		}
@@ -242,6 +250,9 @@ export function sendRequest(
  * One handler per type; later registrations overwrite earlier ones.
  */
 export function onMessage(type: MessageType, handler: MessageHandler): void {
+	if (handlers.has(type)) {
+		console.warn('ws: overwriting handler for MessageType', type);
+	}
 	handlers.set(type, handler);
 }
 

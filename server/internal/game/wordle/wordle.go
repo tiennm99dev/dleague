@@ -120,7 +120,7 @@ func (w *Wordle) ToProto() *dleaguev1.WordleState {
 }
 
 // contains is a simple O(n) linear search. Dictionaries are small enough
-// (<5000 words) that a map is unnecessary for MVP; Phase 10 can optimise.
+// (<5000 words) that a map is unnecessary.
 func contains(dict []string, word string) bool {
 	for _, w := range dict {
 		if w == word {

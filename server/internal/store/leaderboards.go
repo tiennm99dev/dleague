@@ -56,7 +56,11 @@ func leaderboardID(gameID, period, date string) string {
 func (r *LeaderboardRepo) Refresh(ctx context.Context, gameID, period, date string) error {
 	// Step 1: find all completed async matches for this date window.
 	// We use the date portion of completed_at to scope the daily board.
-	dayStart := mustParseDate(date)
+	dayStart, err := parseDate(date)
+	if err != nil {
+		log.Printf("store: WARN leaderboard refresh skipping: %v", err)
+		return err
+	}
 	dayEnd := dayStart.Add(24 * time.Hour)
 
 	matchFilter := bson.M{
@@ -267,12 +271,13 @@ func (r *LeaderboardRepo) upsert(ctx context.Context, lb Leaderboard) error {
 	return nil
 }
 
-// mustParseDate parses "YYYY-MM-DD" as UTC midnight. Panics on bad input;
-// callers control the value (always produced by time.Format).
-func mustParseDate(date string) time.Time {
+// parseDate parses "YYYY-MM-DD" as UTC midnight.
+// Returns an error on malformed input instead of panicking,
+// so the scheduler can log and skip rather than crash.
+func parseDate(date string) (time.Time, error) {
 	t, err := time.ParseInLocation("2006-01-02", date, time.UTC)
 	if err != nil {
-		panic(fmt.Sprintf("store: mustParseDate: bad date %q: %v", date, err))
+		return time.Time{}, fmt.Errorf("store: parseDate: bad date %q: %w", date, err)
 	}
-	return t
+	return t, nil
 }

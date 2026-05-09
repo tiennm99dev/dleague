@@ -55,6 +55,7 @@ func ensureTodayImpl(ctx context.Context, repo DailyPuzzleStore, answers []strin
 	// Mask sign bit to stay positive when cast to int64.
 	seed := int64(rawU64 & 0x7FFFFFFFFFFFFFFF) //nolint:gosec
 
+	// Modulo bias acceptable: with ~772 answers and 2^63 seed range, bias is ~1 in 2^53 — undetectable.
 	idx := seed % int64(len(answers))
 	solution := answers[idx]
 

@@ -14,7 +14,7 @@
 	import { fromBinary } from '@bufbuild/protobuf';
 	import { WordleStateSchema } from '$lib/pb/dleague/v1/wordle_pb';
 	import type { WordleState, WordleHint } from '$lib/pb/dleague/v1/wordle_pb';
-	import type { Color as ProtoColor } from '$lib/pb/dleague/v1/wordle_pb';
+	import { Color as ProtoColor } from '$lib/pb/dleague/v1/wordle_pb';
 	import type { Color as GameColor } from '$lib/game/wordle/colors';
 	import { MessageType } from '$lib/pb/dleague/v1/envelope_pb';
 	import { authUser } from '$lib/auth-store';
@@ -57,10 +57,10 @@
 		return hints.map((h) =>
 			h.colors.map((c): GameColor => {
 				switch (c) {
-					case 3: return 'green';
-					case 2: return 'yellow';
-					case 1: return 'gray';
-					default: return 'gray';
+					case ProtoColor.GREEN:  return 'green';
+					case ProtoColor.YELLOW: return 'yellow';
+					case ProtoColor.GRAY:   return 'gray';
+					default:                return 'gray';
 				}
 			})
 		);
