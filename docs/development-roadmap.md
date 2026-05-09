@@ -22,7 +22,7 @@ Critical correctness, security, and UX bug fixes across 7 phases (Phase 01 compl
 
 ## Previous Plan: Svelte + Phaser + Firebase + MongoDB Pivot
 
-Plan directory: `plans/260508-2300-svelte-phaser-firebase-mongo-pivot/` (completed)
+Plan directory: `plans/archive/260508-2300-svelte-phaser-firebase-mongo-pivot/` (completed, archived 2026-05-09)
 
 ### Phase Status
 

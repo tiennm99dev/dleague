@@ -1,6 +1,6 @@
 # Code Standards
 
-This document captures the patterns and constraints enforced in the dleague codebase. New contributors should follow these rules starting in Phase 2 of the active plan ([`plans/260508-2300-svelte-phaser-firebase-mongo-pivot/plan.md`](../plans/260508-2300-svelte-phaser-firebase-mongo-pivot/plan.md)).
+This document captures the patterns and constraints enforced in the dleague codebase. The original 10-phase build plan is archived at [`plans/archive/260508-2300-svelte-phaser-firebase-mongo-pivot/plan.md`](../plans/archive/260508-2300-svelte-phaser-firebase-mongo-pivot/plan.md); active post-MVP work tracked in [`plans/260509-1331-improvement-plan/plan.md`](../plans/260509-1331-improvement-plan/plan.md).
 
 ## File & Module Structure
 

@@ -71,7 +71,8 @@ compete directly rather than comparing grid emojis on social media.
 
 ## References
 
-- Active plan: `plans/260508-2300-svelte-phaser-firebase-mongo-pivot/plan.md`
+- Build plan (archived 2026-05-09): `plans/archive/260508-2300-svelte-phaser-firebase-mongo-pivot/plan.md`
+- Active plan: `plans/260509-1331-improvement-plan/plan.md` (post-MVP hardening)
 - Architecture: `docs/system-architecture.md`
 - Code standards: `docs/code-standards.md`
 - Deployment: `docs/deployment-guide.md`
