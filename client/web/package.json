@@ -32,11 +32,11 @@
     "@capacitor/cli": "^8.3.1",
     "@sveltejs/adapter-auto": "6.0.0",
     "@sveltejs/adapter-static": "3.0.8",
-    "@sveltejs/kit": "2.57.1",
+    "@sveltejs/kit": "2.61.0",
     "@sveltejs/vite-plugin-svelte": "5.0.3",
     "@tsconfig/svelte": "^5.0.4",
     "protobufjs-cli": "^2.0.3",
-    "svelte": "5.53.5",
+    "svelte": "5.55.9",
     "svelte-check": "^4.0.2",
     "terser": "5.39.0",
     "tslib": "2.7.0",
@@ -50,7 +50,7 @@
     "@capacitor/core": "^8.3.1",
     "firebase": "^12.12.1",
     "phaser": "4.0.0",
-    "protobufjs": "^8.0.3"
+    "protobufjs": "^8.4.2"
   },
   "overrides": {
     "cookie": ">=0.7.0"
