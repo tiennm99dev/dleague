@@ -21,6 +21,8 @@ jobs:
           GOTOOLCHAIN: auto
 
       - name: Install buf + protoc-gen-go
+        env:
+          GOTOOLCHAIN: auto
         run: |
           go install github.com/bufbuild/buf/cmd/buf@latest
           go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
