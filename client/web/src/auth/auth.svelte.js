@@ -3,12 +3,14 @@
 // onAuthStateChanged listener, so reactive consumers get repaint when the
 // SDK rehydrates the user from persistence.
 
-import { initFirebase, onAuthStateChanged, signInWithGoogle, signInWithEmail, signInAnonymously, signOut, getIdToken, type User } from './firebase';
+import { initFirebase, onAuthStateChanged, signInWithGoogle, signInWithEmail, signInAnonymously, signOut, getIdToken } from './firebase';
+
+/** @typedef {import('./firebase').User} User */
 
 class AuthState {
-  user = $state<User | null>(null);
+  user = $state(/** @type {User | null} */ (null));
   loading = $state(true);
-  error = $state<string | null>(null);
+  error = $state(/** @type {string | null} */ (null));
 
   constructor() {
     const a = initFirebase();
@@ -23,16 +25,20 @@ class AuthState {
     try {
       this.user = await signInWithGoogle();
     } catch (e) {
-      this.error = (e as Error).message;
+      this.error = /** @type {Error} */ (e).message;
     }
   }
 
-  async signInWithEmail(email: string, password: string) {
+  /**
+   * @param {string} email
+   * @param {string} password
+   */
+  async signInWithEmail(email, password) {
     this.error = null;
     try {
       this.user = await signInWithEmail(email, password);
     } catch (e) {
-      this.error = (e as Error).message;
+      this.error = /** @type {Error} */ (e).message;
     }
   }
 
@@ -41,7 +47,7 @@ class AuthState {
     try {
       this.user = await signInAnonymously();
     } catch (e) {
-      this.error = (e as Error).message;
+      this.error = /** @type {Error} */ (e).message;
     }
   }
 
@@ -50,7 +56,11 @@ class AuthState {
     this.user = null;
   }
 
-  async getIdToken(forceRefresh = false): Promise<string | null> {
+  /**
+   * @param {boolean} [forceRefresh]
+   * @returns {Promise<string | null>}
+   */
+  async getIdToken(forceRefresh = false) {
     return getIdToken(forceRefresh);
   }
 }

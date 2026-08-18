@@ -1,7 +1,8 @@
-<script lang="ts">
+<script>
   // Sticky beta-stage notice. `mode` ∈ "full" (signin page, always visible)
   // or "topbar" (lobby, dismissable per session via sessionStorage).
-  let { mode = 'full' as 'full' | 'topbar' } = $props();
+  /** @type {{ mode?: 'full' | 'topbar' }} */
+  let { mode = 'full' } = $props();
 
   const sessionKey = 'dleague.beta.dismissed';
   let dismissed = $state(

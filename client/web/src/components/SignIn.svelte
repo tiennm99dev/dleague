@@ -1,4 +1,4 @@
-<script lang="ts">
+<script>
   import { auth } from '../auth/auth.svelte';
   import BetaBanner from './BetaBanner.svelte';
 
@@ -36,7 +36,7 @@
 
   <form
     class="email"
-    onsubmit={(e: SubmitEvent) => {
+    onsubmit={(/** @type {SubmitEvent} */ e) => {
       e.preventDefault();
       withEmail();
     }}

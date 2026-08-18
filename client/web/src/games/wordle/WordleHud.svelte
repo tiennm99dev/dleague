@@ -1,15 +1,20 @@
-<script lang="ts">
+<script>
   import { onMount, onDestroy } from 'svelte';
-  import { onAttemptComplete, onGuessSubmitted, type AttemptCompletePayload } from '../runner/eventbus-helpers';
+  import { onAttemptComplete, onGuessSubmitted } from '../runner/eventbus-helpers';
   import { MAX_GUESSES } from './scoring';
 
-  let { date = '', onDone = (_p: AttemptCompletePayload) => {} } = $props();
+  /** @typedef {import('../runner/eventbus-helpers').AttemptCompletePayload} AttemptCompletePayload */
+
+  /** @type {{ date?: string, onDone?: (p: AttemptCompletePayload) => void }} */
+  let { date = '', onDone = (_p) => {} } = $props();
 
   let guessesUsed = $state(0);
-  let result = $state<AttemptCompletePayload | null>(null);
+  let result = $state(/** @type {AttemptCompletePayload | null} */ (null));
 
-  let unsubGuess: (() => void) | null = null;
-  let unsubComplete: (() => void) | null = null;
+  /** @type {(() => void) | null} */
+  let unsubGuess = null;
+  /** @type {(() => void) | null} */
+  let unsubComplete = null;
 
   onMount(() => {
     unsubGuess = onGuessSubmitted(() => {
@@ -26,7 +31,8 @@
     unsubComplete?.();
   });
 
-  function shareText(): string {
+  /** @returns {string} */
+  function shareText() {
     if (!result) return '';
     const grid = result.evaluations
       .map((row) => row.map((e) => (e === 'hit' ? '🟩' : e === 'present' ? '🟨' : '⬛')).join(''))

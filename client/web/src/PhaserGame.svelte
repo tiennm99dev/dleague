@@ -1,40 +1,41 @@
-<script context="module" lang="ts">
+<script context="module">
 
-    import type { Game, Scene } from "phaser";
-
-    export type TPhaserRef = {
-        game: Game | null,
-        scene: Scene | null
-    };
+    /**
+     * @typedef {Object} TPhaserRef
+     * @property {import('phaser').Game | null} game
+     * @property {import('phaser').Scene | null} scene
+     */
 
 </script>
 
-<script lang="ts">
+<script>
 
     import { onMount } from "svelte";
     import StartGame from "./game/main";
     import { EventBus } from './game/EventBus';
 
-    export let phaserRef: TPhaserRef = {
+    /** @type {TPhaserRef} */
+    export let phaserRef = {
         game: null,
         scene: null
     };
 
-    export let currentActiveScene: (scene: Scene) => void | undefined;
+    /** @type {(scene: import('phaser').Scene) => void | undefined} */
+    export let currentActiveScene;
 
     onMount(() => {
 
         phaserRef.game = StartGame("game-container");
 
-        EventBus.on('current-scene-ready', (scene_instance: Scene) => {
+        EventBus.on('current-scene-ready', (/** @type {import('phaser').Scene} */ scene_instance) => {
 
             phaserRef.scene = scene_instance;
 
             if(currentActiveScene)
             {
-                
+
                 currentActiveScene(scene_instance);
-                
+
             }
 
         });

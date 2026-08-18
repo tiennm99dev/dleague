@@ -1,4 +1,4 @@
-<script lang="ts">
+<script>
   import { onMount, onDestroy } from 'svelte';
   import { auth } from '../auth/auth.svelte';
   import { WsClient, defaultWsUrl } from '../net/ws';

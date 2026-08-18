@@ -7,7 +7,8 @@ import { Preloader } from './scenes/Preloader';
 
 // Find out more information about the Game Config at:
 // https://docs.phaser.io/api-documentation/typedef/types-core#gameconfig
-const config: Phaser.Types.Core.GameConfig = {
+/** @type {Phaser.Types.Core.GameConfig} */
+const config = {
     type: AUTO,
     width: 1024,
     height: 768,
@@ -22,7 +23,8 @@ const config: Phaser.Types.Core.GameConfig = {
     ]
 };
 
-const StartGame = (parent: string) => {
+/** @param {string} parent */
+const StartGame = (parent) => {
 
     return new Game({ ...config, parent });
 

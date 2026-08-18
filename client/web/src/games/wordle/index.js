@@ -1,8 +1,10 @@
-import type { GameVariant } from '../types';
 import { WordleScene } from './WordleScene';
 import WordleHud from './WordleHud.svelte';
 
-const variant: GameVariant = {
+/** @typedef {import('../types').GameVariant} GameVariant */
+
+/** @type {GameVariant} */
+const variant = {
   key: 'wordle',
   Scene: WordleScene,
   Hud: WordleHud,
