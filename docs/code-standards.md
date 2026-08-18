@@ -21,10 +21,11 @@ Patterns and constraints enforced in the dleague codebase. Updated for the Mongo
 ### Frontend (Svelte 5 + Phaser 4) Files
 
 - **Pluggable -dle variants** under `client/web/src/games/<name>/` — each variant exports a `GameVariant` (Scene class + Hud component).
-- **Phaser scenes** in PascalCase (`WordleScene.ts`) — matches Phaser ecosystem.
+- **Phaser scenes** in PascalCase (`WordleScene.js`) — matches Phaser ecosystem.
 - **Svelte components** in PascalCase (`WordleHud.svelte`, `Lobby.svelte`).
-- **Pure utilities** in lowercase (`scoring.ts`, `registry.ts`, `eventbus-helpers.ts`).
-- **Shared events** routed through `game/EventBus.ts` — typed wrappers in `games/runner/eventbus-helpers.ts`.
+- **Pure utilities** in lowercase (`scoring.js`, `registry.js`, `eventbus-helpers.js`).
+- **Shared events** routed through `game/EventBus.js` — JSDoc-typed wrappers in `games/runner/eventbus-helpers.js`.
+- Plain JavaScript + JSDoc throughout (no TypeScript) — checked via `npm run check` against `client/web/jsconfig.json`.
 
 ### Directory Structure
 
@@ -36,8 +37,8 @@ dleague/
 │       ├── components/           # Svelte UI: Lobby, SignIn, BetaBanner
 │       ├── game/                 # Phaser game shell + EventBus
 │       ├── games/                # Pluggable -dle variants (Phase 8)
-│       │   ├── types.ts          # GameVariant interface
-│       │   ├── registry.ts       # lazy variant loader
+│       │   ├── types.js          # GameVariant JSDoc typedef
+│       │   ├── registry.js       # lazy variant loader
 │       │   ├── runner/           # GameRunner + EventBus helpers
 │       │   └── wordle/           # First concrete variant
 │       └── net/                  # WS client + protobuf
@@ -92,24 +93,25 @@ dleague/
 
 ### Pluggable variants (Phase 8)
 
-```typescript
-interface GameVariant {
-  key: string;                    // 'wordle', 'sumdle', etc.
-  Scene: typeof Phaser.Scene;
-  Hud: typeof SvelteComponent;
-  meta: { title: string; difficulty: 'easy'|'medium'|'hard'; tagline: string };
-}
+```js
+/**
+ * @typedef {Object} GameVariant
+ * @property {string} key                    // 'wordle', 'sumdle', etc.
+ * @property {typeof Phaser.Scene} Scene
+ * @property {typeof SvelteComponent} Hud
+ * @property {{ title: string, difficulty: 'easy'|'medium'|'hard', tagline: string }} meta
+ */
 ```
 
-- Variants register in `client/web/src/games/registry.ts` as lazy imports.
+- Variants register in `client/web/src/games/registry.js` as lazy imports.
 - `GameRunner.svelte` fetches puzzle + resume state, mounts the scene, mounts the HUD, posts the final attempt.
-- Adding a new variant = copy `wordle/` folder + register in `registry.ts`.
+- Adding a new variant = copy `wordle/` folder + register in `registry.js`.
 
 ## Code Quality Rules
 
 ### Testing
 
-- **Unit tests** in `*_test.go` (Go) / `*.test.ts` (TypeScript via vitest).
+- **Unit tests** in `*_test.go` (Go) / `*.test.js` (JSDoc-typed JavaScript via vitest).
 - **Coverage target:** >70% on game logic, store impls, auth, API handlers.
 - **Memstore** validates the upper-layer test surface; live MongoDB tests are gated by env var `MONGODB_TEST_URI`.
 
@@ -155,8 +157,8 @@ era. Re-enable for Go 1.25.5 + Svelte/Phaser + Atlas, running:
 | Go constants | UPPER_SNAKE | `MAX_GUESSES`, `MaxGuesses` (mixed; PascalCase preferred for new) |
 | Protobuf messages | PascalCase | `AuthRequest`, `Envelope` |
 | Protobuf fields | snake_case | `message_type`, `request_id` |
-| TS modules (utility) | camelCase / kebab-case | `scoring.ts`, `eventbus-helpers.ts` |
-| TS classes & components | PascalCase | `WordleScene`, `WordleHud.svelte` |
+| JS modules (utility) | camelCase / kebab-case | `scoring.js`, `eventbus-helpers.js` |
+| JS classes & components | PascalCase | `WordleScene`, `WordleHud.svelte` |
 
 ## Dependencies
 

@@ -2,13 +2,18 @@
 // so Vite splits the per-variant code into its own chunk — Phaser loads
 // once, the variant chunk only when its game is played.
 
-import type { GameVariant } from './types';
+/** @typedef {import('./types').GameVariant} GameVariant */
 
-export const variants = new Map<string, () => Promise<GameVariant>>([
+/** @type {Map<string, () => Promise<GameVariant>>} */
+export const variants = new Map([
   ['wordle', async () => (await import('./wordle')).default],
 ]);
 
-export async function loadVariant(key: string): Promise<GameVariant> {
+/**
+ * @param {string} key
+ * @returns {Promise<GameVariant>}
+ */
+export async function loadVariant(key) {
   const loader = variants.get(key);
   if (!loader) throw new Error(`unknown game variant: ${key}`);
   return loader();

@@ -5,7 +5,7 @@
 // Public-by-design config (apiKey etc.) lives in `import.meta.env.VITE_*`
 // — safe to ship in the bundle.
 
-import { initializeApp, type FirebaseApp } from 'firebase/app';
+import { initializeApp } from 'firebase/app';
 import {
   getAuth,
   signInWithPopup,
@@ -13,15 +13,20 @@ import {
   signInAnonymously as fbSignInAnon,
   GoogleAuthProvider,
   signOut as fbSignOut,
-  onAuthStateChanged,
-  type User,
-  type Auth
+  onAuthStateChanged
 } from 'firebase/auth';
 
-let app: FirebaseApp | null = null;
-let auth: Auth | null = null;
+/** @typedef {import('firebase/app').FirebaseApp} FirebaseApp */
+/** @typedef {import('firebase/auth').User} User */
+/** @typedef {import('firebase/auth').Auth} Auth */
 
-export function initFirebase(): Auth {
+/** @type {FirebaseApp | null} */
+let app = null;
+/** @type {Auth | null} */
+let auth = null;
+
+/** @returns {Auth} */
+export function initFirebase() {
   if (auth) return auth;
   app = initializeApp({
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -33,32 +38,44 @@ export function initFirebase(): Auth {
   return auth;
 }
 
-export async function signInWithGoogle(): Promise<User> {
+/** @returns {Promise<User>} */
+export async function signInWithGoogle() {
   const a = initFirebase();
   const cred = await signInWithPopup(a, new GoogleAuthProvider());
   return cred.user;
 }
 
-export async function signInWithEmail(email: string, password: string): Promise<User> {
+/**
+ * @param {string} email
+ * @param {string} password
+ * @returns {Promise<User>}
+ */
+export async function signInWithEmail(email, password) {
   const a = initFirebase();
   const cred = await signInWithEmailAndPassword(a, email, password);
   return cred.user;
 }
 
-export async function signInAnonymously(): Promise<User> {
+/** @returns {Promise<User>} */
+export async function signInAnonymously() {
   const a = initFirebase();
   const cred = await fbSignInAnon(a);
   return cred.user;
 }
 
-export async function signOut(): Promise<void> {
+/** @returns {Promise<void>} */
+export async function signOut() {
   const a = initFirebase();
   await fbSignOut(a);
 }
 
 // getIdToken returns the current ID token. Pass forceRefresh=true to bypass
 // the SDK's 5-minute cache (the WS reconnect path uses this).
-export async function getIdToken(forceRefresh = false): Promise<string | null> {
+/**
+ * @param {boolean} [forceRefresh]
+ * @returns {Promise<string | null>}
+ */
+export async function getIdToken(forceRefresh = false) {
   const a = initFirebase();
   const u = a.currentUser;
   if (!u) return null;
@@ -66,4 +83,3 @@ export async function getIdToken(forceRefresh = false): Promise<string | null> {
 }
 
 export { onAuthStateChanged };
-export type { User };

@@ -1,4 +1,4 @@
-<script lang="ts">
+<script>
   // Generic game shell. Loads the requested variant via dynamic import,
   // fetches today's puzzle (auth'd → includes word for client-side per-guess
   // feedback), fetches resume state, mounts the Phaser scene + Svelte HUD,
@@ -7,28 +7,39 @@
   import { onMount, onDestroy } from 'svelte';
   import { auth } from '../../auth/auth.svelte';
   import { loadVariant } from '../registry';
-  import type { GameVariant } from '../types';
-  import type { Game } from 'phaser';
-  import { onAttemptComplete, type AttemptCompletePayload } from './eventbus-helpers';
+  import { onAttemptComplete } from './eventbus-helpers';
 
+  /** @typedef {import('../types').GameVariant} GameVariant */
+  /** @typedef {import('phaser').Game} Game */
+  /** @typedef {import('./eventbus-helpers').AttemptCompletePayload} AttemptCompletePayload */
+
+  /** @type {{ variantKey: string, onExit?: () => void }} */
   let { variantKey, onExit = () => {} } = $props();
 
-  type Stage = 'loading' | 'ready' | 'finished' | 'error';
-  let stage = $state<Stage>('loading');
-  let errorMsg = $state<string | null>(null);
-  let variant = $state<GameVariant | null>(null);
-  let puzzleDate = $state<string>('');
-  let game: Game | null = null;
-  let unsubAttempt: (() => void) | null = null;
+  /** @typedef {'loading' | 'ready' | 'finished' | 'error'} Stage */
+  let stage = $state(/** @type {Stage} */ ('loading'));
+  let errorMsg = $state(/** @type {string | null} */ (null));
+  let variant = $state(/** @type {GameVariant | null} */ (null));
+  let puzzleDate = $state(/** @type {string} */ (''));
+  /** @type {Game | null} */
+  let game = null;
+  /** @type {(() => void) | null} */
+  let unsubAttempt = null;
 
-  interface PuzzleResponse {
-    date: string;
-    word: string;
-    hint?: string;
-    difficulty?: number;
-  }
+  /**
+   * @typedef {Object} PuzzleResponse
+   * @property {string} date
+   * @property {string} word
+   * @property {string} [hint]
+   * @property {number} [difficulty]
+   */
 
-  async function authedFetch(path: string, init?: RequestInit): Promise<Response> {
+  /**
+   * @param {string} path
+   * @param {RequestInit} [init]
+   * @returns {Promise<Response>}
+   */
+  async function authedFetch(path, init) {
     const token = await auth.getIdToken(false);
     if (!token) throw new Error('not signed in');
     return fetch(path, {
@@ -37,13 +48,18 @@
     });
   }
 
-  async function fetchPuzzle(): Promise<PuzzleResponse> {
+  /** @returns {Promise<PuzzleResponse>} */
+  async function fetchPuzzle() {
     const res = await authedFetch('/api/v1/puzzles/me/today');
     if (!res.ok) throw new Error(`puzzle fetch failed: ${res.status}`);
     return res.json();
   }
 
-  async function fetchResume(date: string): Promise<string[] | null> {
+  /**
+   * @param {string} date
+   * @returns {Promise<string[] | null>}
+   */
+  async function fetchResume(date) {
     const res = await authedFetch(`/api/v1/attempts/me/${date}`);
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`resume fetch failed: ${res.status}`);
@@ -51,7 +67,12 @@
     return Array.isArray(a.guesses) ? a.guesses : null;
   }
 
-  async function postAttempt(date: string, guesses: string[]): Promise<void> {
+  /**
+   * @param {string} date
+   * @param {string[]} guesses
+   * @returns {Promise<void>}
+   */
+  async function postAttempt(date, guesses) {
     const res = await authedFetch('/api/v1/attempts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -60,7 +81,8 @@
     if (!res.ok) throw new Error(`attempt post failed: ${res.status}`);
   }
 
-  async function startGame(parentId: string) {
+  /** @param {string} parentId */
+  async function startGame(parentId) {
     const v = await loadVariant(variantKey);
     variant = v;
     const puzzle = await fetchPuzzle();
@@ -82,17 +104,18 @@
     };
     // Wait until Phaser is up before starting the scene.
     game.events.once('ready', () => {
-      game!.scene.start('Wordle', initData);
+      /** @type {Game} */ (game).scene.start('Wordle', initData);
     });
     if (game.isBooted) game.scene.start('Wordle', initData);
     stage = 'ready';
   }
 
-  async function handleAttemptComplete(p: AttemptCompletePayload) {
+  /** @param {AttemptCompletePayload} p */
+  async function handleAttemptComplete(p) {
     try {
       await postAttempt(puzzleDate, p.guesses);
     } catch (e) {
-      errorMsg = (e as Error).message;
+      errorMsg = /** @type {Error} */ (e).message;
     }
     stage = 'finished';
   }
@@ -102,7 +125,7 @@
     try {
       await startGame('game-container');
     } catch (e) {
-      errorMsg = (e as Error).message;
+      errorMsg = /** @type {Error} */ (e).message;
       stage = 'error';
     }
   });

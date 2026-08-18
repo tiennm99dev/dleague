@@ -3,9 +3,12 @@ import { Scene } from 'phaser';
 
 export class Game extends Scene
 {
-    camera: Phaser.Cameras.Scene2D.Camera;
-    background: Phaser.GameObjects.Image;
-    gameText: Phaser.GameObjects.Text;
+    /** @type {Phaser.Cameras.Scene2D.Camera} */
+    camera = /** @type {any} */ (undefined);
+    /** @type {Phaser.GameObjects.Image} */
+    background = /** @type {any} */ (undefined);
+    /** @type {Phaser.GameObjects.Text} */
+    gameText = /** @type {any} */ (undefined);
 
     constructor ()
     {

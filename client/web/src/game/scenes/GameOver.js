@@ -3,9 +3,12 @@ import { Scene } from 'phaser';
 
 export class GameOver extends Scene
 {
-    camera: Phaser.Cameras.Scene2D.Camera;
-    background: Phaser.GameObjects.Image;
-    gameOverText : Phaser.GameObjects.Text;
+    /** @type {Phaser.Cameras.Scene2D.Camera} */
+    camera = /** @type {any} */ (undefined);
+    /** @type {Phaser.GameObjects.Image} */
+    background = /** @type {any} */ (undefined);
+    /** @type {Phaser.GameObjects.Text} */
+    gameOverText = /** @type {any} */ (undefined);
 
     constructor ()
     {

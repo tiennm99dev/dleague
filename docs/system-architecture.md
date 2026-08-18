@@ -9,11 +9,11 @@
 │  ┌────────────────┐    ┌────────────────────────────────┐  │
 │  │ Svelte shell   │    │ Phaser 4 canvas (per-variant)  │  │
 │  │ Lobby / SignIn │◄──►│  WordleScene, …                │  │
-│  │ HUD overlays   │    │  via game/EventBus.ts          │  │
+│  │ HUD overlays   │    │  via game/EventBus.js          │  │
 │  └────────────────┘    └────────────────────────────────┘  │
 │         │                          │                        │
 │  ┌──────▼──────┐           ┌───────▼────────┐              │
-│  │ Firebase JS │           │ ws.ts client + │              │
+│  │ Firebase JS │           │ ws.js client + │              │
 │  │ SDK (Auth)  │           │ /api fetch     │              │
 │  └─────────────┘           └────────────────┘              │
 └─────────│───────────────────────────│───────────────────────┘
@@ -85,7 +85,7 @@ Lobby → "Play today's puzzle" → GameRunner.svelte
   → GET /api/v1/puzzles/me/today (Bearer; returns puzzle.word)
   → GET /api/v1/attempts/me/{date} (resume, 404 if none)
   → Phaser game starts WordleScene with solution + resume
-  → User makes guesses; scoring.ts evaluates client-side for UX
+  → User makes guesses; scoring.js evaluates client-side for UX
   → On win/lose: EventBus emits attempt-complete
   → POST /api/v1/attempts {date, guesses}
   → Server re-scores via api.Score; UpsertAttempt + SubmitScore

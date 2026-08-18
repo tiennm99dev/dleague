@@ -25,6 +25,7 @@
     "dev-nolog": "vite --config vite/config.dev.mjs",
     "build-nolog": "vite build --config vite/config.prod.mjs",
     "preview": "vite preview --outDir build",
+    "check": "svelte-check --tsconfig ./jsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest"
   },

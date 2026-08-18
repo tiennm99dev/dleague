@@ -2,7 +2,7 @@
 // per-guess UX feedback. Final score reverification lives in
 // server/internal/api/scoring.go.
 
-export type LetterEval = 'hit' | 'present' | 'miss';
+/** @typedef {'hit' | 'present' | 'miss'} LetterEval */
 
 export const MAX_GUESSES = 6;
 
@@ -11,14 +11,21 @@ export const MAX_GUESSES = 6;
 // only against remaining (non-green) target letters. So `LLAMA` against
 // solution `ALLOY` yields [present, hit, present, miss, miss], not
 // [present, hit, present, present, miss].
-export function evaluateGuess(guess: string, solution: string): LetterEval[] {
+/**
+ * @param {string} guess
+ * @param {string} solution
+ * @returns {LetterEval[]}
+ */
+export function evaluateGuess(guess, solution) {
   const g = guess.toUpperCase();
   const s = solution.toUpperCase();
   if (g.length !== s.length) {
     throw new Error(`guess length ${g.length} != solution length ${s.length}`);
   }
-  const out: LetterEval[] = new Array(g.length).fill('miss');
-  const remaining: Record<string, number> = {};
+  /** @type {LetterEval[]} */
+  const out = new Array(g.length).fill('miss');
+  /** @type {Record<string, number>} */
+  const remaining = {};
 
   for (let i = 0; i < g.length; i++) {
     if (g[i] === s[i]) {
@@ -38,13 +45,22 @@ export function evaluateGuess(guess: string, solution: string): LetterEval[] {
   return out;
 }
 
-export function isWin(evaluation: LetterEval[]): boolean {
+/**
+ * @param {LetterEval[]} evaluation
+ * @returns {boolean}
+ */
+export function isWin(evaluation) {
   return evaluation.length > 0 && evaluation.every((e) => e === 'hit');
 }
 
 // Mirror the server's score formula (server/internal/api/scoring.go) so the
 // HUD can show a preview that matches the canonical leaderboard score.
-export function score(guesses: string[], solution: string): { score: number; won: boolean } {
+/**
+ * @param {string[]} guesses
+ * @param {string} solution
+ * @returns {{ score: number, won: boolean }}
+ */
+export function score(guesses, solution) {
   const SCORE_FIRST_SOLVE = 100;
   const SCORE_PER_GUESS = 15;
   const target = solution.trim().toUpperCase();

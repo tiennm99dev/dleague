@@ -78,9 +78,10 @@ message MatchEnd {
 }
 `;
 
-const root: Root = parse(SCHEMA, { keepCase: false }).root;
+/** @type {Root} */
+const root = parse(SCHEMA, { keepCase: false }).root;
 
-export const MessageType = {
+export const MessageType = /** @type {const} */ ({
   UNSPECIFIED: 0,
   PING: 1,
   PONG: 2,
@@ -90,9 +91,9 @@ export const MessageType = {
   JOIN_ROOM_ACK: 6,
   TURN: 7,
   MATCH_END: 8
-} as const;
+});
 
-export type MessageTypeValue = (typeof MessageType)[keyof typeof MessageType];
+/** @typedef {(typeof MessageType)[keyof typeof MessageType]} MessageTypeValue */
 
 const Envelope = root.lookupType('dleague.v1.Envelope');
 const AuthRequest = root.lookupType('dleague.v1.AuthRequest');
@@ -105,20 +106,35 @@ const Turn = root.lookupType('dleague.v1.Turn');
 const MatchEnd = root.lookupType('dleague.v1.MatchEnd');
 
 // Encoded envelope ready for `ws.send`.
-export function encodeEnvelope(typeNum: MessageTypeValue, requestId: string, innerType: Type, body: object): Uint8Array {
+/**
+ * @param {MessageTypeValue} typeNum
+ * @param {string} requestId
+ * @param {Type} innerType
+ * @param {object} body
+ * @returns {Uint8Array}
+ */
+export function encodeEnvelope(typeNum, requestId, innerType, body) {
   const payload = innerType.encode(innerType.create(body)).finish();
   return Envelope.encode(Envelope.create({ type: typeNum, requestId, payload })).finish();
 }
 
 // Decoded envelope + the inner body, looked up by the envelope's `type`.
-export function decodeEnvelope(buf: Uint8Array): { type: MessageTypeValue; requestId: string; body: any } {
-  const env = Envelope.decode(buf) as any;
+/**
+ * @param {Uint8Array} buf
+ * @returns {{ type: MessageTypeValue, requestId: string, body: any }}
+ */
+export function decodeEnvelope(buf) {
+  const env = /** @type {any} */ (Envelope.decode(buf));
   const inner = innerTypeFor(env.type);
   const body = inner ? inner.decode(env.payload) : null;
-  return { type: env.type as MessageTypeValue, requestId: env.requestId, body };
+  return { type: /** @type {MessageTypeValue} */ (env.type), requestId: env.requestId, body };
 }
 
-function innerTypeFor(t: number): Type | null {
+/**
+ * @param {number} t
+ * @returns {Type | null}
+ */
+function innerTypeFor(t) {
   switch (t) {
     case MessageType.PING: return Ping;
     case MessageType.PONG: return Pong;
@@ -134,24 +150,49 @@ function innerTypeFor(t: number): Type | null {
 
 // Convenience: typed builders that avoid stringly-typed call sites.
 export const Build = {
-  auth: (idToken: string, requestId = 'auth') =>
+  /**
+   * @param {string} idToken
+   * @param {string} [requestId]
+   */
+  auth: (idToken, requestId = 'auth') =>
     encodeEnvelope(MessageType.AUTH_REQUEST, requestId, AuthRequest, { idToken, version: 1 }),
-  ping: (clientUnixMs: number, requestId = 'ping') =>
+  /**
+   * @param {number} clientUnixMs
+   * @param {string} [requestId]
+   */
+  ping: (clientUnixMs, requestId = 'ping') =>
     encodeEnvelope(MessageType.PING, requestId, Ping, { clientUnixMs }),
-  joinRoom: (matchId: string, requestId = 'join') =>
+  /**
+   * @param {string} matchId
+   * @param {string} [requestId]
+   */
+  joinRoom: (matchId, requestId = 'join') =>
     encodeEnvelope(MessageType.JOIN_ROOM, requestId, JoinRoom, { matchId }),
-  turn: (matchId: string, turnIndex: number, payload: Uint8Array, requestId = 'turn') =>
+  /**
+   * @param {string} matchId
+   * @param {number} turnIndex
+   * @param {Uint8Array} payload
+   * @param {string} [requestId]
+   */
+  turn: (matchId, turnIndex, payload, requestId = 'turn') =>
     encodeEnvelope(MessageType.TURN, requestId, Turn, { matchId, turnIndex, payload }),
-  matchEnd: (matchId: string, winnerUid: string, scoreP1: number, scoreP2: number, requestId = 'end') =>
+  /**
+   * @param {string} matchId
+   * @param {string} winnerUid
+   * @param {number} scoreP1
+   * @param {number} scoreP2
+   * @param {string} [requestId]
+   */
+  matchEnd: (matchId, winnerUid, scoreP1, scoreP2, requestId = 'end') =>
     encodeEnvelope(MessageType.MATCH_END, requestId, MatchEnd, { matchId, winnerUid, scoreP1, scoreP2 })
 };
 
 // Re-export so consumers can hold typed bodies without re-importing protobufjs.
-export type AuthResponseBody = { ok: boolean; uid: string; error: string };
-export type JoinRoomAckBody = { ok: boolean; matchId: string; role: string; opponentUid: string; error: string };
-export type PongBody = { clientUnixMs: number; serverUnixMs: number };
-export type TurnBody = { matchId: string; turnIndex: number; payload: Uint8Array };
-export type MatchEndBody = { matchId: string; winnerUid: string; scoreP1: number; scoreP2: number };
+/** @typedef {{ ok: boolean, uid: string, error: string }} AuthResponseBody */
+/** @typedef {{ ok: boolean, matchId: string, role: string, opponentUid: string, error: string }} JoinRoomAckBody */
+/** @typedef {{ clientUnixMs: number, serverUnixMs: number }} PongBody */
+/** @typedef {{ matchId: string, turnIndex: number, payload: Uint8Array }} TurnBody */
+/** @typedef {{ matchId: string, winnerUid: string, scoreP1: number, scoreP2: number }} MatchEndBody */
 
 // Silence unused warnings for symbols re-exported as types only above.
 export { Reader, Writer };

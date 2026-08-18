@@ -1,4 +1,4 @@
-<script lang="ts">
+<script>
   import { auth } from '../auth/auth.svelte';
   import SignIn from '../components/SignIn.svelte';
   import Lobby from '../components/Lobby.svelte';

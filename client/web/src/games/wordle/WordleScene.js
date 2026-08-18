@@ -8,9 +8,10 @@ import {
   evaluateGuess,
   isWin,
   MAX_GUESSES,
-  type LetterEval,
 } from './scoring';
 import { emitAttemptComplete, emitGuessSubmitted } from '../runner/eventbus-helpers';
+
+/** @typedef {import('./scoring').LetterEval} LetterEval */
 
 const COLORS = {
   hit: 0x6aaa64,
@@ -22,34 +23,47 @@ const COLORS = {
   textInverse: 0xffffff,
 };
 
-const HEX = (n: number) => '#' + n.toString(16).padStart(6, '0');
+/** @param {number} n */
+const HEX = (n) => '#' + n.toString(16).padStart(6, '0');
 
-interface WordleInitData {
-  solution: string;
-  length: number;
-  resumeGuesses?: string[];
-}
+/**
+ * @typedef {Object} WordleInitData
+ * @property {string} solution
+ * @property {number} length
+ * @property {string[]} [resumeGuesses]
+ */
 
 const KEYBOARD_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', '↵ZXCVBNM⌫'];
 
 export class WordleScene extends Scene {
-  private solution = '';
-  private wordLength = 5;
-  private guesses: string[] = [];
-  private evaluations: LetterEval[][] = [];
-  private currentInput = '';
-  private finished = false;
+  /** @type {string} */
+  solution = '';
+  /** @type {number} */
+  wordLength = 5;
+  /** @type {string[]} */
+  guesses = [];
+  /** @type {LetterEval[][]} */
+  evaluations = [];
+  /** @type {string} */
+  currentInput = '';
+  /** @type {boolean} */
+  finished = false;
 
-  private tiles: Phaser.GameObjects.Rectangle[][] = [];
-  private tileLabels: Phaser.GameObjects.Text[][] = [];
-  private keyButtons = new Map<string, { rect: Phaser.GameObjects.Rectangle; label: Phaser.GameObjects.Text }>();
-  private statusText?: Phaser.GameObjects.Text;
+  /** @type {Phaser.GameObjects.Rectangle[][]} */
+  tiles = [];
+  /** @type {Phaser.GameObjects.Text[][]} */
+  tileLabels = [];
+  /** @type {Map<string, { rect: Phaser.GameObjects.Rectangle, label: Phaser.GameObjects.Text }>} */
+  keyButtons = new Map();
+  /** @type {Phaser.GameObjects.Text | undefined} */
+  statusText;
 
   constructor() {
     super('Wordle');
   }
 
-  init(data: WordleInitData) {
+  /** @param {WordleInitData} data */
+  init(data) {
     this.solution = (data.solution || '').toUpperCase();
     this.wordLength = data.length || this.solution.length || 5;
     this.guesses = [];
@@ -98,7 +112,7 @@ export class WordleScene extends Scene {
     EventBus.emit('current-scene-ready', this);
   }
 
-  private buildGrid() {
+  buildGrid() {
     const tileSize = 56;
     const gap = 6;
     const rows = MAX_GUESSES;
@@ -127,7 +141,7 @@ export class WordleScene extends Scene {
     }
   }
 
-  private buildKeyboard() {
+  buildKeyboard() {
     const keyW = 36;
     const keyH = 48;
     const gap = 4;
@@ -155,21 +169,24 @@ export class WordleScene extends Scene {
     }
   }
 
-  private handleKeyDown(ev: KeyboardEvent) {
+  /** @param {KeyboardEvent} ev */
+  handleKeyDown(ev) {
     if (this.finished) return;
     if (ev.key === 'Enter') this.submitGuess();
     else if (ev.key === 'Backspace') this.popLetter();
     else if (/^[a-zA-Z]$/.test(ev.key)) this.pushLetter(ev.key.toUpperCase());
   }
 
-  private handleVirtualKey(k: string) {
+  /** @param {string} k */
+  handleVirtualKey(k) {
     if (this.finished) return;
     if (k === '↵') this.submitGuess();
     else if (k === '⌫') this.popLetter();
     else this.pushLetter(k);
   }
 
-  private pushLetter(c: string) {
+  /** @param {string} c */
+  pushLetter(c) {
     if (this.currentInput.length >= this.wordLength) return;
     this.currentInput += c;
     const row = this.guesses.length;
@@ -185,7 +202,7 @@ export class WordleScene extends Scene {
     }
   }
 
-  private popLetter() {
+  popLetter() {
     if (this.currentInput.length === 0) return;
     const row = this.guesses.length;
     const col = this.currentInput.length - 1;
@@ -193,7 +210,7 @@ export class WordleScene extends Scene {
     if (this.tileLabels[row]?.[col]) this.tileLabels[row][col].setText('');
   }
 
-  private submitGuess() {
+  submitGuess() {
     if (this.currentInput.length !== this.wordLength) {
       this.showStatus(`Word must be ${this.wordLength} letters`);
       this.shakeRow(this.guesses.length);
@@ -223,7 +240,12 @@ export class WordleScene extends Scene {
     });
   }
 
-  private flipRow(row: number, evaluation: LetterEval[], done: () => void) {
+  /**
+   * @param {number} row
+   * @param {LetterEval[]} evaluation
+   * @param {() => void} done
+   */
+  flipRow(row, evaluation, done) {
     let pending = this.wordLength;
     for (let col = 0; col < this.wordLength; col++) {
       this.tweens.add({
@@ -248,16 +270,23 @@ export class WordleScene extends Scene {
     }
   }
 
-  private applyTileColor(row: number, col: number, ev: LetterEval) {
+  /**
+   * @param {number} row
+   * @param {number} col
+   * @param {LetterEval} ev
+   */
+  applyTileColor(row, col, ev) {
     this.tiles[row][col].setFillStyle(COLORS[ev]);
     this.tiles[row][col].setStrokeStyle(0);
     this.tileLabels[row][col].setColor(HEX(COLORS.textInverse));
   }
 
-  private refreshKeyboardColors() {
+  refreshKeyboardColors() {
     // Best-known eval per letter: hit > present > miss.
-    const rank: Record<LetterEval, number> = { hit: 3, present: 2, miss: 1 };
-    const best: Record<string, LetterEval> = {};
+    /** @type {Record<LetterEval, number>} */
+    const rank = { hit: 3, present: 2, miss: 1 };
+    /** @type {Record<string, LetterEval>} */
+    const best = {};
     for (let i = 0; i < this.guesses.length; i++) {
       for (let j = 0; j < this.wordLength; j++) {
         const c = this.guesses[i][j];
@@ -274,7 +303,8 @@ export class WordleScene extends Scene {
     }
   }
 
-  private shakeRow(row: number) {
+  /** @param {number} row */
+  shakeRow(row) {
     if (!this.tiles[row]) return;
     for (const t of this.tiles[row]) {
       this.tweens.add({
@@ -287,7 +317,8 @@ export class WordleScene extends Scene {
     }
   }
 
-  private showStatus(msg: string) {
+  /** @param {string} msg */
+  showStatus(msg) {
     this.statusText?.setText(msg);
   }
 }

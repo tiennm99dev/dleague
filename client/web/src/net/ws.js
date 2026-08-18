@@ -3,31 +3,45 @@
 // to subscribers. Auto-reconnect refreshes the Firebase ID token to dodge
 // the 1h expiry.
 
-import { Build, MessageType, decodeEnvelope, type AuthResponseBody, type MessageTypeValue } from './proto';
+import { Build, MessageType, decodeEnvelope } from './proto';
 import { auth } from '../auth/auth.svelte';
 
-type Listener = (body: any, requestId: string) => void;
+/** @typedef {import('./proto').AuthResponseBody} AuthResponseBody */
+/** @typedef {import('./proto').MessageTypeValue} MessageTypeValue */
 
-export type ConnState = 'idle' | 'connecting' | 'authenticating' | 'connected' | 'closed';
+/** @typedef {(body: any, requestId: string) => void} Listener */
+
+/** @typedef {'idle' | 'connecting' | 'authenticating' | 'connected' | 'closed'} ConnState */
 
 const reconnectBackoffMs = [500, 1000, 2000, 4000, 8000];
 
 export class WsClient {
-  private url: string;
-  private ws: WebSocket | null = null;
-  private listeners = new Map<MessageTypeValue, Set<Listener>>();
-  private reconnectAttempts = 0;
-  private intentionalClose = false;
+  /** @type {string} */
+  url;
+  /** @type {WebSocket | null} */
+  ws = null;
+  /** @type {Map<MessageTypeValue, Set<Listener>>} */
+  listeners = new Map();
+  /** @type {number} */
+  reconnectAttempts = 0;
+  /** @type {boolean} */
+  intentionalClose = false;
 
-  state = $state<ConnState>('idle');
-  uid = $state<string | null>(null);
-  lastError = $state<string | null>(null);
+  state = $state(/** @type {ConnState} */ ('idle'));
+  uid = $state(/** @type {string | null} */ (null));
+  lastError = $state(/** @type {string | null} */ (null));
 
-  constructor(url: string) {
+  /** @param {string} url */
+  constructor(url) {
     this.url = url;
   }
 
-  on(type: MessageTypeValue, listener: Listener): () => void {
+  /**
+   * @param {MessageTypeValue} type
+   * @param {Listener} listener
+   * @returns {() => void}
+   */
+  on(type, listener) {
     let set = this.listeners.get(type);
     if (!set) {
       set = new Set();
@@ -37,15 +51,17 @@ export class WsClient {
     return () => set?.delete(listener);
   }
 
-  send(buf: Uint8Array) {
+  /** @param {Uint8Array} buf */
+  send(buf) {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(buf);
+      this.ws.send(/** @type {ArrayBufferView<ArrayBuffer>} */ (buf));
     }
   }
 
   // Open + authenticate. Resolves on AUTH_RESPONSE{ok}, rejects on close
   // or AUTH_RESPONSE{ok:false}.
-  async connect(): Promise<void> {
+  /** @returns {Promise<void>} */
+  async connect() {
     this.intentionalClose = false;
     const token = await auth.getIdToken(false);
     if (!token) throw new Error('not signed in');
@@ -58,14 +74,14 @@ export class WsClient {
 
       ws.onopen = () => {
         this.state = 'authenticating';
-        ws.send(Build.auth(token));
+        ws.send(/** @type {ArrayBufferView<ArrayBuffer>} */ (Build.auth(token)));
       };
 
       ws.onmessage = (ev) => {
-        const buf = new Uint8Array(ev.data as ArrayBuffer);
+        const buf = new Uint8Array(/** @type {ArrayBuffer} */ (ev.data));
         const env = decodeEnvelope(buf);
         if (this.state === 'authenticating' && env.type === MessageType.AUTH_RESPONSE) {
-          const ack = env.body as AuthResponseBody;
+          const ack = /** @type {AuthResponseBody} */ (env.body);
           if (!ack.ok) {
             this.lastError = ack.error || 'auth rejected';
             this.state = 'closed';
@@ -94,7 +110,7 @@ export class WsClient {
         if (this.intentionalClose) return;
         if (wasConnected) {
           this.scheduleReconnect();
-        } else if (this.state === 'connecting') {
+        } else if (/** @type {any} */ (this.state) === 'connecting') {
           // Initial connect failed before resolving.
           reject(new Error('connect failed'));
         }
@@ -107,7 +123,7 @@ export class WsClient {
     this.ws?.close();
   }
 
-  private scheduleReconnect() {
+  scheduleReconnect() {
     const delay = reconnectBackoffMs[Math.min(this.reconnectAttempts, reconnectBackoffMs.length - 1)];
     this.reconnectAttempts += 1;
     setTimeout(() => {
@@ -118,8 +134,9 @@ export class WsClient {
 }
 
 // Default factory wires the URL from env or relative `/ws`.
-export function defaultWsUrl(): string {
-  const env = import.meta.env.VITE_WS_URL as string | undefined;
+/** @returns {string} */
+export function defaultWsUrl() {
+  const env = /** @type {string | undefined} */ (import.meta.env.VITE_WS_URL);
   if (env) return env;
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${proto}//${location.host}/ws`;

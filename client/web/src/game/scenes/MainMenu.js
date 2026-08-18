@@ -1,13 +1,17 @@
-import { type GameObjects, Scene } from 'phaser';
+import { Scene } from 'phaser';
 
 import { EventBus } from '../EventBus';
 
 export class MainMenu extends Scene
 {
-    background: GameObjects.Image;
-    logo: GameObjects.Image;
-    title: GameObjects.Text;
-    logoTween: Phaser.Tweens.Tween | null;
+    /** @type {import('phaser').GameObjects.Image} */
+    background = /** @type {any} */ (undefined);
+    /** @type {import('phaser').GameObjects.Image} */
+    logo = /** @type {any} */ (undefined);
+    /** @type {import('phaser').GameObjects.Text} */
+    title = /** @type {any} */ (undefined);
+    /** @type {Phaser.Tweens.Tween | null} */
+    logoTween = /** @type {any} */ (undefined);
 
     constructor ()
     {
@@ -40,7 +44,8 @@ export class MainMenu extends Scene
         this.scene.start('Game');
     }
 
-    moveLogo (vueCallback: ({ x, y }: { x: number, y: number }) => void)
+    /** @param {(pos: { x: number, y: number }) => void} vueCallback */
+    moveLogo (vueCallback)
     {
         if (this.logoTween)
         {

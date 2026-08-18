@@ -1,6 +1,6 @@
 # Phaser Svelte Template
 
-This is a Phaser 3 project template that uses the Svelte framework, TypeScript and Vite for bundling. It includes a bridge for Svelte to Phaser game communication, hot-reloading for quick development workflow and scripts to generate production-ready builds.
+This is a Phaser 3 project template that uses the Svelte framework and Vite for bundling. It includes a bridge for Svelte to Phaser game communication, hot-reloading for quick development workflow and scripts to generate production-ready builds.
 
 ### Versions
 
@@ -9,7 +9,8 @@ This template has been updated for:
 - [Phaser 3.90.0](https://github.com/phaserjs/phaser)
 - [Svelte 5.23.1](https://github.com/sveltejs/kit)
 - [Vite 6.3.1](https://github.com/vitejs/vite)
-- [TypeScript 5.7.2](https://github.com/microsoft/TypeScript)
+
+Source is plain JavaScript with JSDoc type annotations, checked via `npm run check` (`svelte-check` against `jsconfig.json`).
 
 ![screenshot](screenshot.png)
 
@@ -26,6 +27,7 @@ This template has been updated for:
 | `npm run build` | Create a production build in the `build` folder |
 | `npm run dev-nolog` | Launch a development web server without sending anonymous data (see "About log.js" below) |
 | `npm run build-nolog` | Create a production build in the `dist` folder without sending anonymous data (see "About log.js" below) |
+| `npm run check` | Type-check the JSDoc-annotated JavaScript and Svelte source via `svelte-check` |
 
 ## Writing Code
 
@@ -48,8 +50,8 @@ We have provided a default project structure to get you started. This is as foll
 | `src/+page.svelte`            | Svelte page that integrates the functionality of the game created with Phaser.|
 | `src/PhaserGame.svelte`       | The Svelte component that initializes the Phaser game and acts as a bridge between Svelte and Phaser.|
 | `src/game`                    | Contains the game source code.                                             |
-| `src/game/EventBus.ts`        | A simple event bus to communicate between Svelte and Phaser.               |
-| `src/game/main.ts`            | The main **game** entry point containing the game configuration and starting the game.|
+| `src/game/EventBus.js`        | A simple event bus to communicate between Svelte and Phaser.               |
+| `src/game/main.js`            | The main **game** entry point containing the game configuration and starting the game.|
 | `src/game/scenes/`            | Folder containing the Phaser Scenes.                                       |
 | `static/assets`               | Contains the static assets used by the game.                              |
 
@@ -57,7 +59,7 @@ We have provided a default project structure to get you started. This is as foll
 
 The `PhaserGame.svelte` component is the bridge between Svelte and Phaser. It initializes the Phaser game and passes events between the two.
 
-To communicate between Svelte and Phaser, you can use the **EventBus.ts** file. This is a simple event bus that allows you to emit and listen for events from both Svelte and Phaser.
+To communicate between Svelte and Phaser, you can use the **EventBus.js** file. This is a simple event bus that allows you to emit and listen for events from both Svelte and Phaser.
 
 ```js
 // In Svelte
@@ -112,11 +114,13 @@ Here's an example of how to access Phaser data for use in a Svelte Component:
 
 ```js
 // In a parent component
-<script lang="ts">
-    import type { Scene } from "phaser";
-    import PhaserGame, { type TPhaserRef } from "game/PhaserGame.svelte"; // We provide the type TPhaserRef but this route is an example. You should use the correct path to the PhaserGame component.
+<script>
+    import PhaserGame from "game/PhaserGame.svelte"; // This route is an example. You should use the correct path to the PhaserGame component.
 
-    let phaserRef: TPhaserRef = { game: null, scene: null};
+    /** @typedef {import('game/PhaserGame.svelte').TPhaserRef} TPhaserRef */
+
+    /** @type {TPhaserRef} */
+    let phaserRef = { game: null, scene: null};
 
     const onCurrentActiveScene = (scene) => {
         

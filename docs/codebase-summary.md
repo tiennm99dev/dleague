@@ -28,31 +28,31 @@ src/
 ├── app.html, app.d.ts        # SvelteKit shell
 ├── routes/                   # SvelteKit pages (single page: +page.svelte)
 ├── auth/
-│   ├── firebase.ts           # Firebase JS SDK config + helpers
-│   └── auth.svelte.ts        # Rune-backed singleton auth state ($state)
+│   ├── firebase.js           # Firebase JS SDK config + helpers
+│   └── auth.svelte.js        # Rune-backed singleton auth state ($state)
 ├── components/
 │   ├── BetaBanner.svelte     # "Beta — data may reset" banner
 │   ├── SignIn.svelte         # Email + Google + Anonymous sign-in
 │   └── Lobby.svelte          # Authenticated landing; mounts GameRunner
 ├── game/
-│   ├── EventBus.ts           # Shared Phaser.Events.EventEmitter
-│   ├── main.ts               # Legacy Phaser bootstrap (template scenes)
+│   ├── EventBus.js           # Shared Phaser.Events.EventEmitter
+│   ├── main.js               # Legacy Phaser bootstrap (template scenes)
 │   └── scenes/               # Boot, Preloader, MainMenu, Game, GameOver
 ├── games/                    # Pluggable -dle variants
-│   ├── types.ts              # GameVariant interface
-│   ├── registry.ts           # Lazy variant loader
+│   ├── types.js              # GameVariant JSDoc typedef
+│   ├── registry.js           # Lazy variant loader
 │   ├── runner/
 │   │   ├── GameRunner.svelte # Generic shell: fetch puzzle → mount scene + HUD → POST attempt
-│   │   └── eventbus-helpers.ts
+│   │   └── eventbus-helpers.js
 │   └── wordle/               # First concrete variant
-│       ├── WordleScene.ts    # Phaser scene: tile grid, keyboard, animations
+│       ├── WordleScene.js    # Phaser scene: tile grid, keyboard, animations
 │       ├── WordleHud.svelte  # Attempt counter, win/lose modal, share
-│       ├── scoring.ts        # Pure scoring + per-guess evaluation
-│       ├── scoring.test.ts   # vitest unit tests
-│       └── index.ts          # Default-exports the GameVariant
+│       ├── scoring.js        # Pure scoring + per-guess evaluation
+│       ├── scoring.test.js   # vitest unit tests
+│       └── index.js          # Default-exports the GameVariant
 ├── net/
-│   ├── proto.ts              # Envelope encode/decode helpers
-│   └── ws.ts                 # WsClient with AUTH handshake + auto-reconnect
+│   ├── proto.js              # Envelope encode/decode helpers
+│   └── ws.js                 # WsClient with AUTH handshake + auto-reconnect
 └── PhaserGame.svelte         # (Legacy) component for the template scenes
 ```
 
