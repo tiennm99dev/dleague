@@ -11,7 +11,7 @@
 # Multi-arch: build with `docker buildx build --platform linux/amd64,linux/arm64`
 # (see `make image`). Coolify host is OCI Ampere A1 = linux/arm64.
 
-ARG GO_VERSION=1.25.5
+ARG GO_VERSION=1.26
 ARG NODE_VERSION=22
 ARG ALPINE_VERSION=3.20
 

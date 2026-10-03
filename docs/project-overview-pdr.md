@@ -18,7 +18,7 @@
 | Layer | Tech |
 |-------|------|
 | Auth | Firebase Auth (Spark, free) — Email/Google/Anonymous |
-| Backend | Go 1.25.5 (`chi` + `nhooyr.io/websocket`), one binary |
+| Backend | Go 1.26 (`chi` + `nhooyr.io/websocket`), one binary |
 | Data plane | MongoDB Atlas M0 (free tier, AWS Singapore) — documents + leaderboards + presence + cache |
 | Web client | Svelte 5 (shell + HUD) + Phaser 4 (game canvas) |
 | Mobile shell | Capacitor (web first; iOS/Android later) |

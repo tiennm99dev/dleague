@@ -77,7 +77,7 @@ curl -fsS "https://identitytoolkit.googleapis.com/v1/projects/$FIREBASE_PROJECT_
 
 `server/Dockerfile` is a 3-stage build:
 
-1. `golang:1.25.5-alpine` → builds `cmd/api` (static, trimpath).
+1. `golang:1.26-alpine` → builds `cmd/api` (static, trimpath).
 2. `node:22-alpine` → `npm ci && npm run build-nolog` for the SvelteKit
    client. With `adapter-static`, output lands in `client/web/build/`.
 3. `alpine:3.20` runtime — binary on `PATH`, web build at `/app/web`,

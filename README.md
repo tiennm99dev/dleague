@@ -45,7 +45,7 @@ Server health: <http://localhost:8080/health>. Client dev server: <http://localh
 - **Web client:** Svelte 5 (shell + HUD) + Phaser 4 (game canvas), Vite, vitest
 - **Mobile shell:** Capacitor (web first; iOS/Android later)
 - **Auth:** Firebase Auth (Spark plan: Email/Google/Anonymous)
-- **Backend:** Go 1.25.5 (`chi` HTTP + `nhooyr.io/websocket`)
+- **Backend:** Go 1.26 (`chi` HTTP + `nhooyr.io/websocket`)
 - **Data plane:** MongoDB Atlas M0 (free, AWS Singapore) — documents + leaderboards (`$max` + index) + presence/cache (TTL indexes)
 - **Hosting:** OCI Always-Free Ampere A1 Flex (4 OCPU + 24 GB RAM, ARM64) via Coolify
 
