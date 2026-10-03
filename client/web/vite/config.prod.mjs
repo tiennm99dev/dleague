@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite';
-import { sveltekit } from '@sveltejs/kit/vite';
+import { defineConfig, mergeConfig } from 'vite';
+import baseConfig from '../vite.config.js';
 
 const MESSAGE_INTERVAL_MS = 1000000;
 const lastMessageTime = process.env.LAST_MESSAGE_TIME || 0;
@@ -14,11 +14,8 @@ if (now - lastMessageTime > MESSAGE_INTERVAL_MS) {
     process.env.LAST_MESSAGE_TIME = now;
 }
 
-export default defineConfig({
+export default mergeConfig(baseConfig, defineConfig({
     base: './',
-    plugins: [
-        sveltekit(),
-    ],
     logLevel: 'error',
     build: {
         minify: 'terser',
@@ -32,5 +29,4 @@ export default defineConfig({
             }
         }
     }
-});
-
+}));
